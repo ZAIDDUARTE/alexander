@@ -14,6 +14,14 @@ export function ContentCard({
   );
 }
 
+/**
+ * Question-level card. Prefer leaving `error` unset when a child
+ * control (TextField, RadioGroup, CheckboxGroup, PhoneField,
+ * ServicePolicyGroup, etc.) already owns and renders the same
+ * validation message — otherwise the alert appears twice with
+ * duplicate `role="alert"`. Use `error` only for genuinely
+ * question-level cross-field states that no leaf renders.
+ */
 export function QuestionCard({
   title,
   required,

@@ -7,6 +7,7 @@ import { QuestionCard, ConditionalPanel } from "./ui/Card";
 import { TextField, TextareaField } from "./ui/Fields";
 import { PhoneField } from "./ui/PhoneField";
 import { normalizeToE164 } from "@/lib/onboarding/phone";
+import { addCompletedSection } from "@/lib/onboarding/draft-utils";
 import { CheckboxGroup } from "./ui/CheckboxGroup";
 import { RadioGroup } from "./ui/RadioGroup";
 import { OfficeWeeklySchedule, ServiceWeeklySchedule } from "./WeeklySchedule";
@@ -70,9 +71,7 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
         ...draft.navigation,
         stage: "section-complete" as const,
         sectionId: 1,
-        completedSections: draft.navigation.completedSections.includes(1)
-          ? draft.navigation.completedSections
-          : [...draft.navigation.completedSections, 1].sort((a, b) => a - b),
+        completedSections: addCompletedSection(draft.navigation.completedSections, 1),
       },
     };
     await saveDraftNow(finalDraft);
@@ -96,11 +95,7 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
         </p>
       </header>
 
-      <QuestionCard
-        title="What name do your customers know your company by?"
-        required
-        error={submitted ? errors.customerFacingName : undefined}
-      >
+      <QuestionCard title="What name do your customers know your company by?" required>
         <TextField
           id="customerFacingName"
           label=""
@@ -120,11 +115,7 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
         />
       </QuestionCard>
 
-      <QuestionCard
-        title="What is your main business phone number?"
-        required
-        error={submitted ? errors.mainPhone : undefined}
-      >
+      <QuestionCard title="What is your main business phone number?" required>
         <PhoneField
           id="mainPhone"
           value={data.mainPhone}
@@ -133,7 +124,7 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
         />
       </QuestionCard>
 
-      <QuestionCard title="What is your website?" optional error={submitted ? errors.website : undefined}>
+      <QuestionCard title="What is your website?" optional>
         <TextField
           id="website"
           label=""
@@ -147,7 +138,6 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
       <QuestionCard
         title="Which of these may Alexander tell customers about your company?"
         required
-        error={submitted ? errors.approvedClaims : undefined}
       >
         <CheckboxGroup
           name="approvedClaims"
@@ -221,11 +211,7 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
         />
       </QuestionCard>
 
-      <QuestionCard
-        title="When should Alexander answer your calls?"
-        required
-        error={submitted ? errors.answeringMode : undefined}
-      >
+      <QuestionCard title="When should Alexander answer your calls?" required>
         <RadioGroup
           name="answeringMode"
           options={ANSWERING_MODE_OPTIONS}

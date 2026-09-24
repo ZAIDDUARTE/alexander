@@ -3,12 +3,13 @@
 import { useEffect } from "react";
 import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
 import { ContentCard } from "@/components/onboarding/ui/Card";
-import { PrimaryButton, SecondaryButton } from "@/components/onboarding/ui/Buttons";
+import { PrimaryLink, SecondaryButton } from "@/components/onboarding/ui/Buttons";
 import { useOnboarding } from "@/lib/onboarding/OnboardingContext";
 import { TOTAL_SECTIONS } from "@/lib/onboarding/sections";
 import { useRouter } from "next/navigation";
 import { section1IsValid } from "@/lib/onboarding/validation/section1";
 import { getSection1Progress } from "@/lib/onboarding/progress/section1";
+import { addCompletedSection } from "@/lib/onboarding/draft-utils";
 
 const SUMMARY_ITEMS = [
   "Company identity configured",
@@ -23,9 +24,7 @@ export default function Section1CompletePage() {
   const router = useRouter();
   const sectionProgress = getSection1Progress(draft.section1);
 
-  const completedSections = draft.navigation.completedSections.includes(1)
-    ? draft.navigation.completedSections
-    : [...draft.navigation.completedSections, 1].sort((a, b) => a - b);
+  const completedSections = addCompletedSection(draft.navigation.completedSections, 1);
 
   useEffect(() => {
     if (!section1IsValid(draft.section1)) {
@@ -77,12 +76,7 @@ export default function Section1CompletePage() {
         <p className="mt-6 text-sm text-[var(--color-alexander-muted)]">Next: Your Services</p>
 
         <div className="mx-auto mt-10 flex max-w-md flex-col gap-3">
-          <PrimaryButton disabled title="Your Services (Section 2) is not available in this build yet">
-            Continue to Section 2 →
-          </PrimaryButton>
-          <p className="text-center text-xs text-[var(--color-alexander-muted)]">
-            Section 2 — Your Services — will be added in the next implementation pass.
-          </p>
+          <PrimaryLink href="/onboarding/sections/2/intro">Continue to Section 2 →</PrimaryLink>
           <SecondaryButton onClick={() => router.push("/onboarding/sections/1/review")}>
             Review Section 1
           </SecondaryButton>

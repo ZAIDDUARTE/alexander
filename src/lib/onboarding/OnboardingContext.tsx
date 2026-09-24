@@ -12,12 +12,13 @@ import {
 } from "react";
 import { loadLocalDraft, saveLocalDraft, type SaveStatus } from "./persistence";
 import { fetchServerDraft, putServerDraft } from "./server-api";
-import { reconcileDrafts, hasDraftContent } from "./draft-utils";
+import { reconcileDrafts, hasDraftContent, addCompletedSection } from "./draft-utils";
 import {
   createDefaultDraft,
   type OnboardingDraft,
   type OnboardingNavigation,
   type Section1Data,
+  type Section2Data,
 } from "./types";
 
 type OnboardingContextValue = {
@@ -27,6 +28,8 @@ type OnboardingContextValue = {
   lastSavedAt: Date | null;
   updateSection1: (patch: Partial<Section1Data>, options?: { immediate?: boolean }) => void;
   setSection1: (data: Section1Data) => void;
+  updateSection2: (patch: Partial<Section2Data>, options?: { immediate?: boolean }) => void;
+  setSection2: (data: Section2Data) => void;
   setNavigation: (nav: Partial<OnboardingNavigation>) => void;
   markSectionComplete: (sectionId: number) => void;
   setCurrentRoute: (route: string) => void;
@@ -209,6 +212,26 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     [updateDraft],
   );
 
+  const updateSection2 = useCallback(
+    (patch: Partial<Section2Data>, options?: { immediate?: boolean }) => {
+      updateDraft(
+        (prev) => ({
+          ...prev,
+          section2: { ...prev.section2, ...patch },
+        }),
+        options?.immediate,
+      );
+    },
+    [updateDraft],
+  );
+
+  const setSection2 = useCallback(
+    (data: Section2Data) => {
+      updateDraft((prev) => ({ ...prev, section2: data }), true);
+    },
+    [updateDraft],
+  );
+
   const setNavigation = useCallback(
     (nav: Partial<OnboardingNavigation>) => {
       updateDraft(
@@ -233,9 +256,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
           ...prev,
           navigation: {
             ...prev.navigation,
-            completedSections: [...prev.navigation.completedSections, sectionId].sort(
-              (a, b) => a - b,
-            ),
+            completedSections: addCompletedSection(prev.navigation.completedSections, sectionId),
           },
         }),
         true,
@@ -324,6 +345,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       lastSavedAt,
       updateSection1,
       setSection1,
+      updateSection2,
+      setSection2,
       setNavigation,
       markSectionComplete,
       setCurrentRoute,
@@ -337,6 +360,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       lastSavedAt,
       updateSection1,
       setSection1,
+      updateSection2,
+      setSection2,
       setNavigation,
       markSectionComplete,
       setCurrentRoute,

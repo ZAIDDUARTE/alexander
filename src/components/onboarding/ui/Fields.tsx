@@ -66,6 +66,7 @@ export function TextareaField({
   label,
   value,
   onChange,
+  required,
   optional,
   helpText,
   placeholder,
@@ -76,6 +77,7 @@ export function TextareaField({
   label: string;
   value: string;
   onChange: (v: string) => void;
+  required?: boolean;
   optional?: boolean;
   helpText?: string;
   placeholder?: string;
@@ -86,6 +88,9 @@ export function TextareaField({
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-[var(--color-alexander-navy)]">
         {label}
+        {required && (
+          <span className="ml-1 text-[var(--color-alexander-required)]" aria-hidden>*</span>
+        )}
         {optional && (
           <span className="ml-2 font-normal text-[var(--color-alexander-muted)]">(Optional)</span>
         )}

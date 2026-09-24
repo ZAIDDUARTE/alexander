@@ -50,13 +50,15 @@ export async function PUT(request: Request) {
   }
 
   const clientDraft = fromRedisDraft(incoming);
+  const defaults = createDefaultDraft();
   const merged = {
-    ...createDefaultDraft(),
+    ...defaults,
     ...clientDraft,
     schemaVersion: SCHEMA_VERSION,
     updatedAt: new Date().toISOString(),
-    navigation: { ...createDefaultDraft().navigation, ...clientDraft.navigation },
-    section1: { ...createDefaultDraft().section1, ...clientDraft.section1 },
+    navigation: { ...defaults.navigation, ...clientDraft.navigation },
+    section1: { ...defaults.section1, ...clientDraft.section1 },
+    section2: { ...defaults.section2, ...clientDraft.section2 },
   };
 
   const redisPayload: RedisOnboardingDraft = toRedisDraft(

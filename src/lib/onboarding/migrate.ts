@@ -58,6 +58,32 @@ function migrateV2(raw: LegacyDraftV2): OnboardingDraft {
     currentRoute: raw.currentRoute,
     navigation: migrateNavigationV2ToV3(raw.navigation),
     section1: raw.section1 as Section1Data | undefined,
+    // section2 did not exist yet — mergeWithDefaults fills it in.
+  });
+}
+
+/**
+ * v3 had `navigation` in its final (current) shape already — only
+ * `section2` is new in v4. No navigation reshaping needed; Section 1
+ * answers and navigation/progress carry over untouched.
+ */
+type LegacyDraftV3 = {
+  schemaVersion: 3;
+  updatedAt?: string;
+  currentRoute?: string;
+  navigation?: OnboardingNavigation;
+  section1?: Partial<Section1Data>;
+};
+
+function migrateV3(raw: LegacyDraftV3): OnboardingDraft {
+  return mergeWithDefaults({
+    updatedAt: raw.updatedAt,
+    currentRoute: raw.currentRoute,
+    navigation: raw.navigation,
+    section1: raw.section1 as Section1Data | undefined,
+    // section2 did not exist yet — mergeWithDefaults fills it in
+    // with fresh, unanswered defaults (no MD-approved defaults exist
+    // for Q14–Q25, so a blank starting state is correct).
   });
 }
 
@@ -75,6 +101,10 @@ export function migrateDraft(raw: unknown): OnboardingDraft {
 
   if (version === SCHEMA_VERSION) {
     return mergeWithDefaults(raw as Partial<OnboardingDraft>);
+  }
+
+  if (version === 3) {
+    return migrateV3(raw as LegacyDraftV3);
   }
 
   if (version === 2) {
