@@ -50,4 +50,3 @@ next-env.d.ts
 
 # local research / media (not part of the deployable app)
 /zoom/
-.env*
