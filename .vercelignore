@@ -1,0 +1,9 @@
+# Keep Vercel uploads lean — these are local-only / already handled by install.
+node_modules
+.next
+.vercel
+zoom
+*.tsbuildinfo
+.env
+.env.local
+.env*.local
