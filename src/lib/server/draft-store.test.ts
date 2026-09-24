@@ -5,7 +5,7 @@ import {
   isValidRedisDraft,
   migrateStoredRedisDraft,
 } from "./draft-store";
-import { SCHEMA_VERSION, createDefaultSection1 } from "@/lib/onboarding/types";
+import { SCHEMA_VERSION, createDefaultSection1, createDefaultSection2 } from "@/lib/onboarding/types";
 
 describe("isValidRedisDraft — current schema only", () => {
   it("rejects a v3 Redis envelope that lacks section2", () => {
@@ -80,5 +80,52 @@ describe("migrateStoredRedisDraft — Redis v3 → v4 without losing Section 1",
     assert.equal(migrateStoredRedisDraft(null), null);
     assert.equal(migrateStoredRedisDraft("nope"), null);
     assert.equal(migrateStoredRedisDraft({ foo: 1 }), null);
+  });
+});
+
+describe("migrateStoredRedisDraft — (S) Redis v4 → v5 without losing Sections 1–2", () => {
+  it("upgrades a representative v4 stored draft (Sections 1–2, pre-Section-3) into the current Redis envelope", () => {
+    const v4Stored = {
+      schemaVersion: 4,
+      updatedAt: "2026-09-01T12:00:00.000Z",
+      currentRoute: "/onboarding/sections/2/review",
+      currentSection: 2,
+      completedSections: [1, 2],
+      data: {
+        navigation: {
+          stage: "section-complete" as const,
+          sectionId: 2,
+          completedSections: [1, 2],
+        },
+        section1: {
+          ...createDefaultSection1(),
+          customerFacingName: "Acme Plumbing",
+          mainPhone: "+14155552671",
+        },
+        section2: {
+          ...createDefaultSection2(),
+          serviceAreaDefinitionMode: "distance" as const,
+          serviceAreaDistance: { address: "123 Main St", radiusMiles: "25" },
+        },
+        // no section3/contacts — this is exactly a pre-Section-3 v4
+        // Redis draft, for either localStorage or Redis backends.
+      },
+    };
+
+    const migrated = migrateStoredRedisDraft(v4Stored);
+    assert.ok(migrated);
+    assert.equal(migrated!.schemaVersion, SCHEMA_VERSION);
+    assert.equal(migrated!.data.section1.customerFacingName, "Acme Plumbing");
+    assert.equal(migrated!.data.section1.mainPhone, "+14155552671");
+    assert.equal(migrated!.data.section2.serviceAreaDefinitionMode, "distance");
+    assert.equal(migrated!.data.section2.serviceAreaDistance.radiusMiles, "25");
+    assert.deepEqual(migrated!.data.navigation.completedSections, [1, 2]);
+    assert.equal(migrated!.completedSections.length, 2);
+    // Section 3 + shared contact registry are initialized, not omitted.
+    assert.ok(migrated!.data.section3);
+    assert.equal(Array.isArray(migrated!.data.contacts), true);
+    assert.equal(migrated!.data.contacts.length, 1);
+    assert.equal(migrated!.data.section3.primaryContactId, migrated!.data.contacts[0].id);
+    assert.equal(isValidRedisDraft(migrated), true);
   });
 });

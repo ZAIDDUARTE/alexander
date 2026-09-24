@@ -5,6 +5,7 @@ import {
   type OnboardingNavigation,
   type OnboardingStage,
   type Section1Data,
+  type Section2Data,
 } from "./types";
 import { mergeWithDefaults } from "./draft-utils";
 
@@ -88,6 +89,35 @@ function migrateV3(raw: LegacyDraftV3): OnboardingDraft {
 }
 
 /**
+ * v4 had `section1`/`section2` in their final (current) shape already
+ * — only `section3` and the shared `contacts` registry are new in v5.
+ * Section 1 and Section 2 answers, navigation, and completed-section
+ * progress all carry over untouched.
+ */
+type LegacyDraftV4 = {
+  schemaVersion: 4;
+  updatedAt?: string;
+  currentRoute?: string;
+  navigation?: OnboardingNavigation;
+  section1?: Partial<Section1Data>;
+  section2?: Partial<Section2Data>;
+};
+
+function migrateV4(raw: LegacyDraftV4): OnboardingDraft {
+  return mergeWithDefaults({
+    updatedAt: raw.updatedAt,
+    currentRoute: raw.currentRoute,
+    navigation: raw.navigation,
+    section1: raw.section1 as Section1Data | undefined,
+    section2: raw.section2 as Section2Data | undefined,
+    // section3/contacts did not exist yet — mergeWithDefaults fills
+    // them in with fresh, unanswered defaults and one freshly
+    // generated primary-contact placeholder (no MD-approved defaults
+    // exist for Q26–Q38, so a blank starting state is correct).
+  });
+}
+
+/**
  * Migrate a raw persisted value (any prior schema version, or garbage)
  * into the current OnboardingDraft shape, preserving customer answers
  * wherever a deterministic upgrade path exists.
@@ -101,6 +131,10 @@ export function migrateDraft(raw: unknown): OnboardingDraft {
 
   if (version === SCHEMA_VERSION) {
     return mergeWithDefaults(raw as Partial<OnboardingDraft>);
+  }
+
+  if (version === 4) {
+    return migrateV4(raw as LegacyDraftV4);
   }
 
   if (version === 3) {

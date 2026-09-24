@@ -15,10 +15,13 @@ import { fetchServerDraft, putServerDraft } from "./server-api";
 import { reconcileDrafts, hasDraftContent, addCompletedSection } from "./draft-utils";
 import {
   createDefaultDraft,
+  createEmptyContact,
+  type Contact,
   type OnboardingDraft,
   type OnboardingNavigation,
   type Section1Data,
   type Section2Data,
+  type Section3Data,
 } from "./types";
 
 type OnboardingContextValue = {
@@ -30,6 +33,12 @@ type OnboardingContextValue = {
   setSection1: (data: Section1Data) => void;
   updateSection2: (patch: Partial<Section2Data>, options?: { immediate?: boolean }) => void;
   setSection2: (data: Section2Data) => void;
+  updateSection3: (patch: Partial<Section3Data>, options?: { immediate?: boolean }) => void;
+  setSection3: (data: Section3Data) => void;
+  /** Deterministic contact-registry creation — call only from an explicit
+   * user action (e.g. a button onClick), never from a render/effect. */
+  addContact: () => string;
+  updateContact: (id: string, patch: Partial<Contact>, options?: { immediate?: boolean }) => void;
   setNavigation: (nav: Partial<OnboardingNavigation>) => void;
   markSectionComplete: (sectionId: number) => void;
   setCurrentRoute: (route: string) => void;
@@ -232,6 +241,52 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     [updateDraft],
   );
 
+  const updateSection3 = useCallback(
+    (patch: Partial<Section3Data>, options?: { immediate?: boolean }) => {
+      updateDraft(
+        (prev) => ({
+          ...prev,
+          section3: { ...prev.section3, ...patch },
+        }),
+        options?.immediate,
+      );
+    },
+    [updateDraft],
+  );
+
+  const setSection3 = useCallback(
+    (data: Section3Data) => {
+      updateDraft((prev) => ({ ...prev, section3: data }), true);
+    },
+    [updateDraft],
+  );
+
+  /**
+   * Creates exactly one new contact and appends it to the shared
+   * registry. This is only ever invoked from a deliberate user action
+   * (a button onClick — e.g. "+ Add another contact" or "Yes" on the
+   * backup-contact question), never from a render or effect, so the
+   * registry never accumulates duplicate/phantom records.
+   */
+  const addContact = useCallback((): string => {
+    const contact = createEmptyContact();
+    updateDraft((prev) => ({ ...prev, contacts: [...prev.contacts, contact] }), true);
+    return contact.id;
+  }, [updateDraft]);
+
+  const updateContact = useCallback(
+    (id: string, patch: Partial<Contact>, options?: { immediate?: boolean }) => {
+      updateDraft(
+        (prev) => ({
+          ...prev,
+          contacts: prev.contacts.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+        }),
+        options?.immediate,
+      );
+    },
+    [updateDraft],
+  );
+
   const setNavigation = useCallback(
     (nav: Partial<OnboardingNavigation>) => {
       updateDraft(
@@ -347,6 +402,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setSection1,
       updateSection2,
       setSection2,
+      updateSection3,
+      setSection3,
+      addContact,
+      updateContact,
       setNavigation,
       markSectionComplete,
       setCurrentRoute,
@@ -362,6 +421,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setSection1,
       updateSection2,
       setSection2,
+      updateSection3,
+      setSection3,
+      addContact,
+      updateContact,
       setNavigation,
       markSectionComplete,
       setCurrentRoute,

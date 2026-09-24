@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { migrateDraft, migrateNavigationV2ToV3 } from "./migrate";
-import { SCHEMA_VERSION, createDefaultSection1 } from "./types";
+import { SCHEMA_VERSION, createDefaultSection1, createDefaultSection2 } from "./types";
 
 describe("migrateNavigationV2ToV3", () => {
   it("reconstructs a contiguous completedSections run from the old high-water-mark counter", () => {
@@ -100,6 +100,55 @@ describe("migrateDraft", () => {
     for (const entry of Object.values(migrated.section2.plumbingServices)) {
       assert.equal(entry.policy, "");
     }
+  });
+
+  it("(R) upgrades a v4 draft (Sections 1–2, pre-Section-3) into v5 without losing Section 1/2 data", () => {
+    const rawV4 = {
+      schemaVersion: 4 as const,
+      updatedAt: "2026-09-01T00:00:00.000Z",
+      currentRoute: "/onboarding/sections/2/review",
+      navigation: {
+        stage: "section-complete" as const,
+        sectionId: 2,
+        completedSections: [1, 2],
+      },
+      section1: {
+        ...createDefaultSection1(),
+        customerFacingName: "Acme Plumbing",
+        mainPhone: "+14155552671",
+        approvedClaims: ["licensed" as const],
+      },
+      section2: {
+        ...createDefaultSection2(),
+        serviceAreaDefinitionMode: "zip_codes" as const,
+        serviceAreaZipCodes: ["90210", "90211"],
+      },
+      // note: no `section3`/`contacts` keys at all — this is exactly
+      // what a real pre-Section-3 v4 draft looks like.
+    };
+
+    const migrated = migrateDraft(rawV4);
+
+    assert.equal(migrated.schemaVersion, SCHEMA_VERSION);
+    // Section 1 answers survive untouched.
+    assert.equal(migrated.section1.customerFacingName, "Acme Plumbing");
+    assert.equal(migrated.section1.mainPhone, "+14155552671");
+    assert.deepEqual(migrated.section1.approvedClaims, ["licensed"]);
+    // Section 2 answers (service catalog selections included) survive untouched.
+    assert.equal(migrated.section2.serviceAreaDefinitionMode, "zip_codes");
+    assert.deepEqual(migrated.section2.serviceAreaZipCodes, ["90210", "90211"]);
+    // Navigation/progress survives untouched.
+    assert.deepEqual(migrated.navigation.completedSections, [1, 2]);
+    assert.equal(migrated.navigation.sectionId, 2);
+    assert.equal(migrated.currentRoute, "/onboarding/sections/2/review");
+    // Section 3 initializes safely (no MD-approved defaults exist for
+    // Q26–Q38), with exactly one fresh, uniquely identified primary
+    // contact placeholder — never left undefined/omitted.
+    for (const value of Object.values(migrated.section3.emergencyClassifications)) {
+      assert.equal(value, "");
+    }
+    assert.equal(migrated.contacts.length, 1);
+    assert.equal(migrated.section3.primaryContactId, migrated.contacts[0].id);
   });
 
   it("safely resets unrecognized/legacy (pre-v2) or malformed drafts", () => {

@@ -20,6 +20,7 @@ export function isValidRedisDraft(value: unknown): value is RedisOnboardingDraft
   if (!Array.isArray(v.completedSections)) return false;
   if (!v.data || typeof v.data !== "object") return false;
   if (!v.data.navigation || !v.data.section1 || !v.data.section2) return false;
+  if (!v.data.section3 || !Array.isArray(v.data.contacts)) return false;
   return true;
 }
 

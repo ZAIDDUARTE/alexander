@@ -11,6 +11,7 @@ import {
   PLUMBING_SERVICES,
   type ServiceCatalogItem,
 } from "./section2Catalog";
+import { EMERGENCY_SCENARIOS } from "./section3Catalog";
 
 /**
  * Schema history:
@@ -28,8 +29,13 @@ import {
  *            are MIGRATED forward (Section 1 answers + navigation
  *            preserved); Section 2 initializes to its defaults — see
  *            migrate.ts.
+ *  v4 -> v5: Added `section3` ("Emergencies") and the shared `contacts`
+ *            registry to the draft. v4 drafts are MIGRATED forward
+ *            (Sections 1–2 + navigation preserved); Section 3
+ *            initializes to its defaults with one fresh, uniquely
+ *            identified primary-contact placeholder — see migrate.ts.
  */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export type ApprovedClaim =
   | "licensed"
@@ -182,6 +188,211 @@ export function createDefaultSection2(): Section2Data {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Section 3 — Emergencies (Q26–Q38)
+// ---------------------------------------------------------------------------
+
+/**
+ * Q26 classification states. Deliberately has no "not sure" option —
+ * every scenario resolves to exactly one of these five distinct
+ * Company Truth facts. "recommended_default" is itself an explicit,
+ * selectable state (not a hidden fallback) per the MD.
+ */
+export type EmergencyClassification =
+  | "emergency"
+  | "urgent"
+  | "routine"
+  | "human_review"
+  | "recommended_default";
+
+/**
+ * "" = not yet answered.
+ *
+ * SOURCE-DATA DEPENDENCY (not an implementation defect): the final MD
+ * says to preselect "Use Alexander's recommended default" wherever the
+ * approved default library provides a per-scenario mapping, but that
+ * library's actual classifications are not published in the MD. Until
+ * those mappings exist as real source data, every row stays blank —
+ * we do not invent defaults, do not preselect rows, and do not claim a
+ * specific classification in the UI tooltip.
+ */
+export type EmergencyClassificationState = EmergencyClassification | "";
+
+export function createDefaultEmergencyClassifications(): Record<
+  string,
+  EmergencyClassificationState
+> {
+  const map: Record<string, EmergencyClassificationState> = {};
+  for (const scenario of EMERGENCY_SCENARIOS) {
+    // Intentionally blank — see EmergencyClassificationState docs.
+    map[scenario.id] = "";
+  }
+  return map;
+}
+
+/** Q28 — the three after-hours call classes, each with its own dropdown. */
+export type AfterHoursCallClass = "emergency" | "urgent_contained" | "routine";
+
+export type AfterHoursDispositionOption =
+  | "attempt_contact"
+  | "confirm_or_book"
+  | "submit_for_review"
+  | "schedule_next_available"
+  | "arrange_callback"
+  | "info_only"
+  | "no_service";
+
+export type AfterHoursDisposition = Record<AfterHoursCallClass, AfterHoursDispositionOption | "">;
+
+export function createDefaultAfterHoursDisposition(): AfterHoursDisposition {
+  return { emergency: "", urgent_contained: "", routine: "" };
+}
+
+/** Q29 — when the company can actually send someone out after hours. */
+export type EmergencyServiceMode = "24_7" | "certain_hours" | "none";
+
+/**
+ * Shared contact registry (MD §1.2 "Shared Registries" — Contact
+ * registry). Reused by escalation (Q31/Q32/Q38 here), and later by
+ * scheduling exceptions, pricing/fee approvals, callbacks, complaints,
+ * and routing. A durable local id (never array position) lets later
+ * sections reference a contact without re-entering name/phone.
+ */
+export type ContactCategory =
+  | "emergencies"
+  | "urgent_calls"
+  | "scheduling_exceptions"
+  | "pricing_exceptions"
+  | "customer_complaints"
+  // NOTE: the source transcript said "Warranty/callback issues"; that
+  // wording was explicitly removed for the final MVP per the MD —
+  // use "Callback / previous-work issues" instead.
+  | "callback_previous_work"
+  | "other";
+
+/**
+ * Shared contact registry entry. Core identity is always name/role +
+ * phone. Escalation-role metadata (availability, call categories) is
+ * required for Q31/Q32 emergency contacts but optional for other roles
+ * (e.g. a Q38 scheduling-exception approver who only needs name + phone).
+ * Empty defaults keep the draft shape stable without forcing unrelated
+ * fields on every contact.
+ */
+export type Contact = {
+  id: string;
+  nameOrRole: string;
+  phone: string;
+  /** Escalation availability — structured Monday–Sunday; may be empty for non-escalation roles. */
+  availability: WeeklyOfficeSchedule;
+  /** Escalation routing categories; may be empty for non-escalation roles. */
+  callCategories: ContactCategory[];
+  /** Only meaningful while callCategories includes "other". */
+  otherCategory: string;
+};
+
+export function createContactId(): string {
+  return `contact-${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+}
+
+export function createEmptyContact(): Contact {
+  return {
+    id: createContactId(),
+    nameOrRole: "",
+    phone: "",
+    availability: createEmptyAnsweringSchedule(),
+    callCategories: [],
+    otherCategory: "",
+  };
+}
+
+/**
+ * True when a contact has enough identity to appear in pickers /
+ * Company Truth. An empty createDefaultDraft() placeholder returns
+ * false so it never looks like real customer data.
+ */
+export function contactHasIdentity(contact: Contact): boolean {
+  return Boolean(contact.nameOrRole.trim() || contact.phone.trim());
+}
+
+/** Q33 — what Alexander does if nobody on the team responds. */
+export type NobodyRespondsFallback =
+  | "callback"
+  | "schedule_next_available"
+  | "team_notification_fallback"
+  | "custom";
+
+/** Q34 — how Alexander retries an unanswered urgent escalation. */
+export type RetryRule =
+  | "try_once_then_next"
+  | "try_same_again_then_next"
+  | "move_immediately_to_next"
+  | "custom";
+
+/** Q35 — what happens when the normal schedule is already full. */
+export type CapacityMode =
+  | "reserved_capacity"
+  | "emergency_override"
+  | "authorized_approval"
+  | "no_override";
+
+export type Section3Data = {
+  // Q26 — emergency classification matrix (scenarioId -> classification)
+  emergencyClassifications: Record<string, EmergencyClassificationState>;
+  // Q27 — dispatch-approval multi-select. Values are EMERGENCY_SCENARIOS
+  // ids, plus the sentinel values "other" and "none" (None is mutually
+  // exclusive with every other selection; enforced by CheckboxGroup).
+  dispatchApproval: string[];
+  dispatchApprovalOtherDetail: string;
+  // Q28 — after-hours disposition (three call classes -> one dropdown each)
+  afterHoursDisposition: AfterHoursDisposition;
+  // Q29 — after-hours emergency field-service mode
+  emergencyServiceMode: EmergencyServiceMode | "";
+  // Q30 — emergency service weekly schedule (conditional on Q29 = certain_hours)
+  emergencyServiceSchedule: WeeklyOfficeSchedule;
+  // Q31 — primary escalation contact id (always has a registry entry —
+  // created alongside the rest of the default draft, see createDefaultDraft)
+  primaryContactId: string;
+  // Q32 — backup contact
+  hasBackupContact: YesNo | "";
+  backupContactId: string;
+  // Q33 — terminal fallback when nobody on the team responds
+  nobodyRespondsFallback: NobodyRespondsFallback | "";
+  nobodyRespondsCustomRule: string;
+  // Q34 — retry rule for an unanswered urgent escalation
+  retryRule: RetryRule | "";
+  retryCustomRule: string;
+  // Q35 — capacity/override mode when the schedule is full
+  capacityMode: CapacityMode | "";
+  // Q36 — reserved-capacity description (conditional on Q35 = reserved_capacity)
+  reservedCapacityText: string;
+  // Q37 — override conditions (conditional on Q35 = emergency_override)
+  overrideConditionsText: string;
+  // Q38 — approver contact id (conditional on Q35 = authorized_approval)
+  approverContactId: string;
+};
+
+export function createDefaultSection3(primaryContactId: string): Section3Data {
+  return {
+    emergencyClassifications: createDefaultEmergencyClassifications(),
+    dispatchApproval: [],
+    dispatchApprovalOtherDetail: "",
+    afterHoursDisposition: createDefaultAfterHoursDisposition(),
+    emergencyServiceMode: "",
+    emergencyServiceSchedule: createEmptyAnsweringSchedule(),
+    primaryContactId,
+    hasBackupContact: "",
+    backupContactId: "",
+    nobodyRespondsFallback: "",
+    nobodyRespondsCustomRule: "",
+    retryRule: "",
+    retryCustomRule: "",
+    capacityMode: "",
+    reservedCapacityText: "",
+    overrideConditionsText: "",
+    approverContactId: "",
+  };
+}
+
 export type OnboardingStage =
   | "welcome"
   | "section-intro"
@@ -209,6 +420,11 @@ export type OnboardingDraft = {
   navigation: OnboardingNavigation;
   section1: Section1Data;
   section2: Section2Data;
+  section3: Section3Data;
+  /** Shared contact registry (MD §1.2) — sibling to section1/2/3, not
+   * buried inside Section 3, so later sections can reference contacts
+   * by id without re-entering name/phone. */
+  contacts: Contact[];
 };
 
 export function createDefaultSection1(): Section1Data {
@@ -232,6 +448,7 @@ export function createDefaultSection1(): Section1Data {
 export const EMPTY_DRAFT_UPDATED_AT = "1970-01-01T00:00:00.000Z";
 
 export function createDefaultDraft(): OnboardingDraft {
+  const primaryContact = createEmptyContact();
   return {
     schemaVersion: SCHEMA_VERSION,
     updatedAt: EMPTY_DRAFT_UPDATED_AT,
@@ -243,5 +460,7 @@ export function createDefaultDraft(): OnboardingDraft {
     },
     section1: createDefaultSection1(),
     section2: createDefaultSection2(),
+    section3: createDefaultSection3(primaryContact.id),
+    contacts: [primaryContact],
   };
 }

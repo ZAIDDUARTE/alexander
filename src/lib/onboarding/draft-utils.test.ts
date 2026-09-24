@@ -6,7 +6,13 @@ import {
   draftTimestamp,
   addCompletedSection,
 } from "./draft-utils";
-import { createDefaultDraft, EMPTY_DRAFT_UPDATED_AT } from "./types";
+import {
+  createDefaultDraft,
+  createDefaultEmergencyClassifications,
+  EMPTY_DRAFT_UPDATED_AT,
+  contactHasIdentity,
+} from "./types";
+import { migrateDraft } from "./migrate";
 import { isValidE164, sanitizePhoneInput } from "./phone";
 
 describe("draft reconciliation", () => {
@@ -72,6 +78,19 @@ describe("addCompletedSection (J: section completion)", () => {
     const result = addCompletedSection(completed, 1);
     assert.strictEqual(result, completed);
   });
+
+  it("(T) becomes [1, 2, 3] when Section 3 completes after Sections 1–2, preserving prior completions", () => {
+    const afterSections1And2 = [1, 2];
+    const afterSection3 = addCompletedSection(afterSections1And2, 3);
+    assert.deepEqual(afterSection3, [1, 2, 3]);
+  });
+
+  it("(T) re-marking Section 3 complete twice never produces a duplicate", () => {
+    const once = addCompletedSection([1, 2], 3);
+    const twice = addCompletedSection(once, 3);
+    assert.deepEqual(twice, [1, 2, 3]);
+    assert.strictEqual(twice, once);
+  });
 });
 
 describe("hasDraftContent — Section 2 fields", () => {
@@ -87,6 +106,66 @@ describe("hasDraftContent — Section 2 fields", () => {
   it("a fully blank draft (Section 1 and Section 2) has no content", () => {
     const draft = createDefaultDraft();
     assert.equal(hasDraftContent(draft), false);
+  });
+});
+
+describe("hasDraftContent — Section 3 fields", () => {
+  it("fresh default draft hasDraftContent === false (empty primary placeholder is not content)", () => {
+    assert.equal(hasDraftContent(createDefaultDraft()), false);
+  });
+
+  it("detects an in-progress Section 3 answer even with Sections 1–2 blank", () => {
+    const draft = createDefaultDraft();
+    const firstScenarioId = Object.keys(draft.section3.emergencyClassifications)[0];
+    draft.section3.emergencyClassifications[firstScenarioId] = "emergency";
+    assert.equal(hasDraftContent(draft), true);
+  });
+
+  it("detects an edited placeholder contact even with no Section 3 answers", () => {
+    const draft = createDefaultDraft();
+    draft.contacts[0].nameOrRole = "Dispatch Manager";
+    assert.equal(hasDraftContent(draft), true);
+  });
+
+  it("a fully blank draft including the placeholder contact has no content", () => {
+    const draft = createDefaultDraft();
+    assert.equal(hasDraftContent(draft), false);
+  });
+});
+
+describe("contactHasIdentity — Q38 picker eligibility", () => {
+  it("empty primary placeholder is not eligible for Q38 selection", () => {
+    const draft = createDefaultDraft();
+    assert.equal(contactHasIdentity(draft.contacts[0]), false);
+  });
+
+  it("a contact with name/role is eligible", () => {
+    const draft = createDefaultDraft();
+    draft.contacts[0].nameOrRole = "Jamie";
+    assert.equal(contactHasIdentity(draft.contacts[0]), true);
+  });
+
+  it("migration-created placeholder behaves the same (no identity)", () => {
+    const migrated = migrateDraft({
+      schemaVersion: 4,
+      updatedAt: "2026-09-01T00:00:00.000Z",
+      currentRoute: "/onboarding",
+      navigation: { stage: "welcome", sectionId: 1, completedSections: [] },
+      section1: {},
+      section2: {},
+    });
+    assert.equal(migrated.contacts.length, 1);
+    assert.equal(contactHasIdentity(migrated.contacts[0]), false);
+    assert.equal(hasDraftContent(migrated), false);
+  });
+});
+
+describe("Q26 defaults — no invented preselection", () => {
+  it("createDefaultEmergencyClassifications leaves every row blank", () => {
+    const map = createDefaultEmergencyClassifications();
+    for (const value of Object.values(map)) {
+      assert.equal(value, "");
+    }
   });
 });
 

@@ -1,4 +1,5 @@
-import { createDefaultDraft, type OnboardingDraft, SCHEMA_VERSION } from "./types";
+import { createDefaultDraft, type Contact, type OnboardingDraft, SCHEMA_VERSION } from "./types";
+import { hasAnyOpenOfficeDay } from "./schedule";
 
 export type RedisOnboardingDraft = {
   schemaVersion: number;
@@ -10,6 +11,8 @@ export type RedisOnboardingDraft = {
     navigation: OnboardingDraft["navigation"];
     section1: OnboardingDraft["section1"];
     section2: OnboardingDraft["section2"];
+    section3: OnboardingDraft["section3"];
+    contacts: OnboardingDraft["contacts"];
   };
 };
 
@@ -55,6 +58,35 @@ function section2HasContent(s2: OnboardingDraft["section2"]): boolean {
   return false;
 }
 
+function contactHasContent(contact: Contact): boolean {
+  if (contact.nameOrRole.trim()) return true;
+  if (contact.phone.trim()) return true;
+  if (contact.callCategories.length > 0) return true;
+  if (contact.otherCategory.trim()) return true;
+  if (hasAnyOpenOfficeDay(contact.availability)) return true;
+  return false;
+}
+
+function section3HasContent(s3: OnboardingDraft["section3"], contacts: Contact[]): boolean {
+  if (Object.values(s3.emergencyClassifications).some((c) => c !== "")) return true;
+  if (s3.dispatchApproval.length > 0) return true;
+  if (s3.dispatchApprovalOtherDetail.trim()) return true;
+  if (Object.values(s3.afterHoursDisposition).some((v) => v !== "")) return true;
+  if (s3.emergencyServiceMode) return true;
+  if (hasAnyOpenOfficeDay(s3.emergencyServiceSchedule)) return true;
+  if (s3.hasBackupContact) return true;
+  if (s3.nobodyRespondsFallback) return true;
+  if (s3.nobodyRespondsCustomRule.trim()) return true;
+  if (s3.retryRule) return true;
+  if (s3.retryCustomRule.trim()) return true;
+  if (s3.capacityMode) return true;
+  if (s3.reservedCapacityText.trim()) return true;
+  if (s3.overrideConditionsText.trim()) return true;
+  if (s3.approverContactId.trim()) return true;
+  if (contacts.some(contactHasContent)) return true;
+  return false;
+}
+
 export function hasDraftContent(draft: OnboardingDraft): boolean {
   const s = draft.section1;
   if (s.customerFacingName.trim()) return true;
@@ -68,6 +100,7 @@ export function hasDraftContent(draft: OnboardingDraft): boolean {
   if (s.recurringAvailabilityNotes.trim()) return true;
   if (s.answeringMode) return true;
   if (section2HasContent(draft.section2)) return true;
+  if (section3HasContent(draft.section3, draft.contacts)) return true;
   if (draft.navigation.completedSections.length > 0) return true;
   if (draft.navigation.stage !== "welcome") return true;
   return false;
@@ -82,6 +115,8 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
     navigation: { ...base.navigation, ...partial.navigation },
     section1: { ...base.section1, ...partial.section1 },
     section2: { ...base.section2, ...partial.section2 },
+    section3: { ...base.section3, ...partial.section3 },
+    contacts: partial.contacts ?? base.contacts,
   };
 }
 
@@ -96,6 +131,8 @@ export function toRedisDraft(draft: OnboardingDraft, currentRoute: string): Redi
       navigation: draft.navigation,
       section1: draft.section1,
       section2: draft.section2,
+      section3: draft.section3,
+      contacts: draft.contacts,
     },
   };
 }
@@ -108,6 +145,8 @@ export function fromRedisDraft(redis: RedisOnboardingDraft): OnboardingDraft {
     navigation: redis.data.navigation,
     section1: redis.data.section1,
     section2: redis.data.section2,
+    section3: redis.data.section3,
+    contacts: redis.data.contacts,
   });
 }
 
