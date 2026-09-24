@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-alexander-bg: #f4f6f9;
+  --color-alexander-navy: #0f1f3d;
+  --color-alexander-blue: #1a56db;
+  --color-alexander-blue-hover: #1648c0;
+  --color-alexander-muted: #5c6b82;
+  --color-alexander-border: #d8dee8;
+  --color-alexander-info-bg: #eef4fc;
+  --color-alexander-success-bg: #edf7f0;
+  --color-alexander-success: #1d7a45;
+  --color-alexander-required: #c53030;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  background-color: var(--color-alexander-bg);
+  color: var(--color-alexander-navy);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
