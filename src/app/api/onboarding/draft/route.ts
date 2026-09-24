@@ -60,7 +60,9 @@ export async function PUT(request: Request) {
     section1: { ...defaults.section1, ...clientDraft.section1 },
     section2: { ...defaults.section2, ...clientDraft.section2 },
     section3: { ...defaults.section3, ...clientDraft.section3 },
+    section4: { ...defaults.section4, ...clientDraft.section4 },
     contacts: clientDraft.contacts ?? defaults.contacts,
+    fees: clientDraft.fees ?? defaults.fees,
   };
 
   const redisPayload: RedisOnboardingDraft = toRedisDraft(

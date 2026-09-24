@@ -1,7 +1,13 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { migrateDraft, migrateNavigationV2ToV3 } from "./migrate";
-import { SCHEMA_VERSION, createDefaultSection1, createDefaultSection2 } from "./types";
+import {
+  SCHEMA_VERSION,
+  createDefaultSection1,
+  createDefaultSection2,
+  createDefaultSection3,
+  createEmptyContact,
+} from "./types";
 
 describe("migrateNavigationV2ToV3", () => {
   it("reconstructs a contiguous completedSections run from the old high-water-mark counter", () => {
@@ -149,6 +155,53 @@ describe("migrateDraft", () => {
     }
     assert.equal(migrated.contacts.length, 1);
     assert.equal(migrated.section3.primaryContactId, migrated.contacts[0].id);
+  });
+
+  it("(AA) upgrades a v5 draft (Sections 1–3, pre-Section-4) into v6 without losing Sections 1–3 + contacts", () => {
+    const primary = createEmptyContact();
+    primary.nameOrRole = "Jamie Rivera";
+    primary.phone = "+14155552671";
+
+    const rawV5 = {
+      schemaVersion: 5 as const,
+      updatedAt: "2026-10-01T00:00:00.000Z",
+      currentRoute: "/onboarding/sections/3/review",
+      navigation: {
+        stage: "section-complete" as const,
+        sectionId: 3,
+        completedSections: [1, 2, 3],
+      },
+      section1: {
+        ...createDefaultSection1(),
+        customerFacingName: "Acme Plumbing",
+        mainPhone: "+14155552671",
+      },
+      section2: {
+        ...createDefaultSection2(),
+        serviceAreaDefinitionMode: "zip_codes" as const,
+        serviceAreaZipCodes: ["90210"],
+      },
+      section3: {
+        ...createDefaultSection3(primary.id),
+        emergencyServiceMode: "24_7" as const,
+      },
+      contacts: [primary],
+    };
+
+    const migrated = migrateDraft(rawV5);
+
+    assert.equal(migrated.schemaVersion, SCHEMA_VERSION);
+    assert.equal(migrated.section1.customerFacingName, "Acme Plumbing");
+    assert.equal(migrated.section2.serviceAreaDefinitionMode, "zip_codes");
+    assert.deepEqual(migrated.section2.serviceAreaZipCodes, ["90210"]);
+    assert.equal(migrated.section3.emergencyServiceMode, "24_7");
+    assert.equal(migrated.contacts.length, 1);
+    assert.equal(migrated.contacts[0].nameOrRole, "Jamie Rivera");
+    assert.equal(migrated.contacts[0].phone, "+14155552671");
+    assert.equal(migrated.section3.primaryContactId, migrated.contacts[0].id);
+    assert.deepEqual(migrated.navigation.completedSections, [1, 2, 3]);
+    assert.equal(migrated.section4.humanRequestPolicy, "");
+    assert.deepEqual(migrated.fees, []);
   });
 
   it("safely resets unrecognized/legacy (pre-v2) or malformed drafts", () => {

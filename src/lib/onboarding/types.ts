@@ -12,7 +12,14 @@ import {
   type ServiceCatalogItem,
 } from "./section2Catalog";
 import { EMERGENCY_SCENARIOS } from "./section3Catalog";
-
+import {
+  APPOINTMENT_WINDOW_TEMPLATES,
+  CALLER_TYPES,
+  CAPACITY_POLICY_ROWS,
+  CONFIRMATION_INFO_OPTIONS,
+  EXCEPTION_TYPES,
+} from "./section4Catalog";
+import type { TimeValue } from "./schedule";
 /**
  * Schema history:
  *  v1 -> v2: ServiceDaySchedule moved from two independent booleans
@@ -34,8 +41,13 @@ import { EMERGENCY_SCENARIOS } from "./section3Catalog";
  *            (Sections 1–2 + navigation preserved); Section 3
  *            initializes to its defaults with one fresh, uniquely
  *            identified primary-contact placeholder — see migrate.ts.
+ *  v5 -> v6: Added `section4` ("Scheduling") and the shared `fees`
+ *            registry (forward-compatible with Section 5 Q68 fee cards).
+ *            v5 drafts are MIGRATED forward (Sections 1–3 + contacts
+ *            preserved); Section 4 + fees initialize safely — see
+ *            migrate.ts.
  */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export type ApprovedClaim =
   | "licensed"
@@ -393,6 +405,351 @@ export function createDefaultSection3(primaryContactId: string): Section3Data {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Shared fee registry (MD §1.2) — created/updated by Section 4 Q54/Q55,
+// enriched later by Section 5 Q68. Stable IDs; never duplicate on amount edit.
+// ---------------------------------------------------------------------------
+
+/** Forward-compatible with Q68 amount representations. */
+export type FeeAmountKind = "fixed" | "range" | "percentage" | "varies";
+
+export type FeeQuoteAuthority = "yes" | "no" | "after_confirmation";
+export type FeeCreditTowardWork = "yes" | "no" | "sometimes";
+export type FeeWaiverPolicy = "yes" | "no" | "sometimes";
+
+/**
+ * Singleton fee keys used by Section 4 so there can be at most one
+ * active late-cancellation fee and one active no-show fee.
+ */
+export type FeeKey = "late_cancellation" | "no_show";
+
+export type FeeRecord = {
+  id: string;
+  /** Singleton key for Section 4 system fees; empty for future custom fees. */
+  feeKey: FeeKey | "";
+  name: string;
+  /** Amount representation (Q68-compatible). Section 4 uses "fixed". */
+  amountKind: FeeAmountKind | "";
+  amountFixed: string;
+  amountMin: string;
+  amountMax: string;
+  amountPercentage: string;
+  /** When the fee applies (also holds Q54/Q55 conditional rules). */
+  applicationRule: string;
+  /** Late-cancellation notice window (e.g. "24 hours"). */
+  noticeRequired: string;
+  quoteAuthority: FeeQuoteAuthority | "";
+  creditTowardWork: FeeCreditTowardWork | "";
+  waiverPolicy: FeeWaiverPolicy | "";
+  waiverRule: string;
+  /** False when Q54/Q55 = No — excluded from normalized Company Truth. */
+  active: boolean;
+  sourceSection: 4 | 5;
+};
+
+export function createFeeId(): string {
+  return `fee-${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+}
+
+export function createEmptyFee(feeKey: FeeKey, name: string): FeeRecord {
+  return {
+    id: createFeeId(),
+    feeKey,
+    name,
+    amountKind: "fixed",
+    amountFixed: "",
+    amountMin: "",
+    amountMax: "",
+    amountPercentage: "",
+    applicationRule: "",
+    noticeRequired: "",
+    quoteAuthority: "",
+    creditTowardWork: "",
+    waiverPolicy: "",
+    waiverRule: "",
+    active: true,
+    sourceSection: 4,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Section 4 — Scheduling (Q39–Q64)
+// ---------------------------------------------------------------------------
+
+export type HumanRequestPolicy =
+  | "connect_right_away"
+  | "ask_briefly_then_connect"
+  | "callback"
+  | "custom";
+
+export type AiRefusalPolicy = "connect_to_person" | "callback" | "custom";
+
+export type ExceptionAuthority =
+  | "alexander"
+  | "dispatcher"
+  | "manager"
+  | "owner"
+  | "another_person"
+  | "never_allowed";
+
+export type ExceptionAuthorityState = ExceptionAuthority | "";
+
+export type ApproverUnavailablePolicy = "callback" | "follow_normal_rule" | "other";
+
+export type CallerPermission =
+  | "schedule_service"
+  | "approve_diagnostic_fee"
+  | "authorize_repair"
+  | "agree_to_pay"
+  | "human_approval_required"
+  | "not_allowed";
+
+export type SpendingLimitRow = {
+  id: string;
+  callerTypeId: string;
+  maxAmount: string;
+};
+
+export type EmergencyAuthMode = "same_rules" | "special_rules" | "human_review_always";
+
+export type DefaultBookingMode = "confirm_immediately" | "submit_for_approval" | "arrange_callback";
+
+export type AppointmentWindow = {
+  id: string;
+  label: string;
+  start: TimeValue | "";
+  end: TimeValue | "";
+  enabled: boolean;
+};
+
+export type ConfirmationInfoId =
+  | "appointment_date"
+  | "appointment_time_or_window"
+  | "requested_service"
+  | "customer_name_and_address"
+  | "callback_phone"
+  | "email_address";
+
+export type ServiceBookingRule = {
+  id: string;
+  serviceId: string;
+  rule: string;
+};
+
+export type CapacityOfferPolicy =
+  | "allowed"
+  | "with_conditions"
+  | "human_approval"
+  | "not_offered";
+
+export type CapacityOfferEntry = {
+  policy: CapacityOfferPolicy | "";
+  condition: string;
+};
+
+export type ChangeAuthority =
+  | "direct"
+  | "conditional"
+  | "human_approval"
+  | "callback";
+
+export type FeeChargeMode = "yes" | "conditional" | "no";
+
+export type CallbackNumberPolicy = "calling_from" | "ask_preferred";
+
+export type TechnicianSource = "contact" | "name";
+
+export type TechnicianAssignment = {
+  id: string;
+  /** Empty when otherJobName is used. */
+  serviceId: string;
+  otherJobName: string;
+  technicianSource: TechnicianSource | "";
+  technicianContactId: string;
+  technicianName: string;
+};
+
+export type SpecificTechnicianRequest =
+  | "book_if_confirmed_available"
+  | "try_honor_may_reassign"
+  | "submit_for_review"
+  | "do_not_accept";
+
+export type MultiIssueMode = "one_appointment" | "separate_issues" | "ask_team";
+
+export type NoAvailabilityFallbackId =
+  | "offer_next_available"
+  | "look_for_approved_window"
+  | "add_to_callback_waitlist"
+  | "ask_team_for_help";
+
+export function createSpendingLimitId(): string {
+  return `limit-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function createServiceRuleId(): string {
+  return `svc-rule-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function createTechnicianAssignmentId(): string {
+  return `tech-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function createDefaultExceptionAuthority(): Record<string, ExceptionAuthorityState> {
+  const map: Record<string, ExceptionAuthorityState> = {};
+  for (const row of EXCEPTION_TYPES) map[row.id] = "";
+  return map;
+}
+
+export function createDefaultCallerPermissions(): Record<string, CallerPermission[]> {
+  const map: Record<string, CallerPermission[]> = {};
+  for (const row of CALLER_TYPES) map[row.id] = [];
+  return map;
+}
+
+export function createDefaultAppointmentWindows(): AppointmentWindow[] {
+  // Labels only — MD does not authorize invented clock-time defaults.
+  // Rows begin ENABLED so the company fills start/end; empty times are
+  // NOT treated as hasDraftContent (see draft-utils). At least one
+  // enabled window with valid start < end is required for Q48.
+  return APPOINTMENT_WINDOW_TEMPLATES.map((t) => ({
+    id: t.id,
+    label: t.label,
+    start: "",
+    end: "",
+    enabled: true,
+  }));
+}
+
+export function createDefaultCapacityPolicies(): Record<string, CapacityOfferEntry> {
+  const map: Record<string, CapacityOfferEntry> = {};
+  for (const row of CAPACITY_POLICY_ROWS) {
+    map[row.id] = { policy: "", condition: "" };
+  }
+  return map;
+}
+
+/** Explicit MD default: preselect all six confirmation-info options. */
+export function createDefaultConfirmationInfo(): ConfirmationInfoId[] {
+  return CONFIRMATION_INFO_OPTIONS.map((o) => o.id as ConfirmationInfoId);
+}
+
+export type Section4Data = {
+  // Q39
+  humanRequestPolicy: HumanRequestPolicy | "";
+  humanRequestCustomRule: string;
+  // Q40
+  aiRefusalPolicy: AiRefusalPolicy | "";
+  aiRefusalCustomRule: string;
+  // Q41
+  exceptionAuthority: Record<string, ExceptionAuthorityState>;
+  /** Per-row approver contact id when authority = another_person. */
+  exceptionApproverContactIds: Record<string, string>;
+  // Q42
+  approverUnavailablePolicy: ApproverUnavailablePolicy | "";
+  approverUnavailableCustomRule: string;
+  // Q43
+  callerPermissions: Record<string, CallerPermission[]>;
+  // Q44
+  hasSpendingLimits: YesNo | "";
+  spendingLimits: SpendingLimitRow[];
+  // Q45
+  emergencyAuthMode: EmergencyAuthMode | "";
+  emergencyAuthSpecialRules: string;
+  // Q46
+  defaultBookingMode: DefaultBookingMode | "";
+  // Q47
+  bookingHorizonDays: string;
+  bookingHorizonNoMaximum: boolean;
+  // Q48
+  appointmentWindows: AppointmentWindow[];
+  // Q49
+  confirmationInfo: ConfirmationInfoId[];
+  // Q50
+  hasServiceBookingRules: YesNo | "";
+  serviceBookingRules: ServiceBookingRule[];
+  // Q51
+  capacityPolicies: Record<string, CapacityOfferEntry>;
+  // Q52
+  rescheduleAuthority: ChangeAuthority | "";
+  rescheduleCondition: string;
+  // Q53
+  cancellationAuthority: ChangeAuthority | "";
+  cancellationCondition: string;
+  // Q54
+  lateCancellationFeeMode: FeeChargeMode | "";
+  lateCancellationFeeId: string;
+  // Q55
+  noShowFeeMode: FeeChargeMode | "";
+  noShowFeeId: string;
+  // Q56 (optional)
+  cancellationExceptions: string;
+  // Q57 — empty until the customer consciously sets priority (not source-list default)
+  noAvailabilityPriority: NoAvailabilityFallbackId[];
+  // Q58–Q60
+  mayArrangeCallback: YesNo | "";
+  callbackNumberPolicy: CallbackNumberPolicy | "";
+  callbackOwnerContactId: string;
+  // Q61
+  hasTechnicianAssignments: YesNo | "";
+  technicianAssignments: TechnicianAssignment[];
+  // Q62
+  specificTechnicianRequest: SpecificTechnicianRequest | "";
+  // Q63–Q64
+  multiIssueMode: MultiIssueMode | "";
+  separateIssueServiceIds: string[];
+  separateIssueOther: boolean;
+  separateIssueOtherDetail: string;
+};
+
+export function createDefaultSection4(): Section4Data {
+  return {
+    humanRequestPolicy: "",
+    humanRequestCustomRule: "",
+    aiRefusalPolicy: "",
+    aiRefusalCustomRule: "",
+    exceptionAuthority: createDefaultExceptionAuthority(),
+    exceptionApproverContactIds: {},
+    approverUnavailablePolicy: "",
+    approverUnavailableCustomRule: "",
+    callerPermissions: createDefaultCallerPermissions(),
+    hasSpendingLimits: "",
+    spendingLimits: [],
+    emergencyAuthMode: "",
+    emergencyAuthSpecialRules: "",
+    defaultBookingMode: "",
+    bookingHorizonDays: "",
+    bookingHorizonNoMaximum: false,
+    appointmentWindows: createDefaultAppointmentWindows(),
+    confirmationInfo: createDefaultConfirmationInfo(),
+    hasServiceBookingRules: "",
+    serviceBookingRules: [],
+    capacityPolicies: createDefaultCapacityPolicies(),
+    rescheduleAuthority: "",
+    rescheduleCondition: "",
+    cancellationAuthority: "",
+    cancellationCondition: "",
+    lateCancellationFeeMode: "",
+    lateCancellationFeeId: "",
+    noShowFeeMode: "",
+    noShowFeeId: "",
+    cancellationExceptions: "",
+    noAvailabilityPriority: [],
+    mayArrangeCallback: "",
+    // Explicit MD default for when Q58 becomes Yes — stored empty until then
+    // so a fresh draft is not dirty; applied when Q58 = yes if still blank.
+    callbackNumberPolicy: "",
+    callbackOwnerContactId: "",
+    hasTechnicianAssignments: "",
+    technicianAssignments: [],
+    specificTechnicianRequest: "",
+    multiIssueMode: "",
+    separateIssueServiceIds: [],
+    separateIssueOther: false,
+    separateIssueOtherDetail: "",
+  };
+}
+
 export type OnboardingStage =
   | "welcome"
   | "section-intro"
@@ -421,10 +778,16 @@ export type OnboardingDraft = {
   section1: Section1Data;
   section2: Section2Data;
   section3: Section3Data;
-  /** Shared contact registry (MD §1.2) — sibling to section1/2/3, not
-   * buried inside Section 3, so later sections can reference contacts
-   * by id without re-entering name/phone. */
+  section4: Section4Data;
+  /** Shared contact registry (MD §1.2) — sibling to sections, not buried
+   * inside Section 3, so later sections can reference contacts by id. */
   contacts: Contact[];
+  /**
+   * Shared fee registry (MD §1.2). Section 4 Q54/Q55 create/update
+   * late-cancellation and no-show records; Section 5 Q68 will enrich
+   * the same IDs rather than duplicating fee truth.
+   */
+  fees: FeeRecord[];
 };
 
 export function createDefaultSection1(): Section1Data {
@@ -461,6 +824,8 @@ export function createDefaultDraft(): OnboardingDraft {
     section1: createDefaultSection1(),
     section2: createDefaultSection2(),
     section3: createDefaultSection3(primaryContact.id),
+    section4: createDefaultSection4(),
     contacts: [primaryContact],
+    fees: [],
   };
 }

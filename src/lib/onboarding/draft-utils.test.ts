@@ -8,10 +8,14 @@ import {
 } from "./draft-utils";
 import {
   createDefaultDraft,
+  createDefaultSection4,
   createDefaultEmergencyClassifications,
+  createDefaultConfirmationInfo,
   EMPTY_DRAFT_UPDATED_AT,
   contactHasIdentity,
+  createEmptyFee,
 } from "./types";
+import { upsertFeeByKey } from "./section4-test-helpers";
 import { migrateDraft } from "./migrate";
 import { isValidE164, sanitizePhoneInput } from "./phone";
 
@@ -166,6 +170,60 @@ describe("Q26 defaults — no invented preselection", () => {
     for (const value of Object.values(map)) {
       assert.equal(value, "");
     }
+  });
+});
+
+describe("hasDraftContent — Section 4 fields (AC)", () => {
+  it("fresh default draft hasDraftContent === false (Q49 preselect + window shells are not content)", () => {
+    const draft = createDefaultDraft();
+    assert.equal(draft.section4.confirmationInfo.length, createDefaultConfirmationInfo().length);
+    assert.equal(hasDraftContent(draft), false);
+  });
+
+  it("detects an in-progress Section 4 answer even with Sections 1–3 blank", () => {
+    const draft = createDefaultDraft();
+    draft.section4.humanRequestPolicy = "callback";
+    assert.equal(hasDraftContent(draft), true);
+  });
+
+  it("does not treat empty fee shells as draft content", () => {
+    const draft = createDefaultDraft();
+    draft.fees = [createEmptyFee("late_cancellation", "Late cancellation fee")];
+    assert.equal(hasDraftContent(draft), false);
+  });
+});
+
+describe("addCompletedSection — Section 4 (AD)", () => {
+  it("becomes [1, 2, 3, 4] when Section 4 completes after Sections 1–3", () => {
+    const after4 = addCompletedSection([1, 2, 3], 4);
+    assert.deepEqual(after4, [1, 2, 3, 4]);
+  });
+});
+
+describe("fee registry upsert stability (AE)", () => {
+  it("reuses the same fee id when upserting the same feeKey twice", () => {
+    let fees: ReturnType<typeof createEmptyFee>[] = [];
+    const first = upsertFeeByKey(fees, "late_cancellation", { amountFixed: "50" });
+    fees = first.fees;
+    const second = upsertFeeByKey(fees, "late_cancellation", { amountFixed: "75" });
+    assert.equal(first.id, second.id);
+    assert.equal(second.fees.length, 1);
+    assert.equal(second.fees[0].amountFixed, "75");
+  });
+
+  it("creates distinct ids for late_cancellation vs no_show", () => {
+    let fees: ReturnType<typeof createEmptyFee>[] = [];
+    const late = upsertFeeByKey(fees, "late_cancellation", { amountFixed: "50" });
+    fees = late.fees;
+    const noShow = upsertFeeByKey(fees, "no_show", { amountFixed: "25" });
+    assert.notEqual(late.id, noShow.id);
+    assert.equal(noShow.fees.length, 2);
+  });
+});
+
+describe("createDefaultSection4 — Q59 storage default", () => {
+  it("stores callbackNumberPolicy empty until Q58 = yes (form applies calling_from)", () => {
+    assert.equal(createDefaultSection4().callbackNumberPolicy, "");
   });
 });
 

@@ -16,12 +16,16 @@ import { reconcileDrafts, hasDraftContent, addCompletedSection } from "./draft-u
 import {
   createDefaultDraft,
   createEmptyContact,
+  createEmptyFee,
   type Contact,
+  type FeeKey,
+  type FeeRecord,
   type OnboardingDraft,
   type OnboardingNavigation,
   type Section1Data,
   type Section2Data,
   type Section3Data,
+  type Section4Data,
 } from "./types";
 
 type OnboardingContextValue = {
@@ -35,10 +39,20 @@ type OnboardingContextValue = {
   setSection2: (data: Section2Data) => void;
   updateSection3: (patch: Partial<Section3Data>, options?: { immediate?: boolean }) => void;
   setSection3: (data: Section3Data) => void;
+  updateSection4: (patch: Partial<Section4Data>, options?: { immediate?: boolean }) => void;
+  setSection4: (data: Section4Data) => void;
   /** Deterministic contact-registry creation — call only from an explicit
    * user action (e.g. a button onClick), never from a render/effect. */
   addContact: () => string;
   updateContact: (id: string, patch: Partial<Contact>, options?: { immediate?: boolean }) => void;
+  /**
+   * Upsert a singleton Section 4 fee by feeKey (late_cancellation /
+   * no_show). Reuses the same fee ID on amount/rule edits — never
+   * creates duplicates on rerender. Call only from explicit user
+   * actions.
+   */
+  upsertFeeByKey: (feeKey: FeeKey, patch: Partial<FeeRecord>, options?: { immediate?: boolean }) => string;
+  updateFee: (id: string, patch: Partial<FeeRecord>, options?: { immediate?: boolean }) => void;
   setNavigation: (nav: Partial<OnboardingNavigation>) => void;
   markSectionComplete: (sectionId: number) => void;
   setCurrentRoute: (route: string) => void;
@@ -49,6 +63,11 @@ type OnboardingContextValue = {
 const OnboardingContext = createContext<OnboardingContextValue | null>(null);
 
 const TEXT_DEBOUNCE_MS = 500;
+
+const FEE_DISPLAY_NAMES: Record<FeeKey, string> = {
+  late_cancellation: "Late cancellation fee",
+  no_show: "No-show fee",
+};
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [draft, setDraft] = useState<OnboardingDraft>(createDefaultDraft);
@@ -261,6 +280,26 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     [updateDraft],
   );
 
+  const updateSection4 = useCallback(
+    (patch: Partial<Section4Data>, options?: { immediate?: boolean }) => {
+      updateDraft(
+        (prev) => ({
+          ...prev,
+          section4: { ...prev.section4, ...patch },
+        }),
+        options?.immediate,
+      );
+    },
+    [updateDraft],
+  );
+
+  const setSection4 = useCallback(
+    (data: Section4Data) => {
+      updateDraft((prev) => ({ ...prev, section4: data }), true);
+    },
+    [updateDraft],
+  );
+
   /**
    * Creates exactly one new contact and appends it to the shared
    * registry. This is only ever invoked from a deliberate user action
@@ -280,6 +319,46 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         (prev) => ({
           ...prev,
           contacts: prev.contacts.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+        }),
+        options?.immediate,
+      );
+    },
+    [updateDraft],
+  );
+
+  const upsertFeeByKey = useCallback(
+    (feeKey: FeeKey, patch: Partial<FeeRecord>, options?: { immediate?: boolean }): string => {
+      const existing = draftRef.current.fees.find((f) => f.feeKey === feeKey);
+      if (existing) {
+        updateDraft(
+          (prev) => ({
+            ...prev,
+            fees: prev.fees.map((f) =>
+              f.id === existing.id ? { ...f, ...patch, feeKey, id: existing.id } : f,
+            ),
+          }),
+          options?.immediate ?? true,
+        );
+        return existing.id;
+      }
+      const created = {
+        ...createEmptyFee(feeKey, FEE_DISPLAY_NAMES[feeKey]),
+        ...patch,
+        feeKey,
+        name: patch.name ?? FEE_DISPLAY_NAMES[feeKey],
+      };
+      updateDraft((prev) => ({ ...prev, fees: [...prev.fees, created] }), options?.immediate ?? true);
+      return created.id;
+    },
+    [updateDraft],
+  );
+
+  const updateFee = useCallback(
+    (id: string, patch: Partial<FeeRecord>, options?: { immediate?: boolean }) => {
+      updateDraft(
+        (prev) => ({
+          ...prev,
+          fees: prev.fees.map((f) => (f.id === id ? { ...f, ...patch } : f)),
         }),
         options?.immediate,
       );
@@ -404,8 +483,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setSection2,
       updateSection3,
       setSection3,
+      updateSection4,
+      setSection4,
       addContact,
       updateContact,
+      upsertFeeByKey,
+      updateFee,
       setNavigation,
       markSectionComplete,
       setCurrentRoute,
@@ -423,8 +506,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setSection2,
       updateSection3,
       setSection3,
+      updateSection4,
+      setSection4,
       addContact,
       updateContact,
+      upsertFeeByKey,
+      updateFee,
       setNavigation,
       markSectionComplete,
       setCurrentRoute,

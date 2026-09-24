@@ -6,6 +6,8 @@ import {
   type OnboardingStage,
   type Section1Data,
   type Section2Data,
+  type Section3Data,
+  type Contact,
 } from "./types";
 import { mergeWithDefaults } from "./draft-utils";
 
@@ -110,10 +112,35 @@ function migrateV4(raw: LegacyDraftV4): OnboardingDraft {
     navigation: raw.navigation,
     section1: raw.section1 as Section1Data | undefined,
     section2: raw.section2 as Section2Data | undefined,
-    // section3/contacts did not exist yet — mergeWithDefaults fills
-    // them in with fresh, unanswered defaults and one freshly
-    // generated primary-contact placeholder (no MD-approved defaults
-    // exist for Q26–Q38, so a blank starting state is correct).
+    // section3/contacts/section4/fees did not exist yet — defaults fill in.
+  });
+}
+
+/**
+ * v5 had section1–3 + contacts in their final shape — only `section4`
+ * and the shared `fees` registry are new in v6.
+ */
+type LegacyDraftV5 = {
+  schemaVersion: 5;
+  updatedAt?: string;
+  currentRoute?: string;
+  navigation?: OnboardingNavigation;
+  section1?: Partial<Section1Data>;
+  section2?: Partial<Section2Data>;
+  section3?: Partial<Section3Data>;
+  contacts?: Contact[];
+};
+
+function migrateV5(raw: LegacyDraftV5): OnboardingDraft {
+  return mergeWithDefaults({
+    updatedAt: raw.updatedAt,
+    currentRoute: raw.currentRoute,
+    navigation: raw.navigation,
+    section1: raw.section1 as Section1Data | undefined,
+    section2: raw.section2 as Section2Data | undefined,
+    section3: raw.section3 as Section3Data | undefined,
+    contacts: raw.contacts,
+    // section4/fees did not exist yet — mergeWithDefaults fills them.
   });
 }
 
@@ -131,6 +158,10 @@ export function migrateDraft(raw: unknown): OnboardingDraft {
 
   if (version === SCHEMA_VERSION) {
     return mergeWithDefaults(raw as Partial<OnboardingDraft>);
+  }
+
+  if (version === 5) {
+    return migrateV5(raw as LegacyDraftV5);
   }
 
   if (version === 4) {

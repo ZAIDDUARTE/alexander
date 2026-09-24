@@ -1,5 +1,14 @@
-import { createDefaultDraft, type Contact, type OnboardingDraft, SCHEMA_VERSION } from "./types";
+import {
+  createDefaultDraft,
+  createDefaultConfirmationInfo,
+  createDefaultAppointmentWindows,
+  type Contact,
+  type FeeRecord,
+  type OnboardingDraft,
+  SCHEMA_VERSION,
+} from "./types";
 import { hasAnyOpenOfficeDay } from "./schedule";
+import { EXCEPTION_TYPES, CALLER_TYPES, CAPACITY_POLICY_ROWS } from "./section4Catalog";
 
 export type RedisOnboardingDraft = {
   schemaVersion: number;
@@ -12,7 +21,9 @@ export type RedisOnboardingDraft = {
     section1: OnboardingDraft["section1"];
     section2: OnboardingDraft["section2"];
     section3: OnboardingDraft["section3"];
+    section4: OnboardingDraft["section4"];
     contacts: OnboardingDraft["contacts"];
+    fees: OnboardingDraft["fees"];
   };
 };
 
@@ -87,6 +98,85 @@ function section3HasContent(s3: OnboardingDraft["section3"], contacts: Contact[]
   return false;
 }
 
+function feeHasContent(fee: FeeRecord): boolean {
+  if (fee.amountFixed.trim()) return true;
+  if (fee.amountMin.trim() || fee.amountMax.trim()) return true;
+  if (fee.amountPercentage.trim()) return true;
+  if (fee.applicationRule.trim()) return true;
+  if (fee.noticeRequired.trim()) return true;
+  if (fee.quoteAuthority) return true;
+  if (fee.creditTowardWork) return true;
+  if (fee.waiverPolicy) return true;
+  if (fee.waiverRule.trim()) return true;
+  // An active fee shell with only feeKey/name is still a structural default —
+  // only count once the user has entered fee details or explicitly set mode.
+  return false;
+}
+
+/**
+ * Section 4 content detection. Explicitly ignores MD-approved structural
+ * defaults so a fresh questionnaire stays clean:
+ * - appointment window shells (labels only, empty times)
+ * - Q49 all-six confirmation-info preselection
+ * - empty fee registry / empty technician / spending-limit shells
+ * - empty noAvailabilityPriority (must be consciously set)
+ */
+function section4HasContent(s4: OnboardingDraft["section4"], fees: FeeRecord[]): boolean {
+  if (s4.humanRequestPolicy) return true;
+  if (s4.humanRequestCustomRule.trim()) return true;
+  if (s4.aiRefusalPolicy) return true;
+  if (s4.aiRefusalCustomRule.trim()) return true;
+  if (EXCEPTION_TYPES.some((r) => (s4.exceptionAuthority[r.id] ?? "") !== "")) return true;
+  if (Object.values(s4.exceptionApproverContactIds).some((id) => id.trim())) return true;
+  if (s4.approverUnavailablePolicy) return true;
+  if (s4.approverUnavailableCustomRule.trim()) return true;
+  if (CALLER_TYPES.some((r) => (s4.callerPermissions[r.id] ?? []).length > 0)) return true;
+  if (s4.hasSpendingLimits) return true;
+  if (s4.spendingLimits.length > 0) return true;
+  if (s4.emergencyAuthMode) return true;
+  if (s4.emergencyAuthSpecialRules.trim()) return true;
+  if (s4.defaultBookingMode) return true;
+  if (s4.bookingHorizonDays.trim()) return true;
+  if (s4.bookingHorizonNoMaximum) return true;
+  // Window shells: only count if times/labels diverge from defaults meaningfully
+  const defaultWindows = createDefaultAppointmentWindows();
+  for (const w of s4.appointmentWindows) {
+    if (w.start || w.end) return true;
+    const def = defaultWindows.find((d) => d.id === w.id);
+    if (def && w.label !== def.label) return true;
+    if (def && w.enabled !== def.enabled) return true;
+  }
+  if (s4.appointmentWindows.length !== defaultWindows.length) return true;
+  // Q49 default preselection is NOT content
+  const defaultConfirm = createDefaultConfirmationInfo().slice().sort().join(",");
+  const currentConfirm = [...s4.confirmationInfo].slice().sort().join(",");
+  if (currentConfirm !== defaultConfirm) return true;
+  if (s4.hasServiceBookingRules) return true;
+  if (s4.serviceBookingRules.length > 0) return true;
+  if (CAPACITY_POLICY_ROWS.some((r) => (s4.capacityPolicies[r.id]?.policy ?? "") !== "")) return true;
+  if (CAPACITY_POLICY_ROWS.some((r) => (s4.capacityPolicies[r.id]?.condition ?? "").trim())) return true;
+  if (s4.rescheduleAuthority) return true;
+  if (s4.rescheduleCondition.trim()) return true;
+  if (s4.cancellationAuthority) return true;
+  if (s4.cancellationCondition.trim()) return true;
+  if (s4.lateCancellationFeeMode) return true;
+  if (s4.noShowFeeMode) return true;
+  if (s4.cancellationExceptions.trim()) return true;
+  if (s4.noAvailabilityPriority.length > 0) return true;
+  if (s4.mayArrangeCallback) return true;
+  if (s4.callbackNumberPolicy) return true;
+  if (s4.callbackOwnerContactId.trim()) return true;
+  if (s4.hasTechnicianAssignments) return true;
+  if (s4.technicianAssignments.length > 0) return true;
+  if (s4.specificTechnicianRequest) return true;
+  if (s4.multiIssueMode) return true;
+  if (s4.separateIssueServiceIds.length > 0) return true;
+  if (s4.separateIssueOther) return true;
+  if (s4.separateIssueOtherDetail.trim()) return true;
+  if (fees.some(feeHasContent)) return true;
+  return false;
+}
+
 export function hasDraftContent(draft: OnboardingDraft): boolean {
   const s = draft.section1;
   if (s.customerFacingName.trim()) return true;
@@ -101,6 +191,7 @@ export function hasDraftContent(draft: OnboardingDraft): boolean {
   if (s.answeringMode) return true;
   if (section2HasContent(draft.section2)) return true;
   if (section3HasContent(draft.section3, draft.contacts)) return true;
+  if (section4HasContent(draft.section4, draft.fees ?? [])) return true;
   if (draft.navigation.completedSections.length > 0) return true;
   if (draft.navigation.stage !== "welcome") return true;
   return false;
@@ -116,7 +207,9 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
     section1: { ...base.section1, ...partial.section1 },
     section2: { ...base.section2, ...partial.section2 },
     section3: { ...base.section3, ...partial.section3 },
+    section4: { ...base.section4, ...partial.section4 },
     contacts: partial.contacts ?? base.contacts,
+    fees: partial.fees ?? base.fees,
   };
 }
 
@@ -132,7 +225,9 @@ export function toRedisDraft(draft: OnboardingDraft, currentRoute: string): Redi
       section1: draft.section1,
       section2: draft.section2,
       section3: draft.section3,
+      section4: draft.section4,
       contacts: draft.contacts,
+      fees: draft.fees,
     },
   };
 }
@@ -146,7 +241,9 @@ export function fromRedisDraft(redis: RedisOnboardingDraft): OnboardingDraft {
     section1: redis.data.section1,
     section2: redis.data.section2,
     section3: redis.data.section3,
+    section4: redis.data.section4,
     contacts: redis.data.contacts,
+    fees: redis.data.fees,
   });
 }
 

@@ -5,7 +5,13 @@ import {
   isValidRedisDraft,
   migrateStoredRedisDraft,
 } from "./draft-store";
-import { SCHEMA_VERSION, createDefaultSection1, createDefaultSection2 } from "@/lib/onboarding/types";
+import {
+  SCHEMA_VERSION,
+  createDefaultSection1,
+  createDefaultSection2,
+  createDefaultSection3,
+  createEmptyContact,
+} from "@/lib/onboarding/types";
 
 describe("isValidRedisDraft — current schema only", () => {
   it("rejects a v3 Redis envelope that lacks section2", () => {
@@ -126,6 +132,56 @@ describe("migrateStoredRedisDraft — (S) Redis v4 → v5 without losing Section
     assert.equal(Array.isArray(migrated!.data.contacts), true);
     assert.equal(migrated!.data.contacts.length, 1);
     assert.equal(migrated!.data.section3.primaryContactId, migrated!.data.contacts[0].id);
+    assert.equal(isValidRedisDraft(migrated), true);
+  });
+});
+
+describe("migrateStoredRedisDraft — (AB) Redis v5 → v6 without losing Sections 1–3", () => {
+  it("upgrades a representative v5 stored draft (Sections 1–3, pre-Section-4) into the current Redis envelope", () => {
+    const primary = createEmptyContact();
+    primary.nameOrRole = "Jamie Rivera";
+    primary.phone = "+14155552671";
+
+    const v5Stored = {
+      schemaVersion: 5,
+      updatedAt: "2026-10-01T12:00:00.000Z",
+      currentRoute: "/onboarding/sections/3/review",
+      currentSection: 3,
+      completedSections: [1, 2, 3],
+      data: {
+        navigation: {
+          stage: "section-complete" as const,
+          sectionId: 3,
+          completedSections: [1, 2, 3],
+        },
+        section1: {
+          ...createDefaultSection1(),
+          customerFacingName: "Acme Plumbing",
+          mainPhone: "+14155552671",
+        },
+        section2: {
+          ...createDefaultSection2(),
+          serviceAreaDefinitionMode: "distance" as const,
+          serviceAreaDistance: { address: "123 Main St", radiusMiles: "25" },
+        },
+        section3: {
+          ...createDefaultSection3(primary.id),
+          emergencyServiceMode: "24_7" as const,
+        },
+        contacts: [primary],
+      },
+    };
+
+    const migrated = migrateStoredRedisDraft(v5Stored);
+    assert.ok(migrated);
+    assert.equal(migrated!.schemaVersion, SCHEMA_VERSION);
+    assert.equal(migrated!.data.section1.customerFacingName, "Acme Plumbing");
+    assert.equal(migrated!.data.section2.serviceAreaDistance.radiusMiles, "25");
+    assert.equal(migrated!.data.section3.emergencyServiceMode, "24_7");
+    assert.equal(migrated!.data.contacts[0].nameOrRole, "Jamie Rivera");
+    assert.ok(migrated!.data.section4);
+    assert.deepEqual(migrated!.data.fees, []);
+    assert.deepEqual(migrated!.data.navigation.completedSections, [1, 2, 3]);
     assert.equal(isValidRedisDraft(migrated), true);
   });
 });

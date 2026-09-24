@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
 import { ContentCard } from "@/components/onboarding/ui/Card";
-import { PrimaryButton, SecondaryButton } from "@/components/onboarding/ui/Buttons";
+import { PrimaryLink, SecondaryButton } from "@/components/onboarding/ui/Buttons";
 import { useOnboarding } from "@/lib/onboarding/OnboardingContext";
 import { TOTAL_SECTIONS } from "@/lib/onboarding/sections";
 import { useRouter } from "next/navigation";
@@ -79,12 +79,7 @@ export default function Section3CompletePage() {
         <p className="mt-6 text-sm text-[var(--color-alexander-muted)]">Next: Scheduling</p>
 
         <div className="mx-auto mt-10 flex max-w-md flex-col gap-3">
-          <PrimaryButton disabled title="Scheduling (Section 4) is not available in this build yet">
-            Continue to Section 4 →
-          </PrimaryButton>
-          <p className="text-center text-xs text-[var(--color-alexander-muted)]">
-            Section 4 — Scheduling — will be added in the next implementation pass.
-          </p>
+          <PrimaryLink href="/onboarding/sections/4/intro">Continue to Section 4 →</PrimaryLink>
           <SecondaryButton onClick={() => router.push("/onboarding/sections/3/review")}>
             Review Section 3
           </SecondaryButton>

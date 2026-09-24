@@ -66,3 +66,13 @@ export const CUSTOMER_PROPERTY_TYPES: readonly ServiceCatalogItem[] = [
   },
   { id: "insurance-related-work", label: "Insurance-related work" },
 ] as const;
+
+/**
+ * Combined job/service registry for Sections 4+ (booking rules,
+ * technician assignment, multi-issue separation). Plumbing + diagnostic
+ * only — customer/property types are not jobs.
+ */
+export const JOB_SERVICES: readonly ServiceCatalogItem[] = [
+  ...PLUMBING_SERVICES,
+  ...DIAGNOSTIC_SERVICES,
+];
