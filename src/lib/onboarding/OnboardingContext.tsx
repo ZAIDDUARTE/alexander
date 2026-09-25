@@ -13,6 +13,7 @@ import {
 import { loadLocalDraft, saveLocalDraft, type SaveStatus } from "./persistence";
 import { fetchServerDraft, putServerDraft } from "./server-api";
 import { reconcileDrafts, hasDraftContent, addCompletedSection } from "./draft-utils";
+import { applyPostSubmissionEditPolicy } from "./submissionIntegrity";
 import { isSection4LinkedFeeProtected } from "./section4FeeLinks";
 import {
   createDefaultDraft,
@@ -30,6 +31,9 @@ import {
   type Section5Data,
   type Section6Data,
   type Section7Data,
+  type Section8Data,
+  type SoftwareRecord,
+  type OnboardingSubmission,
   createCustomFee,
   createFeeId,
 } from "./types";
@@ -53,6 +57,19 @@ type OnboardingContextValue = {
   setSection6: (data: Section6Data) => void;
   updateSection7: (patch: Partial<Section7Data>, options?: { immediate?: boolean }) => void;
   setSection7: (data: Section7Data) => void;
+  updateSection8: (patch: Partial<Section8Data>, options?: { immediate?: boolean }) => void;
+  setSection8: (data: Section8Data) => void;
+  setSystems: (systems: SoftwareRecord[], options?: { immediate?: boolean }) => void;
+  updateSection8Bundle: (
+    section8: Section8Data,
+    systems: SoftwareRecord[],
+    options?: { immediate?: boolean },
+  ) => void;
+  updateSubmission: (patch: Partial<OnboardingSubmission>, options?: { immediate?: boolean }) => void;
+  updateSubmissionConfirmations: (
+    patch: Partial<OnboardingSubmission["confirmations"]>,
+    options?: { immediate?: boolean },
+  ) => void;
   /** Deterministic contact-registry creation — call only from an explicit
    * user action (e.g. a button onClick), never from a render/effect. */
   addContact: () => string;
@@ -73,6 +90,7 @@ type OnboardingContextValue = {
   setCurrentRoute: (route: string) => void;
   flushSave: () => Promise<void>;
   saveDraftNow: (next: OnboardingDraft) => Promise<void>;
+  getDraftSnapshot: () => OnboardingDraft;
 };
 
 const OnboardingContext = createContext<OnboardingContextValue | null>(null);
@@ -227,7 +245,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     (updater: (prev: OnboardingDraft) => OnboardingDraft, immediate = false) => {
       if (immediate) pendingImmediateRef.current = true;
       setDraft((prev) => {
-        const next = touchUpdatedAt(updater(prev));
+        const rawNext = updater(prev);
+        const withPolicy = applyPostSubmissionEditPolicy(prev, rawNext);
+        const next = touchUpdatedAt(withPolicy);
         draftRef.current = next;
         return next;
       });
@@ -371,6 +391,76 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const setSection7 = useCallback(
     (data: Section7Data) => {
       updateDraft((prev) => ({ ...prev, section7: data }), true);
+    },
+    [updateDraft],
+  );
+
+  const updateSection8 = useCallback(
+    (patch: Partial<Section8Data>, options?: { immediate?: boolean }) => {
+      updateDraft(
+        (prev) => ({
+          ...prev,
+          section8: { ...prev.section8, ...patch },
+        }),
+        options?.immediate,
+      );
+    },
+    [updateDraft],
+  );
+
+  const setSection8 = useCallback(
+    (data: Section8Data) => {
+      updateDraft((prev) => ({ ...prev, section8: data }), true);
+    },
+    [updateDraft],
+  );
+
+  const setSystems = useCallback(
+    (systems: SoftwareRecord[], options?: { immediate?: boolean }) => {
+      updateDraft((prev) => ({ ...prev, systems }), options?.immediate);
+    },
+    [updateDraft],
+  );
+
+  const updateSection8Bundle = useCallback(
+    (section8: Section8Data, systems: SoftwareRecord[], options?: { immediate?: boolean }) => {
+      updateDraft((prev) => ({ ...prev, section8, systems }), options?.immediate ?? true);
+    },
+    [updateDraft],
+  );
+
+  const updateSubmission = useCallback(
+    (patch: Partial<OnboardingSubmission>, options?: { immediate?: boolean }) => {
+      updateDraft(
+        (prev) => ({
+          ...prev,
+          submission: {
+            ...prev.submission,
+            ...patch,
+            confirmations: {
+              ...prev.submission.confirmations,
+              ...patch.confirmations,
+            },
+          },
+        }),
+        options?.immediate,
+      );
+    },
+    [updateDraft],
+  );
+
+  const updateSubmissionConfirmations = useCallback(
+    (patch: Partial<OnboardingSubmission["confirmations"]>, options?: { immediate?: boolean }) => {
+      updateDraft(
+        (prev) => ({
+          ...prev,
+          submission: {
+            ...prev.submission,
+            confirmations: { ...prev.submission.confirmations, ...patch },
+          },
+        }),
+        options?.immediate,
+      );
     },
     [updateDraft],
   );
@@ -552,6 +642,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     }
   }, [isDraftHydrated]);
 
+  const getDraftSnapshot = useCallback(() => draftRef.current, []);
+
   const saveDraftNow = useCallback(
     async (next: OnboardingDraft) => {
       if (!isDraftHydrated) return;
@@ -618,6 +710,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setSection6,
       updateSection7,
       setSection7,
+      updateSection8,
+      setSection8,
+      setSystems,
+      updateSection8Bundle,
+      updateSubmission,
+      updateSubmissionConfirmations,
       addContact,
       updateContact,
       upsertFeeByKey,
@@ -630,6 +728,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setCurrentRoute,
       flushSave,
       saveDraftNow,
+      getDraftSnapshot,
     }),
     [
       draft,
@@ -650,6 +749,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setSection6,
       updateSection7,
       setSection7,
+      updateSection8,
+      setSection8,
+      setSystems,
+      updateSection8Bundle,
+      updateSubmission,
+      updateSubmissionConfirmations,
       addContact,
       updateContact,
       upsertFeeByKey,
@@ -662,6 +767,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setCurrentRoute,
       flushSave,
       saveDraftNow,
+      getDraftSnapshot,
     ],
   );
 

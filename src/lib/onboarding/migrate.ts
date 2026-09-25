@@ -243,6 +243,41 @@ function migrateV8(raw: LegacyDraftV8): OnboardingDraft {
   });
 }
 
+type LegacyDraftV9 = {
+  schemaVersion: 9;
+  updatedAt?: string;
+  currentRoute?: string;
+  navigation?: OnboardingNavigation;
+  section1?: Partial<Section1Data>;
+  section2?: Partial<Section2Data>;
+  section3?: Partial<Section3Data>;
+  section4?: Partial<Section4Data>;
+  section5?: Partial<Section5Data>;
+  section6?: Partial<Section6Data>;
+  section7?: Partial<OnboardingDraft["section7"]>;
+  contacts?: Contact[];
+  fees?: FeeRecord[];
+};
+
+function migrateV9(raw: LegacyDraftV9): OnboardingDraft {
+  const fees = (raw.fees ?? []).map(migrateFeeRecordV6ToV7);
+  return mergeWithDefaults({
+    updatedAt: raw.updatedAt,
+    currentRoute: raw.currentRoute,
+    navigation: raw.navigation,
+    section1: raw.section1 as Section1Data | undefined,
+    section2: raw.section2 as Section2Data | undefined,
+    section3: raw.section3 as Section3Data | undefined,
+    section4: raw.section4 as Section4Data | undefined,
+    section5: raw.section5 as Section5Data | undefined,
+    section6: raw.section6 as Section6Data | undefined,
+    section7: raw.section7 as OnboardingDraft["section7"] | undefined,
+    contacts: raw.contacts,
+    fees,
+    // section8/systems/submission — mergeWithDefaults fills in.
+  });
+}
+
 /**
  * Migrate a raw persisted value (any prior schema version, or garbage)
  * into the current OnboardingDraft shape, preserving customer answers
@@ -261,6 +296,10 @@ export function migrateDraft(raw: unknown): OnboardingDraft {
       ...merged,
       fees: merged.fees.map(migrateFeeRecordV6ToV7),
     };
+  }
+
+  if (version === 9) {
+    return migrateV9(raw as LegacyDraftV9);
   }
 
   if (version === 8) {

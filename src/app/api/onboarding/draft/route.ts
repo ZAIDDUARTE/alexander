@@ -62,8 +62,20 @@ export async function PUT(request: Request) {
     section3: { ...defaults.section3, ...clientDraft.section3 },
     section4: { ...defaults.section4, ...clientDraft.section4 },
     section5: { ...defaults.section5, ...clientDraft.section5 },
+    section6: { ...defaults.section6, ...clientDraft.section6 },
+    section7: { ...defaults.section7, ...clientDraft.section7 },
+    section8: { ...defaults.section8, ...clientDraft.section8 },
     contacts: clientDraft.contacts ?? defaults.contacts,
     fees: clientDraft.fees ?? defaults.fees,
+    systems: clientDraft.systems ?? defaults.systems,
+    submission: {
+      ...defaults.submission,
+      ...clientDraft.submission,
+      confirmations: {
+        ...defaults.submission.confirmations,
+        ...clientDraft.submission?.confirmations,
+      },
+    },
   };
 
   const redisPayload: RedisOnboardingDraft = toRedisDraft(

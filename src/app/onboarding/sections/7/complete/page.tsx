@@ -79,15 +79,9 @@ export default function Section7CompletePage() {
         </p>
 
         <div className="mx-auto mt-10 flex max-w-md flex-col gap-3">
-          <PrimaryButton
-            disabled
-            title="Integration Systems and Final Setup (Section 8) is not available in this build yet"
-          >
+          <PrimaryButton onClick={() => router.push("/onboarding/sections/8/intro")}>
             Continue to Section 8 →
           </PrimaryButton>
-          <p className="text-center text-xs text-[var(--color-alexander-muted)]">
-            Section 8 will be added in a future implementation pass.
-          </p>
           <SecondaryButton onClick={() => router.push("/onboarding/sections/7/review")}>
             Review Section 7
           </SecondaryButton>

@@ -29,6 +29,17 @@ import {
   type NonServiceCallTypeId,
 } from "./section6Catalog";
 import type { TimeValue } from "./schedule";
+import type {
+  AdditionalSoftwareCategoryId,
+  ConnectionOwnerMode,
+  CrmFsmProvider,
+  DispatchProvider,
+  FailureFallbackMode,
+  IntegrationCapabilityId,
+  PhoneProvider,
+  SchedulingProvider,
+} from "./section8Catalog";
+import { ALL_INTEGRATION_CAPABILITY_IDS } from "./section8Catalog";
 /**
  * Schema history:
  *  v1 -> v2: ServiceDaySchedule moved from two independent booleans
@@ -63,8 +74,11 @@ import type { TimeValue } from "./schedule";
  *            initializes to MD-approved defaults — see migrate.ts.
  *  v8 -> v9: Added `section7` ("Voice and Conversation"). v8 drafts are
  *            MIGRATED forward; Section 7 initializes empty — see migrate.ts.
+ *  v9 -> v10: Added `section8`, shared `systems` registry, and
+ *             `submission` lifecycle. v9 drafts are MIGRATED forward — see
+ *             migrate.ts.
  */
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 export type ApprovedClaim =
   | "licensed"
@@ -1196,6 +1210,142 @@ export function createDefaultSection7(): Section7Data {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Section 8 — Integration Systems and Final Setup (Q104–Q113)
+// ---------------------------------------------------------------------------
+
+export type SoftwareRole = "crm_fsm" | "scheduling" | "dispatch" | "phone" | "additional";
+
+export type SoftwareRecord = {
+  id: string;
+  role: SoftwareRole;
+  providerKey: string;
+  displayName: string;
+  customName: string | null;
+  desiredAccess: string | null;
+};
+
+export type AdditionalSoftwareCard = {
+  categoryId: AdditionalSoftwareCategoryId;
+  softwareId: string;
+  systemName: string;
+  desiredAccess: string;
+  otherCategoryLabel: string;
+  otherDetails: string;
+};
+
+export type Section8Data = {
+  crmFsmProvider: CrmFsmProvider;
+  crmFsmCustomName: string;
+  crmFsmSoftwareId: string;
+
+  schedulingProvider: SchedulingProvider;
+  schedulingCustomName: string;
+  schedulingSoftwareId: string;
+
+  dispatchProvider: DispatchProvider;
+  dispatchCustomName: string;
+  dispatchSoftwareId: string;
+
+  phoneProvider: PhoneProvider;
+  phoneCustomName: string;
+  phoneSoftwareId: string;
+
+  additionalSoftwareCategories: AdditionalSoftwareCategoryId[];
+  additionalSoftwareCards: AdditionalSoftwareCard[];
+
+  authorizedCapabilities: IntegrationCapabilityId[];
+  authorizedCapabilityOther: string;
+
+  connectionOwnerMode: ConnectionOwnerMode;
+  connectionOwnerName: string;
+  connectionOwnerEmail: string;
+  connectionOwnerPhone: string;
+
+  connectionNoticeAcknowledged: boolean;
+
+  failureFallback: FailureFallbackMode;
+  failureFallbackCustom: string;
+
+  finalOperatingNotes: string;
+};
+
+/**
+ * MD “preselect all capabilities” = every concrete approved capability.
+ * `other` is an extension affordance requiring custom text — not preselected.
+ */
+export function createDefaultAuthorizedCapabilities(): IntegrationCapabilityId[] {
+  return ALL_INTEGRATION_CAPABILITY_IDS.filter((id) => id !== "other");
+}
+
+export function createDefaultSection8(): Section8Data {
+  return {
+    crmFsmProvider: "",
+    crmFsmCustomName: "",
+    crmFsmSoftwareId: "",
+
+    schedulingProvider: "",
+    schedulingCustomName: "",
+    schedulingSoftwareId: "",
+
+    dispatchProvider: "",
+    dispatchCustomName: "",
+    dispatchSoftwareId: "",
+
+    phoneProvider: "",
+    phoneCustomName: "",
+    phoneSoftwareId: "",
+
+    additionalSoftwareCategories: [],
+    additionalSoftwareCards: [],
+
+    authorizedCapabilities: createDefaultAuthorizedCapabilities(),
+    authorizedCapabilityOther: "",
+
+    connectionOwnerMode: "",
+    connectionOwnerName: "",
+    connectionOwnerEmail: "",
+    connectionOwnerPhone: "",
+
+    connectionNoticeAcknowledged: false,
+
+    failureFallback: "",
+    failureFallbackCustom: "",
+
+    finalOperatingNotes: "",
+  };
+}
+
+export type SubmissionConfirmations = {
+  answersAccurate: boolean;
+  capabilitiesDependOnIntegrations: boolean;
+  actionsRequireSupportAuthorizationConfirmation: boolean;
+};
+
+export type OnboardingSubmission = {
+  status: "draft" | "submitted";
+  submittedAt: string | null;
+  /**
+   * Fingerprint of sections 1–8 + registries at the last successful submit.
+   * Used to detect edits after submission and to preserve submittedAt on duplicate submit.
+   */
+  lastSubmittedContentRevision: string | null;
+  confirmations: SubmissionConfirmations;
+};
+
+export function createDefaultSubmission(): OnboardingSubmission {
+  return {
+    status: "draft",
+    submittedAt: null,
+    lastSubmittedContentRevision: null,
+    confirmations: {
+      answersAccurate: false,
+      capabilitiesDependOnIntegrations: false,
+      actionsRequireSupportAuthorizationConfirmation: false,
+    },
+  };
+}
+
 export function createDefaultSection4(): Section4Data {
   return {
     humanRequestPolicy: "",
@@ -1276,6 +1426,7 @@ export type OnboardingDraft = {
   section5: Section5Data;
   section6: Section6Data;
   section7: Section7Data;
+  section8: Section8Data;
   /** Shared contact registry (MD §1.2) — sibling to sections, not buried
    * inside Section 3, so later sections can reference contacts by id. */
   contacts: Contact[];
@@ -1285,6 +1436,9 @@ export type OnboardingDraft = {
    * the same IDs rather than duplicating fee truth.
    */
   fees: FeeRecord[];
+  /** Shared software registry (MD §1.2) — Section 8 references by stable id. */
+  systems: SoftwareRecord[];
+  submission: OnboardingSubmission;
 };
 
 export function createDefaultSection1(): Section1Data {
@@ -1325,7 +1479,10 @@ export function createDefaultDraft(): OnboardingDraft {
     section5: createDefaultSection5(),
     section6: createDefaultSection6(),
     section7: createDefaultSection7(),
+    section8: createDefaultSection8(),
     contacts: [primaryContact],
     fees: [],
+    systems: [],
+    submission: createDefaultSubmission(),
   };
 }

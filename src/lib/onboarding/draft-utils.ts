@@ -1,4 +1,5 @@
 import {
+  createDefaultAuthorizedCapabilities,
   createDefaultDraft,
   createDefaultConfirmationInfo,
   createDefaultAppointmentWindows,
@@ -37,8 +38,11 @@ export type RedisOnboardingDraft = {
     section5: OnboardingDraft["section5"];
     section6: OnboardingDraft["section6"];
     section7: OnboardingDraft["section7"];
+    section8: OnboardingDraft["section8"];
     contacts: OnboardingDraft["contacts"];
     fees: OnboardingDraft["fees"];
+    systems: OnboardingDraft["systems"];
+    submission: OnboardingDraft["submission"];
   };
 };
 
@@ -281,6 +285,43 @@ function section6HasContent(s6: OnboardingDraft["section6"]): boolean {
   return false;
 }
 
+function section8HasContent(s8: OnboardingDraft["section8"], submission: OnboardingDraft["submission"]): boolean {
+  const defaultCaps = createDefaultAuthorizedCapabilities().slice().sort().join(",");
+  const currentCaps = [...s8.authorizedCapabilities].slice().sort().join(",");
+  if (currentCaps !== defaultCaps) return true;
+
+  if (s8.crmFsmProvider) return true;
+  if (s8.crmFsmCustomName.trim()) return true;
+  if (s8.schedulingProvider) return true;
+  if (s8.schedulingCustomName.trim()) return true;
+  if (s8.dispatchProvider) return true;
+  if (s8.dispatchCustomName.trim()) return true;
+  if (s8.phoneProvider) return true;
+  if (s8.phoneCustomName.trim()) return true;
+  if (s8.additionalSoftwareCategories.length > 0) return true;
+  if (s8.additionalSoftwareCards.length > 0) return true;
+  if (s8.authorizedCapabilityOther.trim()) return true;
+  if (s8.connectionOwnerMode) return true;
+  if (s8.connectionOwnerName.trim() || s8.connectionOwnerEmail.trim() || s8.connectionOwnerPhone.trim()) {
+    return true;
+  }
+  if (s8.connectionNoticeAcknowledged) return true;
+  if (s8.failureFallback) return true;
+  if (s8.failureFallbackCustom.trim()) return true;
+  if (s8.finalOperatingNotes.trim()) return true;
+
+  if (submission.status === "submitted") return true;
+  if (submission.submittedAt) return true;
+  if (
+    submission.confirmations.answersAccurate ||
+    submission.confirmations.capabilitiesDependOnIntegrations ||
+    submission.confirmations.actionsRequireSupportAuthorizationConfirmation
+  ) {
+    return true;
+  }
+  return false;
+}
+
 function section7HasContent(s7: OnboardingDraft["section7"]): boolean {
   if (s7.englishOnly) return true;
   if (s7.callerLanguages.length > 0) return true;
@@ -323,6 +364,7 @@ export function hasDraftContent(draft: OnboardingDraft): boolean {
   if (section5HasContent(draft.section5)) return true;
   if (section6HasContent(draft.section6)) return true;
   if (section7HasContent(draft.section7)) return true;
+  if (section8HasContent(draft.section8, draft.submission)) return true;
   if (draft.navigation.completedSections.length > 0) return true;
   if (draft.navigation.stage !== "welcome") return true;
   return false;
@@ -361,8 +403,28 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
       pronunciationEntries:
         partial.section7?.pronunciationEntries ?? base.section7.pronunciationEntries,
     },
+    section8: {
+      ...base.section8,
+      ...partial.section8,
+      additionalSoftwareCards:
+        partial.section8?.additionalSoftwareCards ?? base.section8.additionalSoftwareCards,
+      authorizedCapabilities:
+        partial.section8?.authorizedCapabilities ?? base.section8.authorizedCapabilities,
+    },
     contacts: partial.contacts ?? base.contacts,
     fees: partial.fees ?? base.fees,
+    systems: partial.systems ?? base.systems,
+    submission: {
+      ...base.submission,
+      ...partial.submission,
+      lastSubmittedContentRevision:
+        partial.submission?.lastSubmittedContentRevision ??
+        base.submission.lastSubmittedContentRevision,
+      confirmations: {
+        ...base.submission.confirmations,
+        ...partial.submission?.confirmations,
+      },
+    },
   };
 }
 
@@ -382,8 +444,11 @@ export function toRedisDraft(draft: OnboardingDraft, currentRoute: string): Redi
       section5: draft.section5,
       section6: draft.section6,
       section7: draft.section7,
+      section8: draft.section8,
       contacts: draft.contacts,
       fees: draft.fees,
+      systems: draft.systems,
+      submission: draft.submission,
     },
   };
 }
@@ -401,8 +466,11 @@ export function fromRedisDraft(redis: RedisOnboardingDraft): OnboardingDraft {
     section5: redis.data.section5,
     section6: redis.data.section6,
     section7: redis.data.section7,
+    section8: redis.data.section8,
     contacts: redis.data.contacts,
     fees: redis.data.fees,
+    systems: redis.data.systems,
+    submission: redis.data.submission,
   });
 }
 

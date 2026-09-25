@@ -26,7 +26,10 @@ export function isValidRedisDraft(value: unknown): value is RedisOnboardingDraft
     !v.data.section5 ||
     !v.data.section6 ||
     !v.data.section7 ||
-    !Array.isArray(v.data.fees)
+    !v.data.section8 ||
+    !Array.isArray(v.data.fees) ||
+    !Array.isArray(v.data.systems) ||
+    !v.data.submission
   ) {
     return false;
   }
@@ -72,6 +75,8 @@ export function migrateStoredRedisDraft(raw: unknown): RedisOnboardingDraft | nu
       section3?: OnboardingDraft["section3"];
       section4?: OnboardingDraft["section4"];
       section5?: OnboardingDraft["section5"];
+      section6?: OnboardingDraft["section6"];
+      section7?: OnboardingDraft["section7"];
       contacts?: OnboardingDraft["contacts"];
       fees?: OnboardingDraft["fees"];
     };
@@ -93,6 +98,8 @@ export function migrateStoredRedisDraft(raw: unknown): RedisOnboardingDraft | nu
     section3: v.data.section3,
     section4: v.data.section4,
     section5: v.data.section5,
+    section6: v.data.section6,
+    section7: v.data.section7,
     contacts: v.data.contacts,
     fees: v.data.fees,
   };
