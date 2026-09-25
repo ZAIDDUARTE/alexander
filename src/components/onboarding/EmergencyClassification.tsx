@@ -22,17 +22,12 @@ export const EMERGENCY_CLASSIFICATION_LABELS: EmergencyClassificationLabels = {
 };
 
 /**
- * SOURCE-DATA DEPENDENCY (not an implementation defect): the final MD
- * references an approved default library for Q26 preselection, but does
- * not contain the actual per-scenario classifications. Until that
- * mapping exists as real source data we:
- *   - do not invent defaults
- *   - do not preselect any row
- *   - keep "Use Alexander's recommended default" selectable
- *   - do not claim a specific classification in this tooltip
+ * Q26 preselects the `recommended_default` state per row — not a hidden
+ * per-scenario classification. The approved default library mapping (if
+ * any) is applied downstream; this UI does not invent classifications.
  */
 const RECOMMENDED_DEFAULT_TOOLTIP =
-  "Selecting this tells Alexander to use his recommended handling for this situation once an approved default mapping is available. No specific classification is claimed here.";
+  "Alexander will use his recommended handling for this situation. This does not display or claim a specific hidden classification.";
 
 /**
  * Accessible 5-state control for Q26. Native radio inputs (never
