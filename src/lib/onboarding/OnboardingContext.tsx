@@ -13,6 +13,7 @@ import {
 import { loadLocalDraft, saveLocalDraft, type SaveStatus } from "./persistence";
 import { fetchServerDraft, putServerDraft } from "./server-api";
 import { reconcileDrafts, hasDraftContent, addCompletedSection } from "./draft-utils";
+import { isSection4LinkedFeeProtected } from "./section4FeeLinks";
 import {
   createDefaultDraft,
   createEmptyContact,
@@ -26,6 +27,9 @@ import {
   type Section2Data,
   type Section3Data,
   type Section4Data,
+  type Section5Data,
+  createCustomFee,
+  createFeeId,
 } from "./types";
 
 type OnboardingContextValue = {
@@ -41,6 +45,8 @@ type OnboardingContextValue = {
   setSection3: (data: Section3Data) => void;
   updateSection4: (patch: Partial<Section4Data>, options?: { immediate?: boolean }) => void;
   setSection4: (data: Section4Data) => void;
+  updateSection5: (patch: Partial<Section5Data>, options?: { immediate?: boolean }) => void;
+  setSection5: (data: Section5Data) => void;
   /** Deterministic contact-registry creation — call only from an explicit
    * user action (e.g. a button onClick), never from a render/effect. */
   addContact: () => string;
@@ -53,6 +59,9 @@ type OnboardingContextValue = {
    */
   upsertFeeByKey: (feeKey: FeeKey, patch: Partial<FeeRecord>, options?: { immediate?: boolean }) => string;
   updateFee: (id: string, patch: Partial<FeeRecord>, options?: { immediate?: boolean }) => void;
+  addFee: (options?: { immediate?: boolean }) => string;
+  removeFee: (id: string, options?: { immediate?: boolean }) => void;
+  duplicateFee: (id: string, options?: { immediate?: boolean }) => string;
   setNavigation: (nav: Partial<OnboardingNavigation>) => void;
   markSectionComplete: (sectionId: number) => void;
   setCurrentRoute: (route: string) => void;
@@ -300,6 +309,26 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     [updateDraft],
   );
 
+  const updateSection5 = useCallback(
+    (patch: Partial<Section5Data>, options?: { immediate?: boolean }) => {
+      updateDraft(
+        (prev) => ({
+          ...prev,
+          section5: { ...prev.section5, ...patch },
+        }),
+        options?.immediate,
+      );
+    },
+    [updateDraft],
+  );
+
+  const setSection5 = useCallback(
+    (data: Section5Data) => {
+      updateDraft((prev) => ({ ...prev, section5: data }), true);
+    },
+    [updateDraft],
+  );
+
   /**
    * Creates exactly one new contact and appends it to the shared
    * registry. This is only ever invoked from a deliberate user action
@@ -362,6 +391,58 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         }),
         options?.immediate,
       );
+    },
+    [updateDraft],
+  );
+
+  const addFee = useCallback(
+    (options?: { immediate?: boolean }): string => {
+      const created = createCustomFee();
+      updateDraft((prev) => ({ ...prev, fees: [...prev.fees, created] }), options?.immediate ?? true);
+      return created.id;
+    },
+    [updateDraft],
+  );
+
+  const duplicateFee = useCallback(
+    (id: string, options?: { immediate?: boolean }): string => {
+      const source = draftRef.current.fees.find((f) => f.id === id);
+      if (!source) return "";
+      const copy = {
+        ...source,
+        id: createFeeId(),
+        feeKey: "" as const,
+        sourceSection: 5 as const,
+      };
+      updateDraft((prev) => ({ ...prev, fees: [...prev.fees, copy] }), options?.immediate ?? true);
+      return copy.id;
+    },
+    [updateDraft],
+  );
+
+  const removeFee = useCallback(
+    (id: string, options?: { immediate?: boolean }) => {
+      if (isSection4LinkedFeeProtected(id, draftRef.current.section4)) {
+        return;
+      }
+      updateDraft((prev) => {
+        const nextFees = prev.fees.filter((f) => f.id !== id);
+
+        const servicePricingRules = { ...prev.section5.servicePricingRules };
+        for (const [serviceId, rule] of Object.entries(servicePricingRules)) {
+          if (!rule.linkedFeeIds.includes(id)) continue;
+          servicePricingRules[serviceId] = {
+            ...rule,
+            linkedFeeIds: rule.linkedFeeIds.filter((feeId) => feeId !== id),
+          };
+        }
+
+        return {
+          ...prev,
+          fees: nextFees,
+          section5: { ...prev.section5, servicePricingRules },
+        };
+      }, options?.immediate ?? true);
     },
     [updateDraft],
   );
@@ -485,10 +566,15 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setSection3,
       updateSection4,
       setSection4,
+      updateSection5,
+      setSection5,
       addContact,
       updateContact,
       upsertFeeByKey,
       updateFee,
+      addFee,
+      removeFee,
+      duplicateFee,
       setNavigation,
       markSectionComplete,
       setCurrentRoute,
@@ -508,10 +594,15 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setSection3,
       updateSection4,
       setSection4,
+      updateSection5,
+      setSection5,
       addContact,
       updateContact,
       upsertFeeByKey,
       updateFee,
+      addFee,
+      removeFee,
+      duplicateFee,
       setNavigation,
       markSectionComplete,
       setCurrentRoute,

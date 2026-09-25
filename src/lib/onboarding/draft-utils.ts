@@ -8,7 +8,13 @@ import {
   SCHEMA_VERSION,
 } from "./types";
 import { hasAnyOpenOfficeDay } from "./schedule";
+import {
+  emergencyClassificationsAreAllRecommendedDefault,
+  fillBlankQ26WithRecommendedDefault,
+} from "./section3Defaults";
 import { EXCEPTION_TYPES, CALLER_TYPES, CAPACITY_POLICY_ROWS } from "./section4Catalog";
+import { DEFAULT_FORBIDDEN_STATEMENT_IDS } from "./section5Catalog";
+import { FINANCIAL_REMEDY_ROWS } from "./section5Catalog";
 
 export type RedisOnboardingDraft = {
   schemaVersion: number;
@@ -22,6 +28,7 @@ export type RedisOnboardingDraft = {
     section2: OnboardingDraft["section2"];
     section3: OnboardingDraft["section3"];
     section4: OnboardingDraft["section4"];
+    section5: OnboardingDraft["section5"];
     contacts: OnboardingDraft["contacts"];
     fees: OnboardingDraft["fees"];
   };
@@ -79,7 +86,7 @@ function contactHasContent(contact: Contact): boolean {
 }
 
 function section3HasContent(s3: OnboardingDraft["section3"], contacts: Contact[]): boolean {
-  if (Object.values(s3.emergencyClassifications).some((c) => c !== "")) return true;
+  if (!emergencyClassificationsAreAllRecommendedDefault(s3.emergencyClassifications)) return true;
   if (s3.dispatchApproval.length > 0) return true;
   if (s3.dispatchApprovalOtherDetail.trim()) return true;
   if (Object.values(s3.afterHoursDisposition).some((v) => v !== "")) return true;
@@ -177,6 +184,65 @@ function section4HasContent(s4: OnboardingDraft["section4"], fees: FeeRecord[]):
   return false;
 }
 
+/**
+ * Section 5 content detection. Q74 MD default preselection of the first five
+ * forbidden statements is NOT user-authored content.
+ */
+function section5HasContent(s5: OnboardingDraft["section5"]): boolean {
+  if (s5.pricingModels.length > 0) return true;
+  if (s5.pricingModelOther.trim()) return true;
+  if (s5.materialMarkupPolicy) return true;
+  if (s5.materialMarkupCustomerExplanation.trim()) return true;
+  if (s5.unknownPriceBehavior) return true;
+  if (s5.unknownPriceCustomRule.trim()) return true;
+  if (s5.noSeparateFees) return true;
+  const defaultForbidden = DEFAULT_FORBIDDEN_STATEMENT_IDS.slice().sort().join(",");
+  const currentForbidden = [...s5.forbiddenStatements].slice().sort().join(",");
+  if (currentForbidden !== defaultForbidden) return true;
+  if (s5.hasAreaTravelOrMinimum) return true;
+  if (s5.areaPricingRows.length > 0) return true;
+  if (s5.forbiddenStatementOther.trim()) return true;
+  if (s5.hasPromotions) return true;
+  if (s5.promotions.length > 0) return true;
+  if (s5.promotionStacking) return true;
+  if (s5.promotionStackingRule.trim()) return true;
+  if (s5.promotionModificationAuthority) return true;
+  if (s5.promotionModificationRule.trim()) return true;
+  if (s5.paymentMethods.length > 0) return true;
+  if (s5.paymentMethodOther.trim()) return true;
+  if (s5.paymentDuePolicies.length > 0) return true;
+  if (s5.depositWorkDetail.trim() || s5.depositRule.trim()) return true;
+  if (s5.progressPaymentProjectsDetail.trim() || s5.progressPaymentRule.trim()) return true;
+  if (s5.invoiceCustomersDetail.trim() || s5.invoiceTerms.trim()) return true;
+  if (s5.paymentDueOtherRule.trim()) return true;
+  if (s5.offersFinancing) return true;
+  if (s5.financingProviderTerms.trim()) return true;
+  if (s5.financingPermissions.length > 0) return true;
+  if (s5.financingPermissionOtherDetail.trim()) return true;
+  if (s5.financingEligibilityStatement.trim()) return true;
+  if (
+    FINANCIAL_REMEDY_ROWS.some((r) => (s5.remedyAuthority[r.id as keyof typeof s5.remedyAuthority] ?? "") !== "")
+  ) {
+    return true;
+  }
+  if (
+    FINANCIAL_REMEDY_ROWS.some((r) =>
+      (s5.remedyRules[r.id as keyof typeof s5.remedyRules] ?? "").trim(),
+    )
+  ) {
+    return true;
+  }
+  if (s5.financialApproverContactId.trim()) return true;
+  if (s5.paidDiagnosticExplanation.trim()) return true;
+  if (s5.generalPricingAuthority) return true;
+  if (Object.keys(s5.servicePricingRules).length > 0) return true;
+  const defaultVisitTypes = createDefaultDraft().section5.visitTypeByServiceId;
+  for (const [serviceId, visitType] of Object.entries(s5.visitTypeByServiceId)) {
+    if (visitType && visitType !== (defaultVisitTypes[serviceId] ?? "")) return true;
+  }
+  return false;
+}
+
 export function hasDraftContent(draft: OnboardingDraft): boolean {
   const s = draft.section1;
   if (s.customerFacingName.trim()) return true;
@@ -192,6 +258,7 @@ export function hasDraftContent(draft: OnboardingDraft): boolean {
   if (section2HasContent(draft.section2)) return true;
   if (section3HasContent(draft.section3, draft.contacts)) return true;
   if (section4HasContent(draft.section4, draft.fees ?? [])) return true;
+  if (section5HasContent(draft.section5)) return true;
   if (draft.navigation.completedSections.length > 0) return true;
   if (draft.navigation.stage !== "welcome") return true;
   return false;
@@ -206,8 +273,16 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
     navigation: { ...base.navigation, ...partial.navigation },
     section1: { ...base.section1, ...partial.section1 },
     section2: { ...base.section2, ...partial.section2 },
-    section3: { ...base.section3, ...partial.section3 },
+    section3: {
+      ...base.section3,
+      ...partial.section3,
+      emergencyClassifications: fillBlankQ26WithRecommendedDefault({
+        ...base.section3.emergencyClassifications,
+        ...partial.section3?.emergencyClassifications,
+      }),
+    },
     section4: { ...base.section4, ...partial.section4 },
+    section5: { ...base.section5, ...partial.section5 },
     contacts: partial.contacts ?? base.contacts,
     fees: partial.fees ?? base.fees,
   };
@@ -226,6 +301,7 @@ export function toRedisDraft(draft: OnboardingDraft, currentRoute: string): Redi
       section2: draft.section2,
       section3: draft.section3,
       section4: draft.section4,
+      section5: draft.section5,
       contacts: draft.contacts,
       fees: draft.fees,
     },
@@ -242,6 +318,7 @@ export function fromRedisDraft(redis: RedisOnboardingDraft): OnboardingDraft {
     section2: redis.data.section2,
     section3: redis.data.section3,
     section4: redis.data.section4,
+    section5: redis.data.section5,
     contacts: redis.data.contacts,
     fees: redis.data.fees,
   });

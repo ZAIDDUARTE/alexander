@@ -18,17 +18,31 @@ function validContact(overrides: Partial<Contact> = {}): Contact {
 }
 
 describe("normalizeSection3 — emergency classifications", () => {
-  it("excludes unanswered scenarios and preserves catalog id/name", () => {
+  it("includes all classified rows (recommended_default counts as Company Truth)", () => {
     const primary = validContact();
     const data = createDefaultSection3(primary.id);
     data.emergencyClassifications[EMERGENCY_SCENARIOS[0].id] = "emergency";
     const normalized = normalizeSection3(data, [primary]);
-    assert.equal(normalized.emergencyClassifications.length, 1);
-    assert.deepEqual(normalized.emergencyClassifications[0], {
+    assert.equal(normalized.emergencyClassifications.length, EMERGENCY_SCENARIOS.length);
+    const first = normalized.emergencyClassifications.find((r) => r.id === EMERGENCY_SCENARIOS[0].id);
+    assert.deepEqual(first, {
       id: EMERGENCY_SCENARIOS[0].id,
       name: EMERGENCY_SCENARIOS[0].label,
       classification: "emergency",
     });
+    const second = normalized.emergencyClassifications.find((r) => r.id === EMERGENCY_SCENARIOS[1].id);
+    assert.equal(second?.classification, "recommended_default");
+  });
+
+  it("excludes legacy blank (unanswered) scenario rows", () => {
+    const primary = validContact();
+    const data = createDefaultSection3(primary.id);
+    for (const scenario of EMERGENCY_SCENARIOS) {
+      data.emergencyClassifications[scenario.id] = "";
+    }
+    data.emergencyClassifications[EMERGENCY_SCENARIOS[0].id] = "emergency";
+    const normalized = normalizeSection3(data, [primary]);
+    assert.equal(normalized.emergencyClassifications.length, 1);
   });
 
   it("preserves 'recommended_default' as a real classification value (no invented substitution)", () => {
@@ -251,12 +265,15 @@ describe("normalizeSection3 — contact normalization", () => {
   });
 });
 
-describe("normalizeSection3 — Q26 defaults are never invented", () => {
-  it("fresh classifications normalize to an empty list (no invented recommended_default rows)", () => {
+describe("normalizeSection3 — Q26 recommended_default defaults", () => {
+  it("fresh classifications normalize all 15 rows as recommended_default", () => {
     const primary = createEmptyContact();
     const data = createDefaultSection3(primary.id);
     const normalized = normalizeSection3(data, [primary]);
-    assert.equal(normalized.emergencyClassifications.length, 0);
+    assert.equal(normalized.emergencyClassifications.length, EMERGENCY_SCENARIOS.length);
+    for (const row of normalized.emergencyClassifications) {
+      assert.equal(row.classification, "recommended_default");
+    }
   });
 });
 

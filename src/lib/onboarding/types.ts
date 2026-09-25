@@ -11,7 +11,7 @@ import {
   PLUMBING_SERVICES,
   type ServiceCatalogItem,
 } from "./section2Catalog";
-import { EMERGENCY_SCENARIOS } from "./section3Catalog";
+import { createDefaultEmergencyClassifications } from "./section3Defaults";
 import {
   APPOINTMENT_WINDOW_TEMPLATES,
   CALLER_TYPES,
@@ -19,6 +19,8 @@ import {
   CONFIRMATION_INFO_OPTIONS,
   EXCEPTION_TYPES,
 } from "./section4Catalog";
+import { JOB_SERVICES } from "./section2Catalog";
+import { DEFAULT_FORBIDDEN_STATEMENT_IDS } from "./section5Catalog";
 import type { TimeValue } from "./schedule";
 /**
  * Schema history:
@@ -46,8 +48,11 @@ import type { TimeValue } from "./schedule";
  *            v5 drafts are MIGRATED forward (Sections 1–3 + contacts
  *            preserved); Section 4 + fees initialize safely — see
  *            migrate.ts.
+ *  v6 -> v7: Added `section5` ("Pricing and Payments"). v6 drafts are
+ *            MIGRATED forward (Sections 1–4 + contacts + fees preserved);
+ *            Section 5 initializes to MD-approved defaults — see migrate.ts.
  */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export type ApprovedClaim =
   | "licensed"
@@ -217,30 +222,10 @@ export type EmergencyClassification =
   | "human_review"
   | "recommended_default";
 
-/**
- * "" = not yet answered.
- *
- * SOURCE-DATA DEPENDENCY (not an implementation defect): the final MD
- * says to preselect "Use Alexander's recommended default" wherever the
- * approved default library provides a per-scenario mapping, but that
- * library's actual classifications are not published in the MD. Until
- * those mappings exist as real source data, every row stays blank —
- * we do not invent defaults, do not preselect rows, and do not claim a
- * specific classification in the UI tooltip.
- */
+/** "" = legacy/uninitialized row (migrated to recommended_default on load). */
 export type EmergencyClassificationState = EmergencyClassification | "";
 
-export function createDefaultEmergencyClassifications(): Record<
-  string,
-  EmergencyClassificationState
-> {
-  const map: Record<string, EmergencyClassificationState> = {};
-  for (const scenario of EMERGENCY_SCENARIOS) {
-    // Intentionally blank — see EmergencyClassificationState docs.
-    map[scenario.id] = "";
-  }
-  return map;
-}
+export { createDefaultEmergencyClassifications } from "./section3Defaults";
 
 /** Q28 — the three after-hours call classes, each with its own dropdown. */
 export type AfterHoursCallClass = "emergency" | "urgent_contained" | "routine";
@@ -442,6 +427,8 @@ export type FeeRecord = {
   creditTowardWork: FeeCreditTowardWork | "";
   waiverPolicy: FeeWaiverPolicy | "";
   waiverRule: string;
+  /** Optional Q68 category template id (label-only prefill). */
+  categoryTemplate: string;
   /** False when Q54/Q55 = No — excluded from normalized Company Truth. */
   active: boolean;
   sourceSection: 4 | 5;
@@ -467,8 +454,31 @@ export function createEmptyFee(feeKey: FeeKey, name: string): FeeRecord {
     creditTowardWork: "",
     waiverPolicy: "",
     waiverRule: "",
+    categoryTemplate: "",
     active: true,
     sourceSection: 4,
+  };
+}
+
+export function createCustomFee(name = ""): FeeRecord {
+  return {
+    id: createFeeId(),
+    feeKey: "",
+    name,
+    amountKind: "",
+    amountFixed: "",
+    amountMin: "",
+    amountMax: "",
+    amountPercentage: "",
+    applicationRule: "",
+    noticeRequired: "",
+    quoteAuthority: "",
+    creditTowardWork: "",
+    waiverPolicy: "",
+    waiverRule: "",
+    categoryTemplate: "",
+    active: true,
+    sourceSection: 5,
   };
 }
 
@@ -702,6 +712,248 @@ export type Section4Data = {
   separateIssueOtherDetail: string;
 };
 
+// ---------------------------------------------------------------------------
+// Section 5 — Pricing and Payments (Q65–Q82)
+// ---------------------------------------------------------------------------
+
+export type PricingModelId =
+  | "flat_rate"
+  | "hourly_labor_materials"
+  | "fixed_prices_certain_services"
+  | "after_diagnosis"
+  | "estimate_required"
+  | "other";
+
+export type MaterialMarkupPolicy = "yes" | "sometimes" | "no";
+
+export type UnknownPriceBehaviorId =
+  | "technician_after_evaluation"
+  | "approved_price_or_range"
+  | "fee_plus_separate_quote"
+  | "team_provides_pricing"
+  | "custom";
+
+export type VisitTypeId =
+  | "free_estimate"
+  | "paid_diagnostic"
+  | "inspection"
+  | "normal_service"
+  | "ask_team"
+  | "not_offered";
+
+export type GeneralPricingAuthorityId =
+  | "approved_price_list"
+  | "fees_not_repair"
+  | "after_evaluation"
+  | "ask_team";
+
+export type ServicePricingInstructionId =
+  | "quote_approved"
+  | "explain_fee_only"
+  | "ask_team"
+  | "do_not_discuss"
+  | "no_approved_pricing";
+
+export type ForbiddenStatementId =
+  | "no_guarantee_before_diagnosis"
+  | "never_invent_price"
+  | "no_promise_no_additional"
+  | "no_disclose_markup"
+  | "no_unauthorized_discount"
+  | "other";
+
+export type PromotionStackingId = "yes" | "no" | "conditional" | "human_approval";
+
+export type PromotionModificationId = "within_rules" | "human_approval" | "no";
+
+export type PaymentMethodId =
+  | "credit_card"
+  | "debit_card"
+  | "cash"
+  | "check"
+  | "ach"
+  | "financing"
+  | "invoice"
+  | "other";
+
+export type PaymentDueId =
+  | "at_time_of_service"
+  | "when_work_completed"
+  | "deposit_required"
+  | "progress_payments"
+  | "invoice_after_service"
+  | "other";
+
+export type FinancingPermissionId =
+  | "explain_options"
+  | "send_application_link"
+  | "help_begin_application"
+  | "transfer_to_team"
+  | "other";
+
+export type RemedyId =
+  | "refund"
+  | "account_credit"
+  | "fee_waiver"
+  | "discount_goodwill"
+  | "return_visit";
+
+export type RemedyAuthority = "within_rules" | "human_approval" | "never";
+
+export type AreaPricingRow = {
+  id: string;
+  area: string;
+  travelFee: string;
+  minimumCharge: string;
+};
+
+export type ServicePricingRule = {
+  instruction: ServicePricingInstructionId | "";
+  approvedPriceMode: "exact" | "range" | "";
+  approvedPriceExact: string;
+  approvedPriceMin: string;
+  approvedPriceMax: string;
+  pricingConditions: string;
+  linkedFeeIds: string[];
+  askTeamDetail: string;
+};
+
+export type PromotionOffer = {
+  id: string;
+  name: string;
+  benefit: string;
+  eligibility: string;
+  qualifyingServiceIds: string[];
+  expiration: string;
+  /** MD has no proactive-use enum — structured free text. */
+  proactiveUsePolicy: string;
+};
+
+export function createAreaPricingRowId(): string {
+  return `area-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function createPromotionId(): string {
+  return `promo-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function createDefaultVisitTypeByService(): Record<string, VisitTypeId | ""> {
+  const map: Record<string, VisitTypeId | ""> = {};
+  for (const item of JOB_SERVICES) map[item.id] = "";
+  return map;
+}
+
+export function createDefaultForbiddenStatements(): ForbiddenStatementId[] {
+  return [...DEFAULT_FORBIDDEN_STATEMENT_IDS] as ForbiddenStatementId[];
+}
+
+export type Section5Data = {
+  pricingModels: PricingModelId[];
+  pricingModelOther: string;
+  materialMarkupPolicy: MaterialMarkupPolicy | "";
+  materialMarkupCustomerExplanation: string;
+  unknownPriceBehavior: UnknownPriceBehaviorId | "";
+  unknownPriceCustomRule: string;
+  /** Q68 — mutually exclusive with active fee cards when true. */
+  noSeparateFees: boolean;
+  hasAreaTravelOrMinimum: YesNo | "";
+  areaPricingRows: AreaPricingRow[];
+  visitTypeByServiceId: Record<string, VisitTypeId | "">;
+  paidDiagnosticExplanation: string;
+  generalPricingAuthority: GeneralPricingAuthorityId | "";
+  servicePricingRules: Record<string, ServicePricingRule>;
+  forbiddenStatements: ForbiddenStatementId[];
+  forbiddenStatementOther: string;
+  hasPromotions: YesNo | "";
+  promotions: PromotionOffer[];
+  promotionStacking: PromotionStackingId | "";
+  promotionStackingRule: string;
+  promotionModificationAuthority: PromotionModificationId | "";
+  promotionModificationRule: string;
+  paymentMethods: PaymentMethodId[];
+  paymentMethodOther: string;
+  paymentDuePolicies: PaymentDueId[];
+  depositWorkDetail: string;
+  depositRule: string;
+  progressPaymentProjectsDetail: string;
+  progressPaymentRule: string;
+  invoiceCustomersDetail: string;
+  invoiceTerms: string;
+  paymentDueOtherRule: string;
+  offersFinancing: YesNo | "";
+  financingProviderTerms: string;
+  financingPermissions: FinancingPermissionId[];
+  financingPermissionOtherDetail: string;
+  financingEligibilityStatement: string;
+  remedyAuthority: Record<RemedyId, RemedyAuthority | "">;
+  remedyRules: Record<RemedyId, string>;
+  financialApproverContactId: string;
+};
+
+export function createDefaultRemedyAuthority(): Record<RemedyId, RemedyAuthority | ""> {
+  return {
+    refund: "",
+    account_credit: "",
+    fee_waiver: "",
+    discount_goodwill: "",
+    return_visit: "",
+  };
+}
+
+export function createDefaultRemedyRules(): Record<RemedyId, string> {
+  return {
+    refund: "",
+    account_credit: "",
+    fee_waiver: "",
+    discount_goodwill: "",
+    return_visit: "",
+  };
+}
+
+export function createDefaultSection5(): Section5Data {
+  return {
+    pricingModels: [],
+    pricingModelOther: "",
+    materialMarkupPolicy: "",
+    materialMarkupCustomerExplanation: "",
+    unknownPriceBehavior: "",
+    unknownPriceCustomRule: "",
+    noSeparateFees: false,
+    hasAreaTravelOrMinimum: "",
+    areaPricingRows: [],
+    visitTypeByServiceId: createDefaultVisitTypeByService(),
+    paidDiagnosticExplanation: "",
+    generalPricingAuthority: "",
+    servicePricingRules: {},
+    forbiddenStatements: createDefaultForbiddenStatements(),
+    forbiddenStatementOther: "",
+    hasPromotions: "",
+    promotions: [],
+    promotionStacking: "",
+    promotionStackingRule: "",
+    promotionModificationAuthority: "",
+    promotionModificationRule: "",
+    paymentMethods: [],
+    paymentMethodOther: "",
+    paymentDuePolicies: [],
+    depositWorkDetail: "",
+    depositRule: "",
+    progressPaymentProjectsDetail: "",
+    progressPaymentRule: "",
+    invoiceCustomersDetail: "",
+    invoiceTerms: "",
+    paymentDueOtherRule: "",
+    offersFinancing: "",
+    financingProviderTerms: "",
+    financingPermissions: [],
+    financingPermissionOtherDetail: "",
+    financingEligibilityStatement: "",
+    remedyAuthority: createDefaultRemedyAuthority(),
+    remedyRules: createDefaultRemedyRules(),
+    financialApproverContactId: "",
+  };
+}
+
 export function createDefaultSection4(): Section4Data {
   return {
     humanRequestPolicy: "",
@@ -779,6 +1031,7 @@ export type OnboardingDraft = {
   section2: Section2Data;
   section3: Section3Data;
   section4: Section4Data;
+  section5: Section5Data;
   /** Shared contact registry (MD §1.2) — sibling to sections, not buried
    * inside Section 3, so later sections can reference contacts by id. */
   contacts: Contact[];
@@ -825,6 +1078,7 @@ export function createDefaultDraft(): OnboardingDraft {
     section2: createDefaultSection2(),
     section3: createDefaultSection3(primaryContact.id),
     section4: createDefaultSection4(),
+    section5: createDefaultSection5(),
     contacts: [primaryContact],
     fees: [],
   };

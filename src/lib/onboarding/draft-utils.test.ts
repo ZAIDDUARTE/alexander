@@ -164,11 +164,11 @@ describe("contactHasIdentity — Q38 picker eligibility", () => {
   });
 });
 
-describe("Q26 defaults — no invented preselection", () => {
-  it("createDefaultEmergencyClassifications leaves every row blank", () => {
+describe("Q26 defaults — recommended_default preselection", () => {
+  it("createDefaultEmergencyClassifications preselects recommended_default on every row", () => {
     const map = createDefaultEmergencyClassifications();
     for (const value of Object.values(map)) {
-      assert.equal(value, "");
+      assert.equal(value, "recommended_default");
     }
   });
 });

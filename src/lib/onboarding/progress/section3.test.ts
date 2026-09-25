@@ -18,10 +18,14 @@ function validContact(overrides: Partial<Contact> = {}): Contact {
 }
 
 describe("getSection3Progress — fresh section", () => {
-  it("starts at 0 with no defaults authorized by the MD for Q26–Q38", () => {
+  it("counts Q26 complete when all rows use recommended_default (MD-approved default)", () => {
     const primary = createEmptyContact();
     const data = createDefaultSection3(primary.id);
-    assert.equal(getSection3Progress(data, [primary]), 0);
+    const units = getSection3ProgressUnits(data, [primary]);
+    assert.equal(units[0].complete, true);
+    const progress = getSection3Progress(data, [primary]);
+    assert.ok(progress > 0);
+    assert.ok(progress < 1);
   });
 });
 
@@ -102,6 +106,7 @@ describe("getSection3Progress — Q26 matrix completion", () => {
     for (const id of ids.slice(0, -1)) {
       data.emergencyClassifications[id] = "routine";
     }
+    data.emergencyClassifications[ids[ids.length - 1]] = "";
     assert.equal(getSection3ProgressUnits(data, [primary])[0].complete, false);
 
     data.emergencyClassifications[ids[ids.length - 1]] = "routine";

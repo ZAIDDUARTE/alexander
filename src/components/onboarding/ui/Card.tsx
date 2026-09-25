@@ -38,37 +38,41 @@ export function QuestionCard({
   children: React.ReactNode;
 }) {
   return (
-    <fieldset className="rounded-xl border border-[var(--color-alexander-border)] bg-white p-5 sm:p-6">
-      <legend className="mb-1 text-base font-semibold text-[var(--color-alexander-navy)]">
-        {title}
-        {required && (
-          <span className="ml-1 text-[var(--color-alexander-required)]" aria-hidden>
-            *
-          </span>
+    <div
+      className="question-card rounded-xl border border-[var(--color-alexander-border)] bg-white p-5 sm:p-6"
+    >
+      <fieldset className="min-w-0 border-0 p-0">
+        <legend className="float-none mb-3 block w-full text-base font-semibold leading-snug text-[var(--color-alexander-navy)]">
+          {title}
+          {required && (
+            <span className="ml-1 text-[var(--color-alexander-required)]" aria-hidden>
+              *
+            </span>
+          )}
+          {optional && (
+            <span className="ml-2 text-sm font-normal text-[var(--color-alexander-muted)]">
+              (Optional)
+            </span>
+          )}
+        </legend>
+        {helpText && (
+          <p className="mb-4 text-sm leading-relaxed text-[var(--color-alexander-muted)]">{helpText}</p>
         )}
-        {optional && (
-          <span className="ml-2 text-sm font-normal text-[var(--color-alexander-muted)]">
-            (Optional)
-          </span>
+        <div className="min-w-0 space-y-4">{children}</div>
+        {error && (
+          <p className="mt-3 text-sm text-[var(--color-alexander-required)]" role="alert">
+            {error}
+          </p>
         )}
-      </legend>
-      {helpText && (
-        <p className="mb-4 text-sm text-[var(--color-alexander-muted)]">{helpText}</p>
-      )}
-      {children}
-      {error && (
-        <p className="mt-3 text-sm text-[var(--color-alexander-required)]" role="alert">
-          {error}
-        </p>
-      )}
-    </fieldset>
+      </fieldset>
+    </div>
   );
 }
 
 export function ConditionalPanel({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="mt-4 rounded-lg border border-[var(--color-alexander-blue)]/20 bg-[var(--color-alexander-info-bg)] p-4"
+      className="mt-5 rounded-lg border border-[var(--color-alexander-blue)]/20 bg-[var(--color-alexander-info-bg)] p-4 sm:p-5"
     >
       {children}
     </div>

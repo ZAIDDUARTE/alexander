@@ -61,6 +61,7 @@ export async function PUT(request: Request) {
     section2: { ...defaults.section2, ...clientDraft.section2 },
     section3: { ...defaults.section3, ...clientDraft.section3 },
     section4: { ...defaults.section4, ...clientDraft.section4 },
+    section5: { ...defaults.section5, ...clientDraft.section5 },
     contacts: clientDraft.contacts ?? defaults.contacts,
     fees: clientDraft.fees ?? defaults.fees,
   };

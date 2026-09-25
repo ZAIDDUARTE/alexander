@@ -21,7 +21,7 @@ export function isValidRedisDraft(value: unknown): value is RedisOnboardingDraft
   if (!v.data || typeof v.data !== "object") return false;
   if (!v.data.navigation || !v.data.section1 || !v.data.section2) return false;
   if (!v.data.section3 || !Array.isArray(v.data.contacts)) return false;
-  if (!v.data.section4 || !Array.isArray(v.data.fees)) return false;
+  if (!v.data.section4 || !v.data.section5 || !Array.isArray(v.data.fees)) return false;
   return true;
 }
 
@@ -63,6 +63,7 @@ export function migrateStoredRedisDraft(raw: unknown): RedisOnboardingDraft | nu
       section2?: OnboardingDraft["section2"];
       section3?: OnboardingDraft["section3"];
       section4?: OnboardingDraft["section4"];
+      section5?: OnboardingDraft["section5"];
       contacts?: OnboardingDraft["contacts"];
       fees?: OnboardingDraft["fees"];
     };
@@ -83,6 +84,7 @@ export function migrateStoredRedisDraft(raw: unknown): RedisOnboardingDraft | nu
     section2: v.data.section2,
     section3: v.data.section3,
     section4: v.data.section4,
+    section5: v.data.section5,
     contacts: v.data.contacts,
     fees: v.data.fees,
   };

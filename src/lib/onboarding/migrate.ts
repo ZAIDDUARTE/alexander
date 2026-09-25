@@ -7,7 +7,9 @@ import {
   type Section1Data,
   type Section2Data,
   type Section3Data,
+  type Section4Data,
   type Contact,
+  type FeeRecord,
 } from "./types";
 import { mergeWithDefaults } from "./draft-utils";
 
@@ -144,6 +146,44 @@ function migrateV5(raw: LegacyDraftV5): OnboardingDraft {
   });
 }
 
+type LegacyDraftV6 = {
+  schemaVersion: 6;
+  updatedAt?: string;
+  currentRoute?: string;
+  navigation?: OnboardingNavigation;
+  section1?: Partial<Section1Data>;
+  section2?: Partial<Section2Data>;
+  section3?: Partial<Section3Data>;
+  section4?: Partial<Section4Data>;
+  contacts?: Contact[];
+  fees?: FeeRecord[];
+};
+
+function migrateFeeRecordV6ToV7(fee: FeeRecord): FeeRecord {
+  const categoryTemplate = fee.categoryTemplate ?? "";
+  let amountKind = fee.amountKind;
+  if (!amountKind && fee.amountFixed.trim()) {
+    amountKind = "fixed";
+  }
+  return { ...fee, categoryTemplate, amountKind };
+}
+
+function migrateV6(raw: LegacyDraftV6): OnboardingDraft {
+  const fees = (raw.fees ?? []).map(migrateFeeRecordV6ToV7);
+  return mergeWithDefaults({
+    updatedAt: raw.updatedAt,
+    currentRoute: raw.currentRoute,
+    navigation: raw.navigation,
+    section1: raw.section1 as Section1Data | undefined,
+    section2: raw.section2 as Section2Data | undefined,
+    section3: raw.section3 as Section3Data | undefined,
+    section4: raw.section4 as Section4Data | undefined,
+    contacts: raw.contacts,
+    fees,
+    // section5 did not exist yet — mergeWithDefaults fills it.
+  });
+}
+
 /**
  * Migrate a raw persisted value (any prior schema version, or garbage)
  * into the current OnboardingDraft shape, preserving customer answers
@@ -157,7 +197,15 @@ export function migrateDraft(raw: unknown): OnboardingDraft {
   const version = (raw as { schemaVersion?: unknown }).schemaVersion;
 
   if (version === SCHEMA_VERSION) {
-    return mergeWithDefaults(raw as Partial<OnboardingDraft>);
+    const merged = mergeWithDefaults(raw as Partial<OnboardingDraft>);
+    return {
+      ...merged,
+      fees: merged.fees.map(migrateFeeRecordV6ToV7),
+    };
+  }
+
+  if (version === 6) {
+    return migrateV6(raw as LegacyDraftV6);
   }
 
   if (version === 5) {

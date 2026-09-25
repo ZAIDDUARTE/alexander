@@ -8,6 +8,11 @@ import {
   createDefaultSection3,
   createEmptyContact,
 } from "./types";
+import {
+  fullyValidSection4,
+  validLateCancellationFee,
+  withLateCancellationFee,
+} from "./section4-test-helpers";
 
 describe("migrateNavigationV2ToV3", () => {
   it("reconstructs a contiguous completedSections run from the old high-water-mark counter", () => {
@@ -151,7 +156,7 @@ describe("migrateDraft", () => {
     // Q26–Q38), with exactly one fresh, uniquely identified primary
     // contact placeholder — never left undefined/omitted.
     for (const value of Object.values(migrated.section3.emergencyClassifications)) {
-      assert.equal(value, "");
+      assert.equal(value, "recommended_default");
     }
     assert.equal(migrated.contacts.length, 1);
     assert.equal(migrated.section3.primaryContactId, migrated.contacts[0].id);
@@ -202,6 +207,59 @@ describe("migrateDraft", () => {
     assert.deepEqual(migrated.navigation.completedSections, [1, 2, 3]);
     assert.equal(migrated.section4.humanRequestPolicy, "");
     assert.deepEqual(migrated.fees, []);
+  });
+
+  it("(AF) upgrades a v6 draft (Sections 1–4, pre-Section-5) into v7 without losing prior data", () => {
+    const primary = createEmptyContact();
+    primary.nameOrRole = "Jamie Rivera";
+    primary.phone = "+14155552671";
+    const lateFee = validLateCancellationFee({
+      quoteAuthority: "yes",
+      creditTowardWork: "no",
+      waiverPolicy: "no",
+      applicationRule: "Within 24 hours of appointment.",
+    });
+    const section4 = fullyValidSection4([primary], [lateFee]);
+    withLateCancellationFee(section4, lateFee, "yes");
+
+    const rawV6 = {
+      schemaVersion: 6 as const,
+      updatedAt: "2026-11-01T00:00:00.000Z",
+      currentRoute: "/onboarding/sections/4/review",
+      navigation: {
+        stage: "section-complete" as const,
+        sectionId: 4,
+        completedSections: [1, 2, 3, 4],
+      },
+      section1: {
+        ...createDefaultSection1(),
+        customerFacingName: "Acme Plumbing",
+      },
+      section2: {
+        ...createDefaultSection2(),
+        serviceAreaDefinitionMode: "zip_codes" as const,
+        serviceAreaZipCodes: ["90210"],
+      },
+      section3: {
+        ...createDefaultSection3(primary.id),
+        emergencyServiceMode: "24_7" as const,
+      },
+      section4,
+      contacts: [primary],
+      fees: [lateFee],
+    };
+
+    const migrated = migrateDraft(rawV6);
+
+    assert.equal(migrated.schemaVersion, SCHEMA_VERSION);
+    assert.equal(migrated.section1.customerFacingName, "Acme Plumbing");
+    assert.equal(migrated.section4.lateCancellationFeeId, lateFee.id);
+    assert.equal(migrated.fees.length, 1);
+    assert.equal(migrated.fees[0].id, lateFee.id);
+    assert.equal(migrated.fees[0].amountKind, "fixed");
+    assert.equal(migrated.section5.pricingModels.length, 0);
+    assert.deepEqual(migrated.section5.forbiddenStatements.length, 5);
+    assert.deepEqual(migrated.navigation.completedSections, [1, 2, 3, 4]);
   });
 
   it("safely resets unrecognized/legacy (pre-v2) or malformed drafts", () => {
