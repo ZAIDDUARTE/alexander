@@ -7,79 +7,55 @@ import { PrimaryButton, SecondaryButton } from "@/components/onboarding/ui/Butto
 import { useOnboarding } from "@/lib/onboarding/OnboardingContext";
 import { TOTAL_SECTIONS } from "@/lib/onboarding/sections";
 import { useRouter } from "next/navigation";
-import { section5IsValid } from "@/lib/onboarding/validation/section5";
-import { getSection5Progress } from "@/lib/onboarding/progress/section5";
+import { section6IsValid } from "@/lib/onboarding/validation/section6";
+import { getSection6Progress } from "@/lib/onboarding/progress/section6";
 import { addCompletedSection } from "@/lib/onboarding/draft-utils";
 
 const SUMMARY_ITEMS = [
-  "Pricing models and material markup policies set",
-  "Fees, travel, and area minimum charges configured",
-  "Visit types and service pricing rules defined",
-  "Forbidden pricing statements selected",
-  "Promotions, payment methods, and due policies set",
-  "Financing and financial remedy authority configured",
+  "Previous-work and callback policies configured",
+  "Unhappy-customer escalation and prohibited promises set",
+  "Non-service call routing defined",
+  "Customer history and privacy boundaries recorded",
+  "Additional-service recommendation policy chosen",
 ];
 
-export default function Section5CompletePage() {
+export default function Section6CompletePage() {
   const { draft, saveStatus, lastSavedAt, markSectionComplete } = useOnboarding();
   const router = useRouter();
-  const sectionProgress = getSection5Progress(
-    draft.section5,
-    draft.section2,
-    draft.contacts,
-    draft.fees,
-  );
+  const sectionProgress = getSection6Progress(draft.section6, draft.contacts);
 
-  const completedSections = addCompletedSection(draft.navigation.completedSections, 5);
+  const completedSections = addCompletedSection(draft.navigation.completedSections, 6);
 
   useEffect(() => {
-    if (
-      !section5IsValid(
-        draft.section5,
-        draft.section2,
-        draft.contacts,
-        draft.fees,
-        draft.section4,
-      )
-    ) {
-      router.replace("/onboarding/sections/5/form");
+    if (!section6IsValid(draft.section6, draft.contacts)) {
+      router.replace("/onboarding/sections/6/form");
       return;
     }
-    if (!draft.navigation.completedSections.includes(5)) {
-      markSectionComplete(5);
+    if (!draft.navigation.completedSections.includes(6)) {
+      markSectionComplete(6);
     }
-  }, [
-    draft.section5,
-    draft.section2,
-    draft.section4,
-    draft.contacts,
-    draft.fees,
-    draft.navigation.completedSections,
-    router,
-    markSectionComplete,
-  ]);
+  }, [draft.section6, draft.contacts, draft.navigation.completedSections, router, markSectionComplete]);
 
   return (
     <OnboardingShell
       completedSections={completedSections}
-      activeSectionId={5}
+      activeSectionId={6}
       currentSectionProgress={sectionProgress}
       saveStatus={saveStatus}
       lastSavedAt={lastSavedAt}
     >
       <ContentCard className="text-center">
         <p className="text-sm font-medium tracking-wide text-[var(--color-alexander-blue)] uppercase">
-          Section 5 of {TOTAL_SECTIONS}
+          Section 6 of {TOTAL_SECTIONS}
         </p>
         <h1 className="mt-4 font-serif text-3xl font-semibold text-[var(--color-alexander-navy)] sm:text-4xl">
-          Alexander now understands your financial boundaries
+          Customer care policies saved
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[var(--color-alexander-muted)]">
-          Alexander now understands your financial boundaries. He knows which fees and payment
-          information he may explain, which prices require an estimate or human review, and which
-          discounts, credits, refunds, or exceptions require authorization. This helps Alexander
-          provide useful information without making financial promises your company has not
-          approved.
+          Alexander now understands how to support existing customers and unusual calls. He knows how
+          to handle callbacks, complaints, privacy boundaries, non-service callers, and requests that
+          require your team&apos;s involvement. This helps every caller receive a clear next step
+          without unsupported promises.
         </p>
         <p className="mt-4 text-sm text-[var(--color-alexander-muted)]">
           Progress: {completedSections.length} of {TOTAL_SECTIONS} sections complete
@@ -97,14 +73,17 @@ export default function Section5CompletePage() {
           ))}
         </ul>
 
-        <p className="mt-6 text-sm text-[var(--color-alexander-muted)]">Next: Customer Care</p>
+        <p className="mt-6 text-sm text-[var(--color-alexander-muted)]">Next: Voice and Conversation</p>
 
         <div className="mx-auto mt-10 flex max-w-md flex-col gap-3">
-          <PrimaryButton onClick={() => router.push("/onboarding/sections/6/intro")}>
-            Continue to Section 6 →
+          <PrimaryButton disabled title="Voice and Conversation (Section 7) is not available in this build yet">
+            Continue to Section 7 →
           </PrimaryButton>
-          <SecondaryButton onClick={() => router.push("/onboarding/sections/5/review")}>
-            Review Section 5
+          <p className="text-center text-xs text-[var(--color-alexander-muted)]">
+            Section 7 — Voice and Conversation — will be added in the next implementation pass.
+          </p>
+          <SecondaryButton onClick={() => router.push("/onboarding/sections/6/review")}>
+            Review Section 6
           </SecondaryButton>
         </div>
       </ContentCard>

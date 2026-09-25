@@ -28,6 +28,7 @@ import {
   type Section3Data,
   type Section4Data,
   type Section5Data,
+  type Section6Data,
   createCustomFee,
   createFeeId,
 } from "./types";
@@ -47,6 +48,8 @@ type OnboardingContextValue = {
   setSection4: (data: Section4Data) => void;
   updateSection5: (patch: Partial<Section5Data>, options?: { immediate?: boolean }) => void;
   setSection5: (data: Section5Data) => void;
+  updateSection6: (patch: Partial<Section6Data>, options?: { immediate?: boolean }) => void;
+  setSection6: (data: Section6Data) => void;
   /** Deterministic contact-registry creation — call only from an explicit
    * user action (e.g. a button onClick), never from a render/effect. */
   addContact: () => string;
@@ -329,6 +332,26 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     [updateDraft],
   );
 
+  const updateSection6 = useCallback(
+    (patch: Partial<Section6Data>, options?: { immediate?: boolean }) => {
+      updateDraft(
+        (prev) => ({
+          ...prev,
+          section6: { ...prev.section6, ...patch },
+        }),
+        options?.immediate,
+      );
+    },
+    [updateDraft],
+  );
+
+  const setSection6 = useCallback(
+    (data: Section6Data) => {
+      updateDraft((prev) => ({ ...prev, section6: data }), true);
+    },
+    [updateDraft],
+  );
+
   /**
    * Creates exactly one new contact and appends it to the shared
    * registry. This is only ever invoked from a deliberate user action
@@ -568,6 +591,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setSection4,
       updateSection5,
       setSection5,
+      updateSection6,
+      setSection6,
       addContact,
       updateContact,
       upsertFeeByKey,
@@ -596,6 +621,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setSection4,
       updateSection5,
       setSection5,
+      updateSection6,
+      setSection6,
       addContact,
       updateContact,
       upsertFeeByKey,

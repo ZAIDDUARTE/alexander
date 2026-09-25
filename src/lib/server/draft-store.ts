@@ -21,7 +21,9 @@ export function isValidRedisDraft(value: unknown): value is RedisOnboardingDraft
   if (!v.data || typeof v.data !== "object") return false;
   if (!v.data.navigation || !v.data.section1 || !v.data.section2) return false;
   if (!v.data.section3 || !Array.isArray(v.data.contacts)) return false;
-  if (!v.data.section4 || !v.data.section5 || !Array.isArray(v.data.fees)) return false;
+  if (!v.data.section4 || !v.data.section5 || !v.data.section6 || !Array.isArray(v.data.fees)) {
+    return false;
+  }
   return true;
 }
 

@@ -15,6 +15,12 @@ import {
 import { EXCEPTION_TYPES, CALLER_TYPES, CAPACITY_POLICY_ROWS } from "./section4Catalog";
 import { DEFAULT_FORBIDDEN_STATEMENT_IDS } from "./section5Catalog";
 import { FINANCIAL_REMEDY_ROWS } from "./section5Catalog";
+import {
+  DEFAULT_ESCALATION_TRIGGER_IDS,
+  DEFAULT_FORBIDDEN_UNHAPPY_PROMISE_IDS,
+  DEFAULT_RESTRICTED_INFORMATION_IDS,
+  NON_SERVICE_CALL_TYPE_ROWS,
+} from "./section6Catalog";
 
 export type RedisOnboardingDraft = {
   schemaVersion: number;
@@ -29,6 +35,7 @@ export type RedisOnboardingDraft = {
     section3: OnboardingDraft["section3"];
     section4: OnboardingDraft["section4"];
     section5: OnboardingDraft["section5"];
+    section6: OnboardingDraft["section6"];
     contacts: OnboardingDraft["contacts"];
     fees: OnboardingDraft["fees"];
   };
@@ -243,6 +250,36 @@ function section5HasContent(s5: OnboardingDraft["section5"]): boolean {
   return false;
 }
 
+function section6HasContent(s6: OnboardingDraft["section6"]): boolean {
+  if (s6.previousWorkInitialAction) return true;
+  if (s6.returnVisitEligibilityRule.trim()) return true;
+  if (s6.previousWorkCustomRule.trim()) return true;
+  if (s6.repeatCallbackAction) return true;
+  const defaultEsc = DEFAULT_ESCALATION_TRIGGER_IDS.slice().sort().join(",");
+  const currentEsc = [...s6.escalationTriggers].slice().sort().join(",");
+  if (currentEsc !== defaultEsc) return true;
+  if (s6.escalationTriggerOther.trim()) return true;
+  const defaultProm = DEFAULT_FORBIDDEN_UNHAPPY_PROMISE_IDS.slice().sort().join(",");
+  const currentProm = [...s6.forbiddenUnhappyPromises].slice().sort().join(",");
+  if (currentProm !== defaultProm) return true;
+  if (s6.forbiddenUnhappyPromiseOther.trim()) return true;
+  for (const row of NON_SERVICE_CALL_TYPE_ROWS) {
+    const policy = s6.nonServiceCallPolicies[row.id];
+    if (policy?.disposition) return true;
+    if (policy?.contactId.trim()) return true;
+  }
+  if (s6.customerHistoryPolicy) return true;
+  if (s6.customerHistoryCustomRule.trim()) return true;
+  const defaultPriv = DEFAULT_RESTRICTED_INFORMATION_IDS.slice().sort().join(",");
+  const currentPriv = [...s6.restrictedInformation].slice().sort().join(",");
+  if (currentPriv !== defaultPriv) return true;
+  if (s6.restrictedInformationOther.trim()) return true;
+  if (s6.additionalServicePolicy) return true;
+  if (s6.additionalServiceCustomRule.trim()) return true;
+  if (s6.unusualCallNotes.trim()) return true;
+  return false;
+}
+
 export function hasDraftContent(draft: OnboardingDraft): boolean {
   const s = draft.section1;
   if (s.customerFacingName.trim()) return true;
@@ -259,6 +296,7 @@ export function hasDraftContent(draft: OnboardingDraft): boolean {
   if (section3HasContent(draft.section3, draft.contacts)) return true;
   if (section4HasContent(draft.section4, draft.fees ?? [])) return true;
   if (section5HasContent(draft.section5)) return true;
+  if (section6HasContent(draft.section6)) return true;
   if (draft.navigation.completedSections.length > 0) return true;
   if (draft.navigation.stage !== "welcome") return true;
   return false;
@@ -283,6 +321,14 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
     },
     section4: { ...base.section4, ...partial.section4 },
     section5: { ...base.section5, ...partial.section5 },
+    section6: {
+      ...base.section6,
+      ...partial.section6,
+      nonServiceCallPolicies: {
+        ...base.section6.nonServiceCallPolicies,
+        ...partial.section6?.nonServiceCallPolicies,
+      },
+    },
     contacts: partial.contacts ?? base.contacts,
     fees: partial.fees ?? base.fees,
   };
@@ -302,6 +348,7 @@ export function toRedisDraft(draft: OnboardingDraft, currentRoute: string): Redi
       section3: draft.section3,
       section4: draft.section4,
       section5: draft.section5,
+      section6: draft.section6,
       contacts: draft.contacts,
       fees: draft.fees,
     },
@@ -319,6 +366,7 @@ export function fromRedisDraft(redis: RedisOnboardingDraft): OnboardingDraft {
     section3: redis.data.section3,
     section4: redis.data.section4,
     section5: redis.data.section5,
+    section6: redis.data.section6,
     contacts: redis.data.contacts,
     fees: redis.data.fees,
   });

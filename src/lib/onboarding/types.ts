@@ -21,6 +21,13 @@ import {
 } from "./section4Catalog";
 import { JOB_SERVICES } from "./section2Catalog";
 import { DEFAULT_FORBIDDEN_STATEMENT_IDS } from "./section5Catalog";
+import {
+  DEFAULT_ESCALATION_TRIGGER_IDS,
+  DEFAULT_FORBIDDEN_UNHAPPY_PROMISE_IDS,
+  DEFAULT_RESTRICTED_INFORMATION_IDS,
+  NON_SERVICE_CALL_TYPE_ROWS,
+  type NonServiceCallTypeId,
+} from "./section6Catalog";
 import type { TimeValue } from "./schedule";
 /**
  * Schema history:
@@ -51,8 +58,11 @@ import type { TimeValue } from "./schedule";
  *  v6 -> v7: Added `section5` ("Pricing and Payments"). v6 drafts are
  *            MIGRATED forward (Sections 1–4 + contacts + fees preserved);
  *            Section 5 initializes to MD-approved defaults — see migrate.ts.
+ *  v7 -> v8: Added `section6` ("Customer Care"). v7 drafts are MIGRATED
+ *            forward (Sections 1–5 + contacts + fees preserved); Section 6
+ *            initializes to MD-approved defaults — see migrate.ts.
  */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 export type ApprovedClaim =
   | "licensed"
@@ -954,6 +964,131 @@ export function createDefaultSection5(): Section5Data {
   };
 }
 
+export type PreviousWorkInitialAction =
+  | "schedule_return_visit"
+  | "submit_team_review"
+  | "connect_team"
+  | "arrange_callback"
+  | "custom";
+
+export type RepeatCallbackAction =
+  | "schedule_another_return"
+  | "human_review_after_first"
+  | "connect_manager";
+
+export type EscalationTriggerId =
+  | "asks_manager"
+  | "repair_not_solved"
+  | "disputes_charge"
+  | "refund_credit_request"
+  | "property_damage"
+  | "legal_threat"
+  | "chargeback_threat"
+  | "repeated_dissatisfaction"
+  | "other";
+
+export type ForbiddenUnhappyPromiseId =
+  | "no_admit_fault"
+  | "no_refund_unauthorized"
+  | "no_free_work_unauthorized"
+  | "no_compensation_unauthorized"
+  | "no_specific_outcome"
+  | "other";
+
+export type NonServiceDisposition =
+  | "send_specific"
+  | "take_message"
+  | "politely_decline"
+  | "human_review";
+
+export type NonServiceCallPolicyRow = {
+  disposition: NonServiceDisposition | "";
+  contactId: string;
+};
+
+export type CustomerHistoryPolicy =
+  | "use_available_history"
+  | "human_review_before_details"
+  | "custom";
+
+export type RestrictedInformationId =
+  | "payment_information"
+  | "internal_company_notes"
+  | "technician_notes"
+  | "another_customer"
+  | "sensitive_account"
+  | "other";
+
+export type AdditionalServicePolicy =
+  | "mention_relevant"
+  | "mention_approved_only"
+  | "only_when_asked"
+  | "do_not_proactive"
+  | "custom";
+
+export type Section6Data = {
+  previousWorkInitialAction: PreviousWorkInitialAction | "";
+  returnVisitEligibilityRule: string;
+  previousWorkCustomRule: string;
+  repeatCallbackAction: RepeatCallbackAction | "";
+  escalationTriggers: EscalationTriggerId[];
+  escalationTriggerOther: string;
+  forbiddenUnhappyPromises: ForbiddenUnhappyPromiseId[];
+  forbiddenUnhappyPromiseOther: string;
+  nonServiceCallPolicies: Record<NonServiceCallTypeId, NonServiceCallPolicyRow>;
+  customerHistoryPolicy: CustomerHistoryPolicy | "";
+  customerHistoryCustomRule: string;
+  restrictedInformation: RestrictedInformationId[];
+  restrictedInformationOther: string;
+  additionalServicePolicy: AdditionalServicePolicy | "";
+  additionalServiceCustomRule: string;
+  unusualCallNotes: string;
+};
+
+export function createDefaultNonServiceCallPolicies(): Record<
+  NonServiceCallTypeId,
+  NonServiceCallPolicyRow
+> {
+  const policies = {} as Record<NonServiceCallTypeId, NonServiceCallPolicyRow>;
+  for (const row of NON_SERVICE_CALL_TYPE_ROWS) {
+    policies[row.id] = { disposition: "", contactId: "" };
+  }
+  return policies;
+}
+
+export function createDefaultEscalationTriggers(): EscalationTriggerId[] {
+  return [...DEFAULT_ESCALATION_TRIGGER_IDS] as EscalationTriggerId[];
+}
+
+export function createDefaultForbiddenUnhappyPromises(): ForbiddenUnhappyPromiseId[] {
+  return [...DEFAULT_FORBIDDEN_UNHAPPY_PROMISE_IDS] as ForbiddenUnhappyPromiseId[];
+}
+
+export function createDefaultRestrictedInformation(): RestrictedInformationId[] {
+  return [...DEFAULT_RESTRICTED_INFORMATION_IDS] as RestrictedInformationId[];
+}
+
+export function createDefaultSection6(): Section6Data {
+  return {
+    previousWorkInitialAction: "",
+    returnVisitEligibilityRule: "",
+    previousWorkCustomRule: "",
+    repeatCallbackAction: "",
+    escalationTriggers: createDefaultEscalationTriggers(),
+    escalationTriggerOther: "",
+    forbiddenUnhappyPromises: createDefaultForbiddenUnhappyPromises(),
+    forbiddenUnhappyPromiseOther: "",
+    nonServiceCallPolicies: createDefaultNonServiceCallPolicies(),
+    customerHistoryPolicy: "",
+    customerHistoryCustomRule: "",
+    restrictedInformation: createDefaultRestrictedInformation(),
+    restrictedInformationOther: "",
+    additionalServicePolicy: "",
+    additionalServiceCustomRule: "",
+    unusualCallNotes: "",
+  };
+}
+
 export function createDefaultSection4(): Section4Data {
   return {
     humanRequestPolicy: "",
@@ -1032,6 +1167,7 @@ export type OnboardingDraft = {
   section3: Section3Data;
   section4: Section4Data;
   section5: Section5Data;
+  section6: Section6Data;
   /** Shared contact registry (MD §1.2) — sibling to sections, not buried
    * inside Section 3, so later sections can reference contacts by id. */
   contacts: Contact[];
@@ -1079,6 +1215,7 @@ export function createDefaultDraft(): OnboardingDraft {
     section3: createDefaultSection3(primaryContact.id),
     section4: createDefaultSection4(),
     section5: createDefaultSection5(),
+    section6: createDefaultSection6(),
     contacts: [primaryContact],
     fees: [],
   };

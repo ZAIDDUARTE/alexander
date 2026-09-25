@@ -8,6 +8,7 @@ import {
   type Section2Data,
   type Section3Data,
   type Section4Data,
+  type Section5Data,
   type Contact,
   type FeeRecord,
 } from "./types";
@@ -170,6 +171,29 @@ function migrateFeeRecordV6ToV7(fee: FeeRecord): FeeRecord {
 
 function migrateV6(raw: LegacyDraftV6): OnboardingDraft {
   const fees = (raw.fees ?? []).map(migrateFeeRecordV6ToV7);
+  return migrateV7({
+    ...raw,
+    schemaVersion: 7,
+    fees,
+  } as LegacyDraftV7);
+}
+
+type LegacyDraftV7 = {
+  schemaVersion: 7;
+  updatedAt?: string;
+  currentRoute?: string;
+  navigation?: OnboardingNavigation;
+  section1?: Partial<Section1Data>;
+  section2?: Partial<Section2Data>;
+  section3?: Partial<Section3Data>;
+  section4?: Partial<Section4Data>;
+  section5?: Partial<Section5Data>;
+  contacts?: Contact[];
+  fees?: FeeRecord[];
+};
+
+function migrateV7(raw: LegacyDraftV7): OnboardingDraft {
+  const fees = (raw.fees ?? []).map(migrateFeeRecordV6ToV7);
   return mergeWithDefaults({
     updatedAt: raw.updatedAt,
     currentRoute: raw.currentRoute,
@@ -178,9 +202,10 @@ function migrateV6(raw: LegacyDraftV6): OnboardingDraft {
     section2: raw.section2 as Section2Data | undefined,
     section3: raw.section3 as Section3Data | undefined,
     section4: raw.section4 as Section4Data | undefined,
+    section5: raw.section5 as Section5Data | undefined,
     contacts: raw.contacts,
     fees,
-    // section5 did not exist yet — mergeWithDefaults fills it.
+    // section6 did not exist yet — mergeWithDefaults fills it.
   });
 }
 
@@ -202,6 +227,10 @@ export function migrateDraft(raw: unknown): OnboardingDraft {
       ...merged,
       fees: merged.fees.map(migrateFeeRecordV6ToV7),
     };
+  }
+
+  if (version === 7) {
+    return migrateV7(raw as LegacyDraftV7);
   }
 
   if (version === 6) {
