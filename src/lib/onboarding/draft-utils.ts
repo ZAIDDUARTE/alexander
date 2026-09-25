@@ -36,6 +36,7 @@ export type RedisOnboardingDraft = {
     section4: OnboardingDraft["section4"];
     section5: OnboardingDraft["section5"];
     section6: OnboardingDraft["section6"];
+    section7: OnboardingDraft["section7"];
     contacts: OnboardingDraft["contacts"];
     fees: OnboardingDraft["fees"];
   };
@@ -280,6 +281,30 @@ function section6HasContent(s6: OnboardingDraft["section6"]): boolean {
   return false;
 }
 
+function section7HasContent(s7: OnboardingDraft["section7"]): boolean {
+  if (s7.englishOnly) return true;
+  if (s7.callerLanguages.length > 0) return true;
+  if (s7.otherSupportedLanguage.trim()) return true;
+  if (s7.voiceSelection) return true;
+  if (s7.anotherApprovedVoiceId.trim()) return true;
+  if (s7.communicationStyle) return true;
+  if (s7.spokenNameMode) return true;
+  if (s7.spokenDisplayName.trim()) return true;
+  if (s7.aiDisclosureStyle) return true;
+  if (s7.aiDisclosureCustom.trim()) return true;
+  if (s7.pronunciationMode) return true;
+  if (s7.pronunciationEntries.length > 0) return true;
+  if (s7.languageSwitchingPolicy) return true;
+  if (s7.languageSwitchingCustomRule.trim()) return true;
+  if (s7.perceivedVoicePreference) return true;
+  if (s7.accentPreference) return true;
+  if (s7.accentOtherApproved.trim()) return true;
+  if (s7.formalityPreference) return true;
+  if (s7.brandPhrasesAndAvoidances.trim()) return true;
+  if (s7.additionalReviewNotes.trim()) return true;
+  return false;
+}
+
 export function hasDraftContent(draft: OnboardingDraft): boolean {
   const s = draft.section1;
   if (s.customerFacingName.trim()) return true;
@@ -297,6 +322,7 @@ export function hasDraftContent(draft: OnboardingDraft): boolean {
   if (section4HasContent(draft.section4, draft.fees ?? [])) return true;
   if (section5HasContent(draft.section5)) return true;
   if (section6HasContent(draft.section6)) return true;
+  if (section7HasContent(draft.section7)) return true;
   if (draft.navigation.completedSections.length > 0) return true;
   if (draft.navigation.stage !== "welcome") return true;
   return false;
@@ -329,6 +355,12 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
         ...partial.section6?.nonServiceCallPolicies,
       },
     },
+    section7: {
+      ...base.section7,
+      ...partial.section7,
+      pronunciationEntries:
+        partial.section7?.pronunciationEntries ?? base.section7.pronunciationEntries,
+    },
     contacts: partial.contacts ?? base.contacts,
     fees: partial.fees ?? base.fees,
   };
@@ -349,6 +381,7 @@ export function toRedisDraft(draft: OnboardingDraft, currentRoute: string): Redi
       section4: draft.section4,
       section5: draft.section5,
       section6: draft.section6,
+      section7: draft.section7,
       contacts: draft.contacts,
       fees: draft.fees,
     },
@@ -367,6 +400,7 @@ export function fromRedisDraft(redis: RedisOnboardingDraft): OnboardingDraft {
     section4: redis.data.section4,
     section5: redis.data.section5,
     section6: redis.data.section6,
+    section7: redis.data.section7,
     contacts: redis.data.contacts,
     fees: redis.data.fees,
   });

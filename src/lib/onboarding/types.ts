@@ -61,8 +61,10 @@ import type { TimeValue } from "./schedule";
  *  v7 -> v8: Added `section6` ("Customer Care"). v7 drafts are MIGRATED
  *            forward (Sections 1–5 + contacts + fees preserved); Section 6
  *            initializes to MD-approved defaults — see migrate.ts.
+ *  v8 -> v9: Added `section7` ("Voice and Conversation"). v8 drafts are
+ *            MIGRATED forward; Section 7 initializes empty — see migrate.ts.
  */
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 export type ApprovedClaim =
   | "licensed"
@@ -1089,6 +1091,111 @@ export function createDefaultSection6(): Section6Data {
   };
 }
 
+export type CallerLanguageId = "english" | "spanish" | "other";
+
+export type VoiceSelectionId =
+  | "voice_a"
+  | "voice_b"
+  | "voice_c"
+  | "another_approved"
+  | "";
+
+export type CommunicationStylePreset =
+  | "warm_professional"
+  | "friendly_relaxed"
+  | "direct_efficient"
+  | "calm_reassuring";
+
+export type SpokenNameMode = "alexander" | "company_specific" | "another_approved" | "";
+
+export type AiDisclosureStyle = "opening_ai_receptionist" | "only_if_asked" | "custom" | "";
+
+export type PronunciationMode = "none" | "yes" | "";
+
+export type LanguageSwitchingPolicy =
+  | "continue_caller_language"
+  | "ask_preference"
+  | "english_offer_human"
+  | "custom"
+  | "";
+
+export type PerceivedVoicePreference =
+  | "no_preference"
+  | "masculine_presenting"
+  | "feminine_presenting"
+  | "neutral_androgynous"
+  | "";
+
+export type AccentPreference =
+  | "neutral_american"
+  | "regional_american"
+  | "spanish_influenced_english"
+  | "other_approved"
+  | "no_preference"
+  | "";
+
+export type FormalityPreference = "conversational" | "balanced_professional" | "formal_traditional" | "";
+
+export type PronunciationEntry = {
+  id: string;
+  term: string;
+  pronunciation: string;
+  /** Optional URL/path reference — not a File/Blob in draft state. */
+  audioSampleReference: string;
+};
+
+export type Section7Data = {
+  englishOnly: boolean;
+  callerLanguages: CallerLanguageId[];
+  otherSupportedLanguage: string;
+  voiceSelection: VoiceSelectionId;
+  anotherApprovedVoiceId: string;
+  communicationStyle: CommunicationStylePreset | "";
+  spokenNameMode: SpokenNameMode;
+  spokenDisplayName: string;
+  aiDisclosureStyle: AiDisclosureStyle;
+  aiDisclosureCustom: string;
+  pronunciationMode: PronunciationMode;
+  pronunciationEntries: PronunciationEntry[];
+  languageSwitchingPolicy: LanguageSwitchingPolicy;
+  languageSwitchingCustomRule: string;
+  perceivedVoicePreference: PerceivedVoicePreference | "";
+  accentPreference: AccentPreference | "";
+  accentOtherApproved: string;
+  formalityPreference: FormalityPreference | "";
+  brandPhrasesAndAvoidances: string;
+  additionalReviewNotes: string;
+};
+
+export function createPronunciationEntryId(): string {
+  return `pron-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function createDefaultSection7(): Section7Data {
+  return {
+    englishOnly: false,
+    callerLanguages: [],
+    otherSupportedLanguage: "",
+    voiceSelection: "",
+    anotherApprovedVoiceId: "",
+    communicationStyle: "",
+    spokenNameMode: "",
+    spokenDisplayName: "",
+    aiDisclosureStyle: "",
+    aiDisclosureCustom: "",
+    pronunciationMode: "",
+    pronunciationEntries: [],
+    languageSwitchingPolicy: "",
+    languageSwitchingCustomRule: "",
+    perceivedVoicePreference: "",
+    accentPreference: "",
+    accentOtherApproved: "",
+    formalityPreference: "",
+    brandPhrasesAndAvoidances: "",
+    additionalReviewNotes: "",
+  };
+}
+
 export function createDefaultSection4(): Section4Data {
   return {
     humanRequestPolicy: "",
@@ -1168,6 +1275,7 @@ export type OnboardingDraft = {
   section4: Section4Data;
   section5: Section5Data;
   section6: Section6Data;
+  section7: Section7Data;
   /** Shared contact registry (MD §1.2) — sibling to sections, not buried
    * inside Section 3, so later sections can reference contacts by id. */
   contacts: Contact[];
@@ -1216,6 +1324,7 @@ export function createDefaultDraft(): OnboardingDraft {
     section4: createDefaultSection4(),
     section5: createDefaultSection5(),
     section6: createDefaultSection6(),
+    section7: createDefaultSection7(),
     contacts: [primaryContact],
     fees: [],
   };
