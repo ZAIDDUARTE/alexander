@@ -11,13 +11,6 @@ import { section7IsValid } from "@/lib/onboarding/validation/section7";
 import { getSection7Progress } from "@/lib/onboarding/progress/section7";
 import { addCompletedSection } from "@/lib/onboarding/draft-utils";
 
-const SUMMARY_ITEMS = [
-  "Supported languages and voice selected",
-  "Communication style and spoken name configured",
-  "AI disclosure behavior set",
-  "Pronunciation and language-switching policies recorded",
-  "Optional presentation preferences captured",
-];
 
 export default function Section7CompletePage() {
   const { draft, saveStatus, lastSavedAt, markSectionComplete } = useOnboarding();
@@ -62,17 +55,6 @@ export default function Section7CompletePage() {
           Progress: {completedSections.length} of {TOTAL_SECTIONS} sections complete
         </p>
 
-        <ul className="mx-auto mt-8 max-w-md space-y-3 text-left">
-          {SUMMARY_ITEMS.map((item) => (
-            <li
-              key={item}
-              className="flex items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] bg-[var(--color-alexander-success-bg)] px-4 py-3 text-sm text-[var(--color-alexander-navy)]"
-            >
-              <span className="mt-0.5 text-[var(--color-alexander-success)]" aria-hidden>✓</span>
-              {item}
-            </li>
-          ))}
-        </ul>
 
         <p className="mt-6 text-sm text-[var(--color-alexander-muted)]">
           Next: Integration Systems and Final Setup
@@ -80,7 +62,7 @@ export default function Section7CompletePage() {
 
         <div className="mx-auto mt-10 flex max-w-md flex-col gap-3">
           <PrimaryButton onClick={() => router.push("/onboarding/sections/8/intro")}>
-            Continue to Section 8 →
+            Continue to Integration Systems and Final Setup →
           </PrimaryButton>
           <SecondaryButton onClick={() => router.push("/onboarding/sections/7/review")}>
             Review Section 7

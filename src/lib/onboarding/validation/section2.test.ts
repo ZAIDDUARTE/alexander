@@ -40,7 +40,7 @@ describe("validateSection2 — matrices (H: blocks completion when incomplete)",
     assert.equal(errors.plumbingServices, undefined);
     assert.equal(
       errors[`plumbingServices.${PLUMBING_SERVICES[0].id}.condition`],
-      "Describe the conditions for this service.",
+      `Describe the conditions for ${PLUMBING_SERVICES[0].label}.`,
     );
     assert.equal(section2IsValid(data), false);
   });
@@ -151,12 +151,12 @@ describe("validateSection2 — Q22/Q23 conditional territory (F: Other/applicabi
 });
 
 describe("validateSection2 — Q24/Q25 after-hours area", () => {
-  it("requires after-hours area text when Q24 = smaller", () => {
+  it("requires structured after-hours geography when the area is smaller", () => {
     const data = fullyValidSection2();
     data.afterHoursAreaMode = "smaller";
-    data.afterHoursServiceArea = "";
+    data.afterHoursDefinitionMode = "";
     const errors = validateSection2(data);
-    assert.ok(errors.afterHoursServiceArea);
+    assert.ok(errors.afterHoursDefinitionMode);
   });
 
   it("does not require after-hours area text for same/none", () => {

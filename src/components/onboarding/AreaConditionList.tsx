@@ -50,14 +50,14 @@ export function AreaConditionList({
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <TextField
               id={`territory-${entry.id}-area`}
-              label="Area"
+              label="City, ZIP, neighborhood, radius segment, or other area"
               value={entry.area}
               onChange={(v) => update(entry.id, { area: v })}
               placeholder="Rosamond"
             />
             <TextField
               id={`territory-${entry.id}-condition`}
-              label="Condition"
+              label="Travel fee, minimum job, selected hours, manager approval, or other approved condition"
               value={entry.condition}
               onChange={(v) => update(entry.id, { condition: v })}
               placeholder="$75 travel fee"

@@ -204,10 +204,17 @@ export type Section2Data = {
   hasConditionalTerritory: YesNo | "";
   // Q23 — repeatable conditional-territory cards
   conditionalTerritories: ConditionalTerritoryEntry[];
-  // Q24 — after-hours field-service area mode
+  // Q27 — after-hours field-service area mode
   afterHoursAreaMode: AfterHoursAreaMode | "";
-  // Q25 — after-hours service area (conditional on Q24 = "smaller")
+  /**
+   * Legacy free-text after-hours area. Not an active policy.
+   * Structured geography below is the approved Q28 record.
+   */
   afterHoursServiceArea: string;
+  afterHoursDefinitionMode: ServiceAreaDefinitionMode | "";
+  afterHoursZipCodes: string[];
+  afterHoursCities: string[];
+  afterHoursDistance: ServiceAreaDistance;
 };
 
 export function createDefaultSection2(): Section2Data {
@@ -228,6 +235,10 @@ export function createDefaultSection2(): Section2Data {
     conditionalTerritories: [],
     afterHoursAreaMode: "",
     afterHoursServiceArea: "",
+    afterHoursDefinitionMode: "",
+    afterHoursZipCodes: [],
+    afterHoursCities: [],
+    afterHoursDistance: { address: "", radiusMiles: "" },
   };
 }
 
@@ -356,7 +367,7 @@ export type CapacityMode =
   | "reserved_capacity"
   | "emergency_override"
   | "authorized_approval"
-  | "no_override";
+  | "arrange_callback";
 
 export type Section3Data = {
   // Q26 — emergency classification matrix (scenarioId -> classification)
@@ -886,6 +897,8 @@ export type Section5Data = {
   areaPricingRows: AreaPricingRow[];
   visitTypeByServiceId: Record<string, VisitTypeId | "">;
   paidDiagnosticExplanation: string;
+  /** Q78 — fee record this explanation refers to, when one exists. */
+  paidDiagnosticFeeId: string;
   generalPricingAuthority: GeneralPricingAuthorityId | "";
   servicePricingRules: Record<string, ServicePricingRule>;
   forbiddenStatements: ForbiddenStatementId[];
@@ -949,6 +962,7 @@ export function createDefaultSection5(): Section5Data {
     areaPricingRows: [],
     visitTypeByServiceId: createDefaultVisitTypeByService(),
     paidDiagnosticExplanation: "",
+    paidDiagnosticFeeId: "",
     generalPricingAuthority: "",
     servicePricingRules: {},
     forbiddenStatements: createDefaultForbiddenStatements(),

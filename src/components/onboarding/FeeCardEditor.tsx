@@ -141,11 +141,11 @@ function FeeCard({
             {collapsed ? "Expand" : "Collapse"}
           </SecondaryButton>
           <SecondaryButton fullWidth={false} className="px-3 py-2 text-sm" onClick={onDuplicate}>
-            Duplicate
+            Duplicate fee
           </SecondaryButton>
           {!removeProtected && (
             <SecondaryButton fullWidth={false} className="px-3 py-2 text-sm" onClick={onRemove}>
-              Remove
+              Remove fee
             </SecondaryButton>
           )}
         </div>
@@ -155,13 +155,17 @@ function FeeCard({
         <div className="mt-4 min-w-0 space-y-4">
           <TextField
             id={`fee-name-${fee.id}`}
-            label="Fee name or type"
+            label="What is this fee called?"
             required
             value={fee.name}
             onChange={(v) => onUpdate({ name: v })}
             error={showErrors ? feeError(errors, fee.id, "name") : undefined}
           />
 
+          <p className="text-sm font-medium text-[var(--color-alexander-navy)]">
+            What is the amount?
+            <span className="ml-1 text-[var(--color-alexander-required)]" aria-hidden>*</span>
+          </p>
           <AmountKindSegmented
             name={`fee-amount-kind-${fee.id}`}
             value={fee.amountKind}

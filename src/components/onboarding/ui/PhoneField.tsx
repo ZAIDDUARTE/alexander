@@ -13,14 +13,17 @@ type Props = {
   value: string;
   onChange: (e164OrEmpty: string) => void;
   error?: string;
+  ariaLabel?: string;
 };
 
-export function PhoneField({ id, value, onChange, error }: Props) {
+export function PhoneField({ id, value, onChange, error, ariaLabel }: Props) {
   return (
     <div>
       <input
         id={id}
+        name={id}
         type="tel"
+        aria-label={ariaLabel}
         inputMode="tel"
         autoComplete="tel"
         value={value}

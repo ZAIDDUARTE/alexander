@@ -11,13 +11,6 @@ import { section1IsValid } from "@/lib/onboarding/validation/section1";
 import { getSection1Progress } from "@/lib/onboarding/progress/section1";
 import { addCompletedSection } from "@/lib/onboarding/draft-utils";
 
-const SUMMARY_ITEMS = [
-  "Company identity configured",
-  "Approved claims captured",
-  "Office hours configured",
-  "Service availability configured",
-  "Call answering hours policy set",
-];
 
 export default function Section1CompletePage() {
   const { draft, saveStatus, lastSavedAt, markSectionComplete } = useOnboarding();
@@ -52,7 +45,7 @@ export default function Section1CompletePage() {
           Your company is now part of Alexander&apos;s foundation
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[var(--color-alexander-muted)]">
-          Your company is now part of Alexander&apos;s foundation. Alexander now understands your
+          Alexander now understands your
           company&apos;s identity, operating hours, approved claims, and basic availability. This
           helps him represent your business accurately and communicate with callers within the
           boundaries you have established.
@@ -61,22 +54,11 @@ export default function Section1CompletePage() {
           Progress: 1 of {TOTAL_SECTIONS} sections complete
         </p>
 
-        <ul className="mx-auto mt-8 max-w-md space-y-3 text-left">
-          {SUMMARY_ITEMS.map((item) => (
-            <li
-              key={item}
-              className="flex items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] bg-[var(--color-alexander-success-bg)] px-4 py-3 text-sm text-[var(--color-alexander-navy)]"
-            >
-              <span className="mt-0.5 text-[var(--color-alexander-success)]" aria-hidden>✓</span>
-              {item}
-            </li>
-          ))}
-        </ul>
 
         <p className="mt-6 text-sm text-[var(--color-alexander-muted)]">Next: Your Services</p>
 
         <div className="mx-auto mt-10 flex max-w-md flex-col gap-3">
-          <PrimaryLink href="/onboarding/sections/2/intro">Continue to Section 2 →</PrimaryLink>
+          <PrimaryLink href="/onboarding/sections/2/intro">Continue to Your Services →</PrimaryLink>
           <SecondaryButton onClick={() => router.push("/onboarding/sections/1/review")}>
             Review Section 1
           </SecondaryButton>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * Structured tokenized list input (Q20 ZIP codes / cities). Trims
@@ -28,6 +28,10 @@ export function TokenListField({
   helpText?: string;
 }) {
   const [draft, setDraft] = useState("");
+
+  useEffect(() => {
+    setDraft("");
+  }, [id]);
 
   const commit = (raw: string) => {
     const trimmed = raw.trim();
@@ -73,7 +77,9 @@ export function TokenListField({
       )}
       <input
         id={id}
+        name={id}
         type="text"
+        autoComplete="off"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {

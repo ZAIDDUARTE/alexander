@@ -26,8 +26,8 @@ function remedyRequiresHumanApproval(data: Section5Data): boolean {
 function q68Complete(data: Section5Data, fees: FeeRecord[]): boolean {
   const meaningfulActive = activeMeaningfulFees(fees);
   if (data.noSeparateFees) return meaningfulActive.length === 0;
-  if (meaningfulActive.length === 0) {
-    if (!fees.some((f) => f.active && feeCardStarted(f))) return false;
+  if (meaningfulActive.length === 0 && !fees.some((f) => f.active && feeCardStarted(f))) {
+    return true;
   }
   const errors: Record<string, string> = {};
   for (const fee of fees) {
@@ -44,7 +44,7 @@ function q68Complete(data: Section5Data, fees: FeeRecord[]): boolean {
       });
     }
   }
-  return Object.keys(errors).length === 0 && meaningfulActive.length > 0;
+  return Object.keys(errors).length === 0;
 }
 
 function areaRowsComplete(data: Section5Data): boolean {
@@ -200,8 +200,6 @@ export function getSection5ProgressUnits(
       applicable: showPaidDiagnostic,
       complete: showPaidDiagnostic && Boolean(data.paidDiagnosticExplanation.trim()),
     },
-    // Q72
-    { applicable: true, complete: data.generalPricingAuthority !== "" },
     // Q73
     {
       applicable: true,
@@ -253,12 +251,7 @@ export function getSection5ProgressUnits(
       applicable: true,
       complete:
         data.offersFinancing !== "" &&
-        (!showFinancing ||
-          (Boolean(data.financingProviderTerms.trim()) &&
-            data.financingPermissions.length > 0 &&
-            Boolean(data.financingEligibilityStatement.trim()) &&
-            (!data.financingPermissions.includes("other") ||
-              Boolean(data.financingPermissionOtherDetail.trim())))),
+        (!showFinancing || Boolean(data.financingProviderTerms.trim())),
     },
     // Q81
     { applicable: true, complete: remediesComplete(data) },

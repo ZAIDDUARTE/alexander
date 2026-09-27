@@ -1,3 +1,4 @@
+import { CUSTOMER_PROPERTY_TYPES, DIAGNOSTIC_SERVICES, PLUMBING_SERVICES } from "../section2Catalog";
 import type { Section2Data, ServicePolicyEntry } from "../types";
 
 export type FieldErrors = Partial<Record<string, string>>;
@@ -18,9 +19,11 @@ export type FieldErrors = Partial<Record<string, string>>;
  */
 function validateServicePolicyMap(
   map: Record<string, ServicePolicyEntry>,
+  catalog: readonly { id: string; label: string }[],
   groupMessage: string,
 ): { groupError: string | null; conditionErrors: Record<string, string> } {
   const conditionErrors: Record<string, string> = {};
+  const labels = new Map(catalog.map((item) => [item.id, item.label]));
   let missingPolicy = false;
 
   for (const [id, entry] of Object.entries(map)) {
@@ -29,7 +32,8 @@ function validateServicePolicyMap(
       continue;
     }
     if (entry.policy === "with_conditions" && !entry.condition.trim()) {
-      conditionErrors[id] = "Describe the conditions for this service.";
+      const name = labels.get(id) ?? "this service";
+      conditionErrors[id] = `Describe the conditions for ${name}.`;
     }
   }
 
@@ -54,6 +58,7 @@ export function validateSection2(data: Section2Data): FieldErrors {
 
   const plumbing = validateServicePolicyMap(
     data.plumbingServices,
+    PLUMBING_SERVICES,
     "Select a policy for every plumbing service.",
   );
   if (plumbing.groupError) errors.plumbingServices = plumbing.groupError;
@@ -63,6 +68,7 @@ export function validateSection2(data: Section2Data): FieldErrors {
 
   const diagnostic = validateServicePolicyMap(
     data.diagnosticServices,
+    DIAGNOSTIC_SERVICES,
     "Select a policy for every diagnostic, drain, and inspection service.",
   );
   if (diagnostic.groupError) errors.diagnosticServices = diagnostic.groupError;
@@ -72,6 +78,7 @@ export function validateSection2(data: Section2Data): FieldErrors {
 
   const customer = validateServicePolicyMap(
     data.customerPropertyTypes,
+    CUSTOMER_PROPERTY_TYPES,
     "Select a policy for every customer or property type.",
   );
   if (customer.groupError) errors.customerPropertyTypes = customer.groupError;
@@ -130,11 +137,58 @@ export function validateSection2(data: Section2Data): FieldErrors {
 
   if (!data.afterHoursAreaMode) {
     errors.afterHoursAreaMode = "Select an option.";
-  } else if (data.afterHoursAreaMode === "smaller" && !data.afterHoursServiceArea.trim()) {
-    errors.afterHoursServiceArea = "Describe your after-hours service area.";
+  } else if (data.afterHoursAreaMode === "smaller") {
+    validateStructuredGeography(errors, {
+      mode: data.afterHoursDefinitionMode,
+      zipCodes: data.afterHoursZipCodes,
+      cities: data.afterHoursCities,
+      distance: data.afterHoursDistance,
+      modeKey: "afterHoursDefinitionMode",
+      zipKey: "afterHoursZipCodes",
+      cityKey: "afterHoursCities",
+      addressKey: "afterHoursDistanceAddress",
+      radiusKey: "afterHoursDistanceRadius",
+      modeMessage: "Choose how to define the after-hours service area.",
+    });
   }
 
   return errors;
+}
+
+function validateStructuredGeography(
+  errors: FieldErrors,
+  input: {
+    mode: Section2Data["serviceAreaDefinitionMode"];
+    zipCodes: string[];
+    cities: string[];
+    distance: Section2Data["serviceAreaDistance"];
+    modeKey: string;
+    zipKey: string;
+    cityKey: string;
+    addressKey: string;
+    radiusKey: string;
+    modeMessage: string;
+  },
+) {
+  if (!input.mode) {
+    errors[input.modeKey] = input.modeMessage;
+  } else if (input.mode === "zip_codes") {
+    if (input.zipCodes.filter((z) => z.trim()).length === 0) {
+      errors[input.zipKey] = "Add at least one ZIP code.";
+    }
+  } else if (input.mode === "cities") {
+    if (input.cities.filter((c) => c.trim()).length === 0) {
+      errors[input.cityKey] = "Add at least one city or community.";
+    }
+  } else if (input.mode === "distance") {
+    if (!input.distance.address.trim()) {
+      errors[input.addressKey] = "Enter your business address.";
+    }
+    const radius = Number(input.distance.radiusMiles);
+    if (!input.distance.radiusMiles.trim() || !Number.isFinite(radius) || radius <= 0) {
+      errors[input.radiusKey] = "Radius must be a positive number.";
+    }
+  }
 }
 
 export function section2IsValid(data: Section2Data): boolean {
@@ -159,16 +213,16 @@ export function matrixConditionErrors(
 
 export const SERVICE_OFFER_LABELS = {
   offered: "We offer this",
-  with_conditions: "Yes, with conditions",
+  with_conditions: "With conditions",
   ask_team: "Ask our team first",
-  not_offered: "We do not offer this",
+  not_offered: "We don’t offer this",
 } as const;
 
 export const CUSTOMER_SERVE_LABELS = {
-  offered: "We serve these normally",
-  with_conditions: "Yes, with conditions",
+  offered: "We serve this",
+  with_conditions: "With conditions",
   ask_team: "Ask our team first",
-  not_offered: "We do not serve these",
+  not_offered: "We don’t serve this",
 } as const;
 
 export const YES_NO_POLICY_LABELS = {
@@ -187,7 +241,7 @@ export const SERVICE_AREA_DEFINITION_OPTIONS = [
 export const AFTER_HOURS_AREA_OPTIONS = [
   { value: "same" as const, label: "Same service area as normal" },
   { value: "smaller" as const, label: "A smaller service area" },
-  { value: "none" as const, label: "We do not provide after-hours field service" },
+  { value: "none" as const, label: "We don’t provide after-hours field service" },
 ];
 
 export const YES_NO_OPTIONS = [

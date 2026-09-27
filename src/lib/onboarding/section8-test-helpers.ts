@@ -48,6 +48,7 @@ export function fullyValidSection8(): { section8: Section8Data; systems: Softwar
   systems = phoneUpsert.systems;
   section8.phoneSoftwareId = phoneUpsert.id;
 
+  section8.additionalSoftwareCategories = ["none"];
   section8.connectionOwnerMode = "self_authorized";
   section8.connectionNoticeAcknowledged = true;
   section8.failureFallback = "callback";

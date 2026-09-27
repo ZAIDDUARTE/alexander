@@ -56,12 +56,13 @@ function TimeSelect({
 /* ------------------------------------------------------------------ */
 
 type OfficeProps = {
+  idPrefix: string;
   schedule: WeeklyOfficeSchedule;
   onChange: (schedule: WeeklyOfficeSchedule) => void;
   dayError?: Partial<Record<DayKey, string>>;
 };
 
-export function OfficeWeeklySchedule({ schedule, onChange, dayError }: OfficeProps) {
+export function OfficeWeeklySchedule({ idPrefix, schedule, onChange, dayError }: OfficeProps) {
   const updateDay = (day: DayKey, patch: Partial<OfficeDaySchedule>) => {
     const current = schedule[day];
     let next = { ...current, ...patch };
@@ -89,17 +90,23 @@ export function OfficeWeeklySchedule({ schedule, onChange, dayError }: OfficePro
       {DAYS.map((day) => {
         const row = schedule[day];
         const disabled = row.closed;
+        const startId = `${idPrefix}-${day}-start`;
+        const endId = `${idPrefix}-${day}-end`;
+        const availabilityId = `${idPrefix}-${day}-availability`;
         return (
           <div key={day} className={rowClass}>
             <span className="text-sm font-medium text-[var(--color-alexander-navy)]">
               {DAY_LABELS[day]}
             </span>
             <div>
-              <span className="mb-1 block text-xs text-[var(--color-alexander-muted)] sm:hidden">
-                Opens
-              </span>
+              <label
+                htmlFor={startId}
+                className="mb-1 block text-xs text-[var(--color-alexander-muted)] sm:sr-only"
+              >
+                {DAY_LABELS[day]} opening time
+              </label>
               <TimeSelect
-                id={`${day}-start`}
+                id={startId}
                 label={`${DAY_LABELS[day]} opening time`}
                 value={row.start}
                 disabled={disabled}
@@ -107,11 +114,14 @@ export function OfficeWeeklySchedule({ schedule, onChange, dayError }: OfficePro
               />
             </div>
             <div>
-              <span className="mb-1 block text-xs text-[var(--color-alexander-muted)] sm:hidden">
-                Closes
-              </span>
+              <label
+                htmlFor={endId}
+                className="mb-1 block text-xs text-[var(--color-alexander-muted)] sm:sr-only"
+              >
+                {DAY_LABELS[day]} closing time
+              </label>
               <TimeSelect
-                id={`${day}-end`}
+                id={endId}
                 label={`${DAY_LABELS[day]} closing time`}
                 value={row.end}
                 disabled={disabled}
@@ -119,11 +129,14 @@ export function OfficeWeeklySchedule({ schedule, onChange, dayError }: OfficePro
               />
             </div>
             <div>
-              <span className="mb-1 block text-xs text-[var(--color-alexander-muted)] sm:hidden">
-                Availability
-              </span>
+              <label
+                htmlFor={availabilityId}
+                className="mb-1 block text-xs text-[var(--color-alexander-muted)] sm:sr-only"
+              >
+                {DAY_LABELS[day]} availability
+              </label>
               <select
-                id={`${day}-availability`}
+                id={availabilityId}
                 aria-label={`${DAY_LABELS[day]} availability`}
                 value={row.closed ? "closed" : "open"}
                 onChange={(e) => updateDay(day, { closed: e.target.value === "closed" })}
@@ -150,18 +163,19 @@ export function OfficeWeeklySchedule({ schedule, onChange, dayError }: OfficePro
 /* ------------------------------------------------------------------ */
 
 const SERVICE_MODE_OPTIONS: { value: ServiceScheduleMode; label: string }[] = [
-  { value: "regular", label: "Regular hours" },
+  { value: "regular", label: "Normal hours" },
   { value: "no_service", label: "No service" },
   { value: "twenty_four_hours", label: "24-hour service" },
 ];
 
 type ServiceProps = {
+  idPrefix: string;
   schedule: WeeklyServiceSchedule;
   onChange: (schedule: WeeklyServiceSchedule) => void;
   dayError?: Partial<Record<DayKey, string>>;
 };
 
-export function ServiceWeeklySchedule({ schedule, onChange, dayError }: ServiceProps) {
+export function ServiceWeeklySchedule({ idPrefix, schedule, onChange, dayError }: ServiceProps) {
   const updateDay = (day: DayKey, patch: Partial<ServiceDaySchedule>) => {
     const current = schedule[day];
     let next: ServiceDaySchedule = { ...current, ...patch };
@@ -190,17 +204,23 @@ export function ServiceWeeklySchedule({ schedule, onChange, dayError }: ServiceP
       {DAYS.map((day) => {
         const row = schedule[day];
         const timesDisabled = row.mode !== "regular";
+        const fromId = `${idPrefix}-${day}-start`;
+        const toId = `${idPrefix}-${day}-end`;
+        const availabilityId = `${idPrefix}-${day}-availability`;
         return (
           <div key={day} className={rowClass}>
             <span className="text-sm font-medium text-[var(--color-alexander-navy)]">
               {DAY_LABELS[day]}
             </span>
             <div>
-              <span className="mb-1 block text-xs text-[var(--color-alexander-muted)] sm:hidden">
-                From
-              </span>
+              <label
+                htmlFor={fromId}
+                className="mb-1 block text-xs text-[var(--color-alexander-muted)] sm:sr-only"
+              >
+                {DAY_LABELS[day]} service from
+              </label>
               <TimeSelect
-                id={`svc-${day}-from`}
+                id={fromId}
                 label={`${DAY_LABELS[day]} service from`}
                 value={row.start}
                 disabled={timesDisabled}
@@ -208,11 +228,14 @@ export function ServiceWeeklySchedule({ schedule, onChange, dayError }: ServiceP
               />
             </div>
             <div>
-              <span className="mb-1 block text-xs text-[var(--color-alexander-muted)] sm:hidden">
-                To
-              </span>
+              <label
+                htmlFor={toId}
+                className="mb-1 block text-xs text-[var(--color-alexander-muted)] sm:sr-only"
+              >
+                {DAY_LABELS[day]} service to
+              </label>
               <TimeSelect
-                id={`svc-${day}-to`}
+                id={toId}
                 label={`${DAY_LABELS[day]} service to`}
                 value={row.end}
                 disabled={timesDisabled}
@@ -220,11 +243,14 @@ export function ServiceWeeklySchedule({ schedule, onChange, dayError }: ServiceP
               />
             </div>
             <div>
-              <span className="mb-1 block text-xs text-[var(--color-alexander-muted)] sm:hidden">
-                Availability
-              </span>
+              <label
+                htmlFor={availabilityId}
+                className="mb-1 block text-xs text-[var(--color-alexander-muted)] sm:sr-only"
+              >
+                {DAY_LABELS[day]} availability
+              </label>
               <select
-                id={`svc-${day}-availability`}
+                id={availabilityId}
                 aria-label={`${DAY_LABELS[day]} availability`}
                 value={row.mode}
                 onChange={(e) => updateDay(day, { mode: e.target.value as ServiceScheduleMode })}

@@ -12,8 +12,8 @@ export const EXCEPTION_TYPES: readonly CatalogItem[] = [
   { id: "service_area", label: "Service-area exception" },
   { id: "fee_or_price", label: "Fee or price exception" },
   { id: "discount_or_promotion", label: "Discount or promotion exception" },
-  { id: "refund_credit_goodwill", label: "Refund, credit, or goodwill exception" },
-  { id: "callback_previous_work", label: "Callback / previous-work exception" },
+  { id: "refund_credit_goodwill", label: "Refund, credit or goodwill exception" },
+  { id: "callback_previous_work", label: "Warranty or callback exception" },
   { id: "other", label: "Other exception" },
 ] as const;
 
@@ -28,7 +28,11 @@ export const CALLER_TYPES: readonly CatalogItem[] = [
   { id: "other_third_party", label: "Other third party" },
 ] as const;
 
-/** Q48 predefined appointment-window shells (labels only — no invented clock times). */
+/**
+ * Q51 predefined appointment-window shells (labels only — no invented clock times).
+ * The first label is "Morning" pending video confirmation. Do not change it
+ * until an authoritative recording resolves the specification placeholder.
+ */
 export const APPOINTMENT_WINDOW_TEMPLATES: readonly CatalogItem[] = [
   { id: "morning", label: "Morning" },
   { id: "late_morning", label: "Late morning" },
@@ -39,19 +43,19 @@ export const APPOINTMENT_WINDOW_TEMPLATES: readonly CatalogItem[] = [
 
 /** Q49 confirmation-information options (all six preselected by MD default). */
 export const CONFIRMATION_INFO_OPTIONS: readonly CatalogItem[] = [
-  { id: "appointment_date", label: "Appointment date" },
-  { id: "appointment_time_or_window", label: "Appointment time or arrival window" },
-  { id: "requested_service", label: "Requested service" },
-  { id: "customer_name_and_address", label: "Customer name and service address" },
-  { id: "callback_phone", label: "Callback phone number" },
-  { id: "email_address", label: "Email address provided" },
+  { id: "appointment_date", label: "Confirm the appointment date" },
+  { id: "appointment_time_or_window", label: "Confirm the appointment time or arrival window" },
+  { id: "requested_service", label: "Confirm the requested service" },
+  { id: "customer_name_and_address", label: "Confirm the customer’s name and service address" },
+  { id: "callback_phone", label: "Confirm the callback phone number" },
+  { id: "email_address", label: "Confirm the email address provided" },
 ] as const;
 
 /** Q57 no-availability fallback options (display order is NOT an approved default priority). */
 export const NO_AVAILABILITY_FALLBACK_OPTIONS: readonly CatalogItem[] = [
   { id: "offer_next_available", label: "Offer the next available appointment" },
   { id: "look_for_approved_window", label: "Look for another approved appointment window" },
-  { id: "add_to_callback_waitlist", label: "Add the customer to a callback / waitlist" },
+  { id: "add_to_callback_waitlist", label: "Add the customer to a callback/waitlist" },
   { id: "ask_team_for_help", label: "Ask the team for help" },
 ] as const;
 

@@ -39,7 +39,7 @@ export const ESCALATION_TRIGGER_OPTIONS = [
   },
   {
     id: "repair_not_solved" as const,
-    label: "Customer says the previous repair did not solve the problem",
+    label: "Customer says the previous repair didn’t solve the problem",
   },
   { id: "disputes_charge" as const, label: "Customer disputes a charge" },
   {
@@ -111,7 +111,7 @@ export const NON_SERVICE_CALL_TYPE_ROWS = [
   { id: "government_regulator", label: "Government / regulator" },
   {
     id: "service_not_offered",
-    label: "Customer requesting a service you do not offer",
+    label: "Customer requesting a service you don’t offer",
   },
   { id: "outside_service_area", label: "Customer outside your service area" },
   { id: "wrong_number_spam", label: "Wrong number / spam" },
@@ -122,7 +122,7 @@ export type NonServiceCallTypeId = (typeof NON_SERVICE_CALL_TYPE_ROWS)[number]["
 export const CUSTOMER_HISTORY_POLICY_OPTIONS = [
   {
     id: "use_available_history" as const,
-    label: "Use available customer and service history when it helps resolve the call",
+    label: "Use available customer information and service history when it helps resolve the call",
   },
   {
     id: "human_review_before_details" as const,
@@ -132,7 +132,7 @@ export const CUSTOMER_HISTORY_POLICY_OPTIONS = [
 ];
 
 export const CUSTOMER_HISTORY_HELP =
-  "This policy applies only when the information is available through connected software and the caller is authorized to access it.";
+  "This applies only when Alexander has access to the information through connected software and the caller is authorized to receive it.";
 
 export const RESTRICTED_INFORMATION_OPTIONS = [
   { id: "payment_information" as const, label: "Payment information" },
@@ -160,7 +160,7 @@ export const ADDITIONAL_SERVICE_POLICY_OPTIONS = [
   },
   {
     id: "mention_approved_only" as const,
-    label: "Mention only approved offers, promotions, or services",
+    label: "Mention only approved offers, memberships, or services",
   },
   {
     id: "only_when_asked" as const,
@@ -168,13 +168,13 @@ export const ADDITIONAL_SERVICE_POLICY_OPTIONS = [
   },
   {
     id: "do_not_proactive" as const,
-    label: "Do not proactively recommend additional services",
+    label: "Don’t proactively recommend additional services",
   },
   { id: "custom" as const, label: "Follow another rule" },
 ];
 
 export const ADDITIONAL_SERVICE_HELP =
-  "This does not authorize unsupported diagnosis, pressure tactics, or invented needs.";
+  "This does not authorize invented problems, unsupported diagnoses, or pressure-based upselling.";
 
 export function labelForPreviousWorkAction(id: string): string {
   return PREVIOUS_WORK_INITIAL_ACTION_OPTIONS.find((o) => o.id === id)?.label ?? id;

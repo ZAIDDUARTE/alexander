@@ -11,15 +11,6 @@ import { section4IsValid } from "@/lib/onboarding/validation/section4";
 import { getSection4Progress } from "@/lib/onboarding/progress/section4";
 import { addCompletedSection } from "@/lib/onboarding/draft-utils";
 
-const SUMMARY_ITEMS = [
-  "Human-request and AI-refusal policies set",
-  "Exception approval authority configured",
-  "Caller authorization and spending limits set",
-  "Booking horizon and appointment windows configured",
-  "Reschedule, cancellation, and fee policies set",
-  "Callback and technician assignment rules set",
-  "Multi-issue scheduling policy set",
-];
 
 export default function Section4CompletePage() {
   const { draft, saveStatus, lastSavedAt, markSectionComplete } = useOnboarding();
@@ -67,7 +58,7 @@ export default function Section4CompletePage() {
           Alexander now understands your scheduling rules
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[var(--color-alexander-muted)]">
-          Alexander now understands your scheduling rules. He knows when appointments may be offered,
+          He knows when appointments may be offered,
           what information is needed, which situations require approval, and how to handle changes,
           cancellations, capacity limits, and scheduling exceptions. This helps prevent double
           promises, unsupported availability claims, and unnecessary back-and-forth with your team.
@@ -76,22 +67,11 @@ export default function Section4CompletePage() {
           Progress: {completedSections.length} of {TOTAL_SECTIONS} sections complete
         </p>
 
-        <ul className="mx-auto mt-8 max-w-md space-y-3 text-left">
-          {SUMMARY_ITEMS.map((item) => (
-            <li
-              key={item}
-              className="flex items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] bg-[var(--color-alexander-success-bg)] px-4 py-3 text-sm text-[var(--color-alexander-navy)]"
-            >
-              <span className="mt-0.5 text-[var(--color-alexander-success)]" aria-hidden>✓</span>
-              {item}
-            </li>
-          ))}
-        </ul>
 
         <p className="mt-6 text-sm text-[var(--color-alexander-muted)]">Next: Pricing and Payments</p>
 
         <div className="mx-auto mt-10 flex max-w-md flex-col gap-3">
-          <PrimaryLink href="/onboarding/sections/5/intro">Continue to Section 5 →</PrimaryLink>
+          <PrimaryLink href="/onboarding/sections/5/intro">Continue to Pricing and Payments →</PrimaryLink>
           <SecondaryButton onClick={() => router.push("/onboarding/sections/4/review")}>
             Review Section 4
           </SecondaryButton>

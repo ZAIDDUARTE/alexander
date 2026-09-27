@@ -97,6 +97,7 @@ export type NormalizedSection5 = {
   };
   visitTypes: NormalizedVisitTypeRow[];
   paidDiagnosticExplanation: string | null;
+  paidDiagnosticFeeId: string | null;
   generalPricingAuthority: Section5Data["generalPricingAuthority"] | null;
   servicePricingRules: NormalizedServicePricingRule[];
   forbiddenStatements: ForbiddenStatementId[];
@@ -337,7 +338,14 @@ export function normalizeSection5(
     visitTypes: normalizeVisitTypes(data),
     paidDiagnosticExplanation:
       hasPaidDiagnosticVisit(data) ? data.paidDiagnosticExplanation.trim() || null : null,
-    generalPricingAuthority: data.generalPricingAuthority || null,
+    paidDiagnosticFeeId: (() => {
+      if (!hasPaidDiagnosticVisit(data) || data.noSeparateFees) return null;
+      const feeId = data.paidDiagnosticFeeId.trim();
+      if (!feeId) return null;
+      const linked = activeMeaningfulFees(fees).some((fee) => fee.id === feeId);
+      return linked ? feeId : null;
+    })(),
+    generalPricingAuthority: null,
     servicePricingRules: normalizeServicePricingRules(data, section2, fees),
     forbiddenStatements: forbidden,
     forbiddenStatementOther: forbidden.includes("other")
@@ -376,12 +384,9 @@ export function normalizeSection5(
     financing: {
       offersFinancing: data.offersFinancing || null,
       providerTerms: showFinancing ? data.financingProviderTerms.trim() || null : null,
-      permissions: showFinancing ? [...data.financingPermissions] : [],
-      permissionOtherDetail:
-        showFinancing && data.financingPermissions.includes("other")
-          ? data.financingPermissionOtherDetail.trim() || null
-          : null,
-      eligibilityStatement: showFinancing ? data.financingEligibilityStatement.trim() || null : null,
+      permissions: [],
+      permissionOtherDetail: null,
+      eligibilityStatement: null,
     },
     remedies,
     feeWaiverPrecedence,

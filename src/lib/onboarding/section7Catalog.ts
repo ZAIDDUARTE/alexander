@@ -1,7 +1,7 @@
 /** Section 7 — Voice and Conversation (Q92–Q103). Final MD §7. */
 
 export const LANGUAGE_HELP =
-  "If more than one language is selected, Alexander should respond in the caller’s language when it can do so reliably.";
+  "Select only languages verified for the selected voice. If more than one language is selected, Alexander should respond in the caller’s language when it can do so reliably.";
 
 export const LANGUAGE_OPTIONS = [
   { id: "english" as const, label: "English" },
@@ -31,7 +31,7 @@ export const SPOKEN_NAME_OPTIONS = [
 ];
 
 export const SPOKEN_NAME_HELP =
-  "Alexander remains the product name. This controls the spoken receptionist name.";
+  "Alexander remains the name of the product. This controls the name callers hear when the company’s receptionist introduces himself.";
 
 export const AI_DISCLOSURE_OPTIONS = [
   {
@@ -46,11 +46,11 @@ export const AI_DISCLOSURE_OPTIONS = [
 ];
 
 export const AI_DISCLOSURE_HELP =
-  "Alexander should be transparent without making the disclosure awkward or repetitive. Mandatory legal/platform disclosure requirements override a company preference where applicable.";
+  "Alexander should be transparent without making the disclosure awkward or repetitive.";
 
 export const PRONUNCIATION_MODE_OPTIONS = [
   { id: "none" as const, label: "None" },
-  { id: "yes" as const, label: "Yes — enter pronunciation details" },
+  { id: "yes" as const, label: "Yes — enter the pronunciation details below" },
 ];
 
 export const LANGUAGE_SWITCHING_OPTIONS = [
@@ -74,10 +74,10 @@ export const PERCEIVED_VOICE_OPTIONS = [
 ];
 
 export const PERCEIVED_VOICE_HELP =
-  "The voice preview is the source of truth; callers may perceive a voice differently.";
+  "The voice preview is the source of truth; perception may vary by caller.";
 
 export const ACCENT_HELP =
-  "Expose only options available in the approved voice library and clear for the service area.";
+  "Only choose an accent that is available in the approved voice library and remains clear to the service area.";
 
 export const FORMALITY_OPTIONS = [
   { id: "conversational" as const, label: "Conversational and natural" },
@@ -86,13 +86,19 @@ export const FORMALITY_OPTIONS = [
 ];
 
 export const FORMALITY_HELP =
-  "Alexander remains professional in every configuration; this only changes ordinary phrasing.";
+  "Alexander remains professional in every configuration; this changes only the degree of formality in ordinary phrasing.";
 
 export const BRAND_PHRASES_HELP =
-  "Do not use this field to define safety, pricing, or appointment policy. Those belong in the earlier sections.";
+  "Do not use this field to define safety, pricing, or appointment rules; those belong in earlier sections.";
 
 export const REVIEW_NOTES_HELP =
-  "Use this only for a preference not covered above. The Alexander standard may be recommended when a request would reduce clarity, trust, or reliability.";
+  "Use this only for a preference not covered above. The standard Alexander configuration may be recommended when a request would reduce clarity, trust, or reliability.";
+
+export const LANGUAGE_SWITCHING_HELP =
+  "This controls language behavior, not whether Alexander may make commitments or bypass company policies.";
+
+export const PRONUNCIATION_HELP =
+  "Provide the spelling, preferred pronunciation, and an audio example if useful. Example: “Lancaster” — LAN-cas-ter; “Zayden” — ZAY-den; “Rheem” — REEM.";
 
 export function labelCommunicationStyle(id: string): string {
   return COMMUNICATION_STYLE_OPTIONS.find((o) => o.id === id)?.label ?? id;

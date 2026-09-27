@@ -97,6 +97,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
             )
           }
           labels={SERVICE_OFFER_LABELS}
+          conditionLabel="Tell us about any services that have special conditions."
           highlightIncomplete={submitted}
           groupError={submitted ? errors.plumbingServices : undefined}
           conditionErrors={plumbingConditionErrors}
@@ -104,7 +105,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Which diagnostic, drain, and inspection services does your company provide?"
+        title="Which of these services does your company provide?"
         required
       >
         <ServicePolicyGroup
@@ -117,6 +118,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
             )
           }
           labels={SERVICE_OFFER_LABELS}
+          conditionLabel="Tell us about any of these services that have special conditions."
           highlightIncomplete={submitted}
           groupError={submitted ? errors.diagnosticServices : undefined}
           conditionErrors={diagnosticConditionErrors}
@@ -134,6 +136,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
             )
           }
           labels={CUSTOMER_SERVE_LABELS}
+          conditionLabel="Are there any special conditions for the customers or properties you selected?"
           highlightIncomplete={submitted}
           groupError={submitted ? errors.customerPropertyTypes : undefined}
           conditionErrors={customerConditionErrors}
@@ -141,7 +144,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Will you install or work with fixtures, equipment, or materials supplied by the customer?"
+        title="Will you install or work with items supplied by the customer?"
         required
       >
         <ServicePolicyChoice
@@ -149,7 +152,13 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
           ariaLabel="Will you install or work with customer-supplied materials?"
           value={data.customerSuppliedMaterialsPolicy}
           onChange={(policy) =>
-            updateSection2({ customerSuppliedMaterialsPolicy: policy }, { immediate: true })
+            updateSection2(
+              {
+                customerSuppliedMaterialsPolicy: policy,
+                ...(policy === "with_conditions" ? {} : { customerSuppliedMaterialsCondition: "" }),
+              },
+              { immediate: true },
+            )
           }
           labels={YES_NO_POLICY_LABELS}
           conditionLabel="What are the conditions?"
@@ -162,14 +171,23 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Will your company repair, correct, or finish work another plumber started?"
+        title="Will you repair or finish work another plumber started?"
+        helpText="Will your company repair, correct, or finish work another plumber started?"
         required
       >
         <ServicePolicyChoice
           name="correctiveWorkPolicy"
           ariaLabel="Will your company repair, correct, or finish work another plumber started?"
           value={data.correctiveWorkPolicy}
-          onChange={(policy) => updateSection2({ correctiveWorkPolicy: policy }, { immediate: true })}
+          onChange={(policy) =>
+            updateSection2(
+              {
+                correctiveWorkPolicy: policy,
+                ...(policy === "with_conditions" ? {} : { correctiveWorkCondition: "" }),
+              },
+              { immediate: true },
+            )
+          }
           labels={YES_NO_POLICY_LABELS}
           conditionLabel="What are the conditions?"
           conditionValue={data.correctiveWorkCondition}
@@ -179,7 +197,11 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
         />
       </QuestionCard>
 
-      <QuestionCard title="How do you normally define your service area?" required>
+      <QuestionCard
+        title="How would you like to define your normal service area?"
+        required
+        helpText="How do you normally define your service area?"
+      >
         <RadioGroup
           name="serviceAreaDefinitionMode"
           options={SERVICE_AREA_DEFINITION_OPTIONS}
@@ -190,11 +212,16 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
         {data.serviceAreaDefinitionMode && (
           <ConditionalPanel>
             <p className="mb-4 text-sm font-medium text-[var(--color-alexander-navy)]">
-              Define your normal service area.
+              {data.serviceAreaDefinitionMode === "zip_codes"
+                ? "Which ZIP codes do you normally serve?"
+                : data.serviceAreaDefinitionMode === "cities"
+                  ? "Which cities or communities do you normally serve?"
+                  : "What is your normal service radius?"}
               <span className="ml-1 text-[var(--color-alexander-required)]" aria-hidden>*</span>
             </p>
             {data.serviceAreaDefinitionMode === "zip_codes" && (
               <TokenListField
+                key="serviceAreaZipCodes"
                 id="serviceAreaZipCodes"
                 label="ZIP codes"
                 required
@@ -206,6 +233,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
             )}
             {data.serviceAreaDefinitionMode === "cities" && (
               <TokenListField
+                key="serviceAreaCities"
                 id="serviceAreaCities"
                 label="Cities / communities"
                 required
@@ -219,6 +247,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
               <div className="space-y-4">
                 <TextField
                   id="serviceAreaDistanceAddress"
+                  autoComplete="off"
                   label="Business address"
                   required
                   value={data.serviceAreaDistance.address}
@@ -231,6 +260,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
                 />
                 <TextField
                   id="serviceAreaDistanceRadius"
+                  autoComplete="off"
                   label="Service radius (miles)"
                   required
                   type="number"
@@ -249,12 +279,15 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Are there any cities, ZIP codes, neighborhoods, or other areas Alexander should always decline?"
+        title="Are there any areas inside or near your service area that you do not serve?"
+        helpText="Are there any cities, ZIP codes, neighborhoods, or other areas Alexander should always decline?"
         optional
       >
         <TextareaField
           id="excludedTerritory"
           label=""
+          autoComplete="off"
+          ariaLabel="Areas you do not serve"
           value={data.excludedTerritory}
           onChange={(v) => updateSection2({ excludedTerritory: v })}
           placeholder="We do not service Edwards Air Force Base."
@@ -262,7 +295,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Are there any areas you sometimes serve, but only under certain conditions?"
+        title="Are there areas you serve only under certain conditions?"
         required
       >
         <RadioGroup
@@ -275,7 +308,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
         {data.hasConditionalTerritory === "yes" && (
           <ConditionalPanel>
             <p className="mb-4 text-sm font-medium text-[var(--color-alexander-navy)]">
-              Which areas are conditional, and what are the conditions?
+              Tell us about those conditional service areas.
               <span className="ml-1 text-[var(--color-alexander-required)]" aria-hidden>*</span>
             </p>
             <AreaConditionList
@@ -287,24 +320,105 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="When you are providing after-hours service, where will you go?" required>
+      <QuestionCard title="Is your after-hours service area different?" required>
         <RadioGroup
           name="afterHoursAreaMode"
           options={AFTER_HOURS_AREA_OPTIONS}
           value={data.afterHoursAreaMode}
-          onChange={(v) => updateSection2({ afterHoursAreaMode: v }, { immediate: true })}
+          onChange={(v) =>
+            updateSection2(
+              {
+                afterHoursAreaMode: v,
+                ...(v === "smaller"
+                  ? {}
+                  : {
+                      afterHoursServiceArea: "",
+                      afterHoursDefinitionMode: "",
+                      afterHoursZipCodes: [],
+                      afterHoursCities: [],
+                      afterHoursDistance: { address: "", radiusMiles: "" },
+                    }),
+              },
+              { immediate: true },
+            )
+          }
           error={submitted ? errors.afterHoursAreaMode : undefined}
         />
         {data.afterHoursAreaMode === "smaller" && (
-          <ConditionalPanel>
-            <TextareaField
-              id="afterHoursServiceArea"
-              label="What is your after-hours service area?"
-              required
-              value={data.afterHoursServiceArea}
-              onChange={(v) => updateSection2({ afterHoursServiceArea: v })}
-              error={submitted ? errors.afterHoursServiceArea : undefined}
+          <ConditionalPanel key="after-hours-geography">
+            <p className="mb-4 text-sm font-medium text-[var(--color-alexander-navy)]">
+              What is your after-hours service area?
+              <span className="ml-1 text-[var(--color-alexander-required)]" aria-hidden>*</span>
+            </p>
+            <RadioGroup
+              name="afterHoursDefinitionMode"
+              options={SERVICE_AREA_DEFINITION_OPTIONS}
+              value={data.afterHoursDefinitionMode}
+              onChange={(v) => updateSection2({ afterHoursDefinitionMode: v }, { immediate: true })}
+              error={submitted ? errors.afterHoursDefinitionMode : undefined}
             />
+            {data.afterHoursDefinitionMode === "zip_codes" && (
+              <div className="mt-4">
+                <TokenListField
+                  key="afterHoursZipCodes"
+                  id="afterHoursZipCodes"
+                  label="Which ZIP codes do you normally serve?"
+                  required
+                  value={data.afterHoursZipCodes}
+                  onChange={(v) => updateSection2({ afterHoursZipCodes: v }, { immediate: true })}
+                  placeholder="Type a ZIP code and press Enter"
+                  error={submitted ? errors.afterHoursZipCodes : undefined}
+                />
+              </div>
+            )}
+            {data.afterHoursDefinitionMode === "cities" && (
+              <div className="mt-4">
+                <TokenListField
+                  key="afterHoursCities"
+                  id="afterHoursCities"
+                  label="Which cities or communities do you normally serve?"
+                  required
+                  value={data.afterHoursCities}
+                  onChange={(v) => updateSection2({ afterHoursCities: v }, { immediate: true })}
+                  placeholder="Type a city or community and press Enter"
+                  error={submitted ? errors.afterHoursCities : undefined}
+                />
+              </div>
+            )}
+            {data.afterHoursDefinitionMode === "distance" && (
+              <div className="mt-4 space-y-4">
+                <p className="text-sm font-medium text-[var(--color-alexander-navy)]">
+                  What is your normal service radius?
+                </p>
+                <TextField
+                  id="afterHoursDistanceAddress"
+                  autoComplete="off"
+                  label="Business address"
+                  required
+                  value={data.afterHoursDistance.address}
+                  onChange={(v) =>
+                    updateSection2({
+                      afterHoursDistance: { ...data.afterHoursDistance, address: v },
+                    })
+                  }
+                  error={submitted ? errors.afterHoursDistanceAddress : undefined}
+                />
+                <TextField
+                  id="afterHoursDistanceRadius"
+                  autoComplete="off"
+                  label="Service radius (miles)"
+                  required
+                  type="number"
+                  value={data.afterHoursDistance.radiusMiles}
+                  onChange={(v) =>
+                    updateSection2({
+                      afterHoursDistance: { ...data.afterHoursDistance, radiusMiles: v },
+                    })
+                  }
+                  error={submitted ? errors.afterHoursDistanceRadius : undefined}
+                />
+              </div>
+            )}
           </ConditionalPanel>
         )}
       </QuestionCard>

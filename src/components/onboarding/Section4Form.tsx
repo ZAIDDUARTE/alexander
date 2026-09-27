@@ -39,6 +39,7 @@ import {
   APPROVER_UNAVAILABLE_OPTIONS,
   CALLBACK_NUMBER_OPTIONS,
   CAPACITY_OFFER_OPTIONS,
+  CANCELLATION_AUTHORITY_OPTIONS,
   CHANGE_AUTHORITY_OPTIONS,
   DEFAULT_BOOKING_OPTIONS,
   EMERGENCY_AUTH_OPTIONS,
@@ -216,7 +217,11 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
         </p>
       </header>
 
-      <QuestionCard title="If a caller asks to speak with a person, what should Alexander do?" required>
+      <QuestionCard
+        title="What should Alexander do if a caller asks to speak with a person?"
+        required
+        helpText="If a caller asks to speak with a person, what should Alexander do?"
+      >
         <RadioGroup
           name="humanRequestPolicy"
           options={HUMAN_REQUEST_OPTIONS}
@@ -239,7 +244,8 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="If someone says they do not want to speak with an AI, what should Alexander do?"
+        title="What should Alexander do if a caller doesn’t want to speak with AI?"
+        helpText="If someone says they don’t want to speak with an AI, what should Alexander do?"
         required
       >
         <RadioGroup
@@ -263,7 +269,7 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="Who has authority to approve each type of exception?" required>
+      <QuestionCard title="Who can approve these types of exceptions?" required>
         <ExceptionAuthorityMatrix
           value={data.exceptionAuthority}
           approverContactIds={data.exceptionApproverContactIds}
@@ -310,7 +316,7 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="What should Alexander do if the person who must approve an exception is not available?"
+        title="What should Alexander do if the person who must approve an exception isn’t available?"
         required
       >
         <RadioGroup
@@ -350,7 +356,11 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
         />
       </QuestionCard>
 
-      <QuestionCard title="Do any callers have a maximum amount they are allowed to approve?" required>
+      <QuestionCard
+        title="Are there spending limits for any of these callers?"
+        required
+        helpText="Do any callers have a maximum amount they’re allowed to approve?"
+      >
         <RadioGroup
           name="hasSpendingLimits"
           options={YES_NO_OPTIONS}
@@ -464,7 +474,8 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="When there is an emergency, do the same authorization rules still apply?"
+        title="Do emergency situations change any of these authorization rules?"
+        helpText="When there’s an emergency, do the same authorization rules still apply?"
         required
       >
         <RadioGroup
@@ -490,7 +501,8 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="When an eligible customer wants service, what may Alexander normally do?"
+        title="What is Alexander normally allowed to do when a customer wants an appointment?"
+        helpText="When an eligible customer wants service, what may Alexander normally do?"
         required
       >
         <RadioGroup
@@ -502,7 +514,11 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
         />
       </QuestionCard>
 
-      <QuestionCard title="How far into the future may Alexander book?" required>
+      <QuestionCard
+        title="How far in advance may Alexander schedule appointments?"
+        required
+        helpText="How far into the future may Alexander book?"
+      >
         <div className="space-y-4">
           <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--color-alexander-navy)]">
             <input
@@ -522,19 +538,18 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
             />
             No maximum
           </label>
-          {!data.bookingHorizonNoMaximum && (
-            <TextField
-              id="bookingHorizonDays"
-              label="Maximum days ahead"
-              required
-              type="number"
-              value={data.bookingHorizonDays}
-              onChange={(v) =>
-                updateSection4({ bookingHorizonDays: v, bookingHorizonNoMaximum: false })
-              }
-              error={submitted ? errors.bookingHorizonDays : undefined}
-            />
-          )}
+          <TextField
+            id="bookingHorizonDays"
+            label="Maximum days ahead"
+            required={!data.bookingHorizonNoMaximum}
+            type="number"
+            value={data.bookingHorizonDays}
+            onChange={(v) =>
+              updateSection4({ bookingHorizonDays: v, bookingHorizonNoMaximum: false })
+            }
+            disabled={data.bookingHorizonNoMaximum}
+            error={submitted ? errors.bookingHorizonDays : undefined}
+          />
           {data.bookingHorizonNoMaximum && submitted && errors.bookingHorizonDays && (
             <p className="text-sm text-[var(--color-alexander-required)]" role="alert">
               {errors.bookingHorizonDays}
@@ -543,7 +558,11 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
         </div>
       </QuestionCard>
 
-      <QuestionCard title="What appointment windows may Alexander offer customers?" required>
+      <QuestionCard
+        title="What appointment windows do you offer?"
+        required
+        helpText="What appointment windows may Alexander offer customers?"
+      >
         <AppointmentWindowEditor
           value={data.appointmentWindows}
           onChange={(windows) => updateSection4({ appointmentWindows: windows }, { immediate: true })}
@@ -707,7 +726,11 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="When may Alexander offer same-day or holiday appointments?" required>
+      <QuestionCard
+        title="When may Alexander offer these appointments?"
+        required
+        helpText="When may Alexander offer same-day or holiday appointments?"
+      >
         <ul className="space-y-4">
           {CAPACITY_POLICY_ROWS.map((row) => {
             const entry = data.capacityPolicies[row.id] ?? { policy: "", condition: "" };
@@ -773,7 +796,7 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
       <QuestionCard title="What may Alexander do when a customer wants to cancel?" required>
         <RadioGroup
           name="cancellationAuthority"
-          options={CHANGE_AUTHORITY_OPTIONS}
+          options={CANCELLATION_AUTHORITY_OPTIONS}
           value={data.cancellationAuthority}
           onChange={(v) => updateSection4({ cancellationAuthority: v }, { immediate: true })}
           error={submitted ? errors.cancellationAuthority : undefined}
@@ -883,12 +906,13 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Are there situations where Alexander should not apply the normal cancellation or no-show rule?"
+        title="Are there exceptions to your cancellation or no-show rules?"
+        helpText="Are there situations where Alexander should not apply the normal cancellation or no-show rule?"
+        optional
       >
         <TextareaField
           id="cancellationExceptions"
-          label="Exceptions (optional)"
-          optional
+          label=""
           rows={3}
           value={data.cancellationExceptions}
           onChange={(v) => updateSection4({ cancellationExceptions: v })}
@@ -897,8 +921,12 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
 
       <QuestionCard
         title="What should Alexander do if the customer needs service but there are no appropriate appointments available?"
+        helpText="Put these in the order Alexander should try them."
         required
       >
+        <p className="mb-3 text-sm text-[var(--color-alexander-navy)]">
+          Rank all four options from first choice to last choice.
+        </p>
         <PriorityOrderList
           value={data.noAvailabilityPriority}
           onChange={(v) =>
@@ -1068,7 +1096,8 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="If a customer wants help with more than one plumbing problem, what should Alexander normally do?"
+        title="What should Alexander do when a customer has several plumbing issues?"
+        helpText="If a customer wants help with more than one plumbing problem, what should Alexander normally do?"
         required
       >
         <RadioGroup
@@ -1080,12 +1109,10 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
         />
         {data.multiIssueMode === "separate_issues" && (
           <ConditionalPanel>
-            {eligibleServices.length === 0 && (
-              <p className="mb-3 text-sm text-[var(--color-alexander-muted)]">
-                No registered services from Section 2 are currently eligible. You can still describe
-                other work below, or configure offered services in Section 2.
-              </p>
-            )}
+            <p className="mb-4 text-sm font-medium text-[var(--color-alexander-navy)]">
+              Which issues need their own appointment?
+              <span className="ml-1 text-[var(--color-alexander-required)]" aria-hidden>*</span>
+            </p>
             <CheckboxGroup
               name="separateIssueServiceIds"
               options={separateIssueOptions}

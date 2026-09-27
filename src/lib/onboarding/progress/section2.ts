@@ -73,9 +73,25 @@ export function getSection2ProgressUnits(data: Section2Data): ProgressUnit[] {
     // Q25 — after-hours service area (conditional on Q24 = "smaller")
     {
       applicable: showAfterHoursTerritory,
-      complete: showAfterHoursTerritory && Boolean(data.afterHoursServiceArea.trim()),
+      complete: showAfterHoursTerritory && isAfterHoursGeographyComplete(data),
     },
   ];
+}
+
+function isAfterHoursGeographyComplete(data: Section2Data): boolean {
+  if (data.afterHoursDefinitionMode === "zip_codes") {
+    return data.afterHoursZipCodes.some((z) => z.trim());
+  }
+  if (data.afterHoursDefinitionMode === "cities") {
+    return data.afterHoursCities.some((c) => c.trim());
+  }
+  if (data.afterHoursDefinitionMode === "distance") {
+    const radius = Number(data.afterHoursDistance.radiusMiles);
+    return (
+      Boolean(data.afterHoursDistance.address.trim()) && Number.isFinite(radius) && radius > 0
+    );
+  }
+  return false;
 }
 
 function isServiceAreaDetailComplete(data: Section2Data): boolean {

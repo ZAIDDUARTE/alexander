@@ -36,19 +36,19 @@ export const PLUMBING_SERVICES: readonly ServiceCatalogItem[] = [
   { id: "gas-line-plumbing-non-emergency", label: "Gas-line plumbing (non-emergency)" },
   { id: "excavation", label: "Excavation" },
   { id: "trenchless-sewer-service-line-work", label: "Trenchless sewer/service-line work" },
-  { id: "water-filtration-softening-ro", label: "Water filtration, softening or RO" },
-  { id: "remodel-project-work", label: "Remodel or project work" },
-  { id: "other-specialty-plumbing", label: "Other specialty plumbing" },
+  { id: "water-filtration-softening-ro", label: "Water filtration / softening / reverse osmosis" },
+  { id: "remodel-project-work", label: "Remodel or project plumbing" },
+  { id: "other-specialty-plumbing", label: "Specialty plumbing" },
 ] as const;
 
 /** Q15 — "Which diagnostic, drain, and inspection services does your company provide?" */
 export const DIAGNOSTIC_SERVICES: readonly ServiceCatalogItem[] = [
-  { id: "general-diagnostic-service-visits", label: "General diagnostic/service visits" },
-  { id: "plumbing-inspections", label: "Plumbing inspections" },
+  { id: "general-diagnostic-service-visits", label: "General diagnostic/service visit" },
+  { id: "plumbing-inspections", label: "Plumbing inspection" },
   { id: "leak-detection", label: "Leak detection" },
   { id: "drain-cleaning", label: "Drain cleaning" },
-  { id: "sewer-drain-camera-inspections", label: "Sewer/drain camera inspections" },
-  { id: "hydro-jetting-advanced-drain-cleaning", label: "Hydro-jetting / advanced drain cleaning" },
+  { id: "sewer-drain-camera-inspections", label: "Sewer/drain camera inspection" },
+  { id: "hydro-jetting-advanced-drain-cleaning", label: "Hydro-jetting" },
 ] as const;
 
 /** Q16 — "Who does your company serve?" */

@@ -11,15 +11,6 @@ import { section3IsValid } from "@/lib/onboarding/validation/section3";
 import { getSection3Progress } from "@/lib/onboarding/progress/section3";
 import { addCompletedSection } from "@/lib/onboarding/draft-utils";
 
-const SUMMARY_ITEMS = [
-  "Emergency situations classified",
-  "Dispatch approval requirements set",
-  "After-hours call handling configured",
-  "After-hours emergency service availability set",
-  "Primary escalation contact configured",
-  "Fallback and retry rules set",
-  "Emergency capacity/override rule set",
-];
 
 export default function Section3CompletePage() {
   const { draft, saveStatus, lastSavedAt, markSectionComplete } = useOnboarding();
@@ -54,7 +45,7 @@ export default function Section3CompletePage() {
           Alexander now knows how your company handles urgent situations
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[var(--color-alexander-muted)]">
-          Alexander now knows how your company handles urgent situations. He understands which
+          He understands which
           calls require immediate attention, when human approval is needed, who should be
           contacted, what happens when nobody answers, and how to communicate unresolved
           situations truthfully. This gives Alexander a clear safety and escalation framework
@@ -64,22 +55,11 @@ export default function Section3CompletePage() {
           Progress: {completedSections.length} of {TOTAL_SECTIONS} sections complete
         </p>
 
-        <ul className="mx-auto mt-8 max-w-md space-y-3 text-left">
-          {SUMMARY_ITEMS.map((item) => (
-            <li
-              key={item}
-              className="flex items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] bg-[var(--color-alexander-success-bg)] px-4 py-3 text-sm text-[var(--color-alexander-navy)]"
-            >
-              <span className="mt-0.5 text-[var(--color-alexander-success)]" aria-hidden>✓</span>
-              {item}
-            </li>
-          ))}
-        </ul>
 
         <p className="mt-6 text-sm text-[var(--color-alexander-muted)]">Next: Scheduling</p>
 
         <div className="mx-auto mt-10 flex max-w-md flex-col gap-3">
-          <PrimaryLink href="/onboarding/sections/4/intro">Continue to Section 4 →</PrimaryLink>
+          <PrimaryLink href="/onboarding/sections/4/intro">Continue to Scheduling →</PrimaryLink>
           <SecondaryButton onClick={() => router.push("/onboarding/sections/3/review")}>
             Review Section 3
           </SecondaryButton>

@@ -33,6 +33,7 @@ export function RadioGroup<T extends string>({
                 }`}
               >
                 <input
+                  id={`${name}-${opt.value}`}
                   type="radio"
                   name={name}
                   value={opt.value}

@@ -105,7 +105,13 @@ function ServicePolicyRow({
         value={entry.policy}
         ariaLabel={item.label}
         labels={labels}
-        onChange={(policy) => onChange({ ...entry, policy })}
+        onChange={(policy) =>
+          onChange({
+            ...entry,
+            policy,
+            condition: policy === "with_conditions" ? entry.condition : "",
+          })
+        }
       />
       {showCondition && (
         <ConditionalPanel>

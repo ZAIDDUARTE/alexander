@@ -29,13 +29,13 @@ export function Section8ReviewSummary({ draft }: { draft: OnboardingDraft }) {
     s8.schedulingProvider === "same_as_crm"
       ? `Same as CRM (${refLabel(draft, resolveCrmSoftware(s8, draft.systems))})`
       : refLabel(draft, resolveSchedulingSoftware(s8, draft.systems)) ||
-        (s8.schedulingProvider === "none" ? "We do not use scheduling software" : "—");
+        (s8.schedulingProvider === "none" ? "We don’t use scheduling software" : "—");
 
   const dispatch =
     s8.dispatchProvider === "same_as_scheduling"
       ? `Same as scheduling (${refLabel(draft, resolveSchedulingSoftware(s8, draft.systems))})`
       : refLabel(draft, resolveDispatchSoftware(s8, draft.systems)) ||
-        (s8.dispatchProvider === "none" ? "We do not use dispatch software" : "—");
+        (s8.dispatchProvider === "none" ? "We don’t use dispatch software" : "—");
 
   const phone =
     s8.phoneProvider === "not_sure"

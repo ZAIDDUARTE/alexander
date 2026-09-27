@@ -70,7 +70,11 @@ export function Section8Form({ mode = "form" }: Props) {
 
   return (
     <div className="space-y-8">
-      <QuestionCard title="What system do you use to manage customers, jobs, or field-service operations?">
+      <QuestionCard
+        title="What software does your company use to manage customers and jobs?"
+        required
+        helpText="What system do you use to manage customers, jobs, or your field-service operations?"
+      >
         <RadioGroup
           name="crmFsmProvider"
           options={CRM_FSM_OPTIONS.map((o) => ({ value: o.id, label: o.label }))}
@@ -91,7 +95,11 @@ export function Section8Form({ mode = "form" }: Props) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="Where does your company manage appointments and availability?">
+      <QuestionCard
+        title="What software contains your appointment schedule?"
+        required
+        helpText="Where does your company manage appointments and availability?"
+      >
         <RadioGroup
           name="schedulingProvider"
           options={schedulingOptions}
@@ -119,7 +127,11 @@ export function Section8Form({ mode = "form" }: Props) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="Where does your team manage technician schedules or dispatch?">
+      <QuestionCard
+        title="What system do you use for dispatching technicians?"
+        required
+        helpText="Where does your team manage technician schedules or dispatch?"
+      >
         <RadioGroup
           name="dispatchProvider"
           options={DISPATCH_OPTIONS.map((o) => ({ value: o.id, label: o.label }))}
@@ -146,7 +158,7 @@ export function Section8Form({ mode = "form" }: Props) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="What system currently handles your business phone calls?">
+      <QuestionCard title="What phone system do you currently use?" required>
         <RadioGroup
           name="phoneProvider"
           options={PHONE_OPTIONS.map((o) => ({ value: o.id, label: o.label }))}
@@ -169,7 +181,7 @@ export function Section8Form({ mode = "form" }: Props) {
 
       <QuestionCard
         title="Do you use any other software Alexander may need to work with?"
-        optional
+        required
       >
         <fieldset>
           <legend className="sr-only">Additional software categories</legend>
@@ -177,19 +189,27 @@ export function Section8Form({ mode = "form" }: Props) {
             {ADDITIONAL_SOFTWARE_CATEGORIES.map((cat) => {
               const checked = data.additionalSoftwareCategories.includes(cat.id);
               return (
-                <label
+                <div
                   key={cat.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-[var(--color-alexander-border)] px-4 py-3"
+                  className="flex items-center gap-3 rounded-lg border border-[var(--color-alexander-border)] px-4 py-3"
                 >
                   <input
+                    id={`additional-software-${cat.id}`}
+                    name={`additional-software-${cat.id}`}
                     type="checkbox"
+                    value={cat.id}
                     className="h-4 w-4 accent-[var(--color-alexander-blue)]"
                     checked={checked}
                     disabled={readOnly}
                     onChange={() => applyDraft(toggleAdditionalCategory(draft, cat.id))}
                   />
-                  <span className="text-sm text-[var(--color-alexander-navy)]">{cat.label}</span>
-                </label>
+                  <label
+                    htmlFor={`additional-software-${cat.id}`}
+                    className="cursor-pointer text-sm text-[var(--color-alexander-navy)]"
+                  >
+                    {cat.label}
+                  </label>
+                </div>
               );
             })}
           </div>
@@ -222,18 +242,22 @@ export function Section8Form({ mode = "form" }: Props) {
 
       <QuestionCard
         title="Which of these should Alexander be able to do when your software supports it?"
+        required
         helpText={Q109_HELP}
       >
         <fieldset>
           <legend className="sr-only">Authorized software capabilities</legend>
           <div className="space-y-2">
             {INTEGRATION_CAPABILITY_OPTIONS.map((cap) => (
-              <label
+              <div
                 key={cap.id}
-                className="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] px-4 py-3"
+                className="flex items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] px-4 py-3"
               >
                 <input
+                  id={`capability-${cap.id}`}
+                  name={`capability-${cap.id}`}
                   type="checkbox"
+                  value={cap.id}
                   className="mt-0.5 h-4 w-4 accent-[var(--color-alexander-blue)]"
                   checked={data.authorizedCapabilities.includes(cap.id)}
                   disabled={readOnly}
@@ -243,8 +267,13 @@ export function Section8Form({ mode = "form" }: Props) {
                     });
                   }}
                 />
-                <span className="text-sm text-[var(--color-alexander-navy)]">{cap.label}</span>
-              </label>
+                <label
+                  htmlFor={`capability-${cap.id}`}
+                  className="cursor-pointer text-sm text-[var(--color-alexander-navy)]"
+                >
+                  {cap.label}
+                </label>
+              </div>
             ))}
           </div>
         </fieldset>
@@ -261,7 +290,7 @@ export function Section8Form({ mode = "form" }: Props) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="Are you an administrator or authorized person for these systems?">
+      <QuestionCard title="Are you an administrator or authorized person for these systems?" required>
         <RadioGroup
           name="connectionOwnerMode"
           options={CONNECTION_OWNER_OPTIONS.map((o) => ({ value: o.id, label: o.label }))}
@@ -305,11 +334,14 @@ export function Section8Form({ mode = "form" }: Props) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="Software connection notice">
+      <QuestionCard title="Software connection notice" required>
         <p className="mb-4 text-sm text-[var(--color-alexander-muted)]">{Q111_NOTICE}</p>
-        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] px-4 py-3">
+        <div className="flex items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] px-4 py-3">
           <input
+            id="connection-notice-acknowledged"
+            name="connection-notice-acknowledged"
             type="checkbox"
+            value="acknowledged"
             className="mt-0.5 h-5 w-5 accent-[var(--color-alexander-blue)]"
             checked={data.connectionNoticeAcknowledged}
             disabled={readOnly}
@@ -317,8 +349,10 @@ export function Section8Form({ mode = "form" }: Props) {
               updateSection8({ connectionNoticeAcknowledged: e.target.checked }, { immediate: true })
             }
           />
-          <span className="text-sm text-[var(--color-alexander-navy)]">I understand</span>
-        </label>
+          <label htmlFor="connection-notice-acknowledged" className="cursor-pointer text-sm text-[var(--color-alexander-navy)]">
+            I understand
+          </label>
+        </div>
         {submitted && errors.connectionNoticeAcknowledged && (
           <p className="mt-2 text-sm text-[var(--color-alexander-error)]" role="alert">
             {errors.connectionNoticeAcknowledged}
@@ -327,8 +361,9 @@ export function Section8Form({ mode = "form" }: Props) {
       </QuestionCard>
 
       <QuestionCard
-        title="If Alexander temporarily cannot access information or complete an action through your software, what should he normally do?"
-        helpText={Q112_HELP}
+        title="If Alexander can’t access a system or complete an action, what should he normally do?"
+        required
+        helpText={`If Alexander temporarily can’t access information or complete an action through your software, what should he normally do? ${Q112_HELP}`}
       >
         <RadioGroup
           name="failureFallback"
@@ -345,15 +380,18 @@ export function Section8Form({ mode = "form" }: Props) {
               id="failureFallbackCustom"
               label="Custom fallback rule"
               rows={3}
+              required
               value={data.failureFallbackCustom}
               onChange={(v) => updateSection8({ failureFallbackCustom: v })}
+              error={submitted ? errors.failureFallbackCustom : undefined}
             />
           </ConditionalPanel>
         )}
       </QuestionCard>
 
       <QuestionCard
-        title="Anything else Alexander should know about how your company operates?"
+        title="Is there anything important about your company that we haven’t asked?"
+        helpText="Anything else Alexander should know about how your company operates?"
         optional
       >
         <TextareaField

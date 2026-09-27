@@ -1,5 +1,5 @@
 import { EMERGENCY_SCENARIOS } from "../section3Catalog";
-import { DAYS, isOfficeDayValid, hasAnyOpenOfficeDay, type OfficeDaySchedule } from "../schedule";
+import { DAYS, DAY_LABELS, isOfficeDayValid, hasAnyOpenOfficeDay, type OfficeDaySchedule } from "../schedule";
 import { isValidE164, PHONE_INVALID_MESSAGE } from "../phone";
 import type { AfterHoursCallClass, Contact, Section3Data } from "../types";
 
@@ -8,9 +8,9 @@ export type FieldErrors = Partial<Record<string, string>>;
 function officeDayError(label: string, day: OfficeDaySchedule): string | null {
   if (isOfficeDayValid(day)) return null;
   if (!day.start || !day.end) {
-    return `${label}: start and end times are required when available.`;
+    return `${label}: opening and closing times are required when this contact is available.`;
   }
-  return `${label}: end time must be after start time.`;
+  return `${label}: closing time must be after opening time.`;
 }
 
 export type ContactErrors = {
@@ -42,7 +42,7 @@ export function validateContact(contact: Contact): ContactErrors {
 
   const scheduleDayErrors: Partial<Record<string, string>> = {};
   for (const day of DAYS) {
-    const err = officeDayError(day, contact.availability[day]);
+    const err = officeDayError(DAY_LABELS[day], contact.availability[day]);
     if (err) scheduleDayErrors[day] = err;
   }
   if (Object.keys(scheduleDayErrors).length > 0) {
@@ -137,7 +137,7 @@ export function validateSection3(data: Section3Data, contacts: Contact[]): Field
   } else if (data.emergencyServiceMode === "certain_hours") {
     const scheduleDayErrors: Partial<Record<string, string>> = {};
     for (const day of DAYS) {
-      const err = officeDayError(day, data.emergencyServiceSchedule[day]);
+      const err = officeDayError(DAY_LABELS[day], data.emergencyServiceSchedule[day]);
       if (err) scheduleDayErrors[`emergencyServiceSchedule.${day}`] = err;
     }
     Object.assign(errors, scheduleDayErrors);
@@ -254,15 +254,15 @@ export const CAPACITY_MODE_OPTIONS = [
   },
   { value: "authorized_approval" as const, label: "Ask an authorized person to approve an exception" },
   {
-    value: "no_override" as const,
-    label: "Do not override the schedule - take the customer's information and arrange follow-up",
+    value: "arrange_callback" as const,
+    label: "Take the customer’s information and arrange a callback",
   },
 ];
 
 export const EMERGENCY_SERVICE_MODE_OPTIONS = [
   { value: "24_7" as const, label: "24 hours a day, 7 days a week" },
   { value: "certain_hours" as const, label: "Only during certain hours" },
-  { value: "none" as const, label: "We do not provide after-hours emergency field service" },
+  { value: "none" as const, label: "We don’t provide after-hours emergency field service" },
 ];
 
 export const HAS_BACKUP_CONTACT_OPTIONS = [

@@ -7,6 +7,7 @@ export type SaveStatus =
   | "idle"
   | "saving"
   | "saved"
+  | "saved-local"
   | "error"
   | "server-pending";
 

@@ -16,7 +16,6 @@ import {
   APPROVED_PRIMARY_VOICES,
   hasAdditionalApprovedVoices,
   isAccentOptionAvailable,
-  isOtherSupportedLanguageOptionAvailable,
 } from "@/lib/onboarding/approvedVoiceCatalog";
 import {
   ACCENT_HELP,
@@ -28,6 +27,8 @@ import {
   FORMALITY_HELP,
   FORMALITY_OPTIONS,
   LANGUAGE_HELP,
+  LANGUAGE_SWITCHING_HELP,
+  PRONUNCIATION_HELP,
   LANGUAGE_SWITCHING_OPTIONS,
   PERCEIVED_VOICE_HELP,
   PERCEIVED_VOICE_OPTIONS,
@@ -57,10 +58,7 @@ function LanguageCheckboxes({
     onChange({ englishOnly: true, callerLanguages: [] });
   };
 
-  const otherLanguageAvailable = isOtherSupportedLanguageOptionAvailable(null);
-
   const toggleLang = (lang: CallerLanguageId) => {
-    if (lang === "other" && !otherLanguageAvailable) return;
     const has = data.callerLanguages.includes(lang);
     const next = has
       ? data.callerLanguages.filter((l) => l !== lang)
@@ -68,56 +66,40 @@ function LanguageCheckboxes({
     onChange({ englishOnly: false, callerLanguages: next });
   };
 
+  const rows: { id: "english" | "spanish" | "other" | "english_only"; label: string }[] = [
+    { id: "english", label: "English" },
+    { id: "spanish", label: "Spanish" },
+    { id: "other", label: "Other supported language" },
+    { id: "english_only", label: "English only" },
+  ];
+
   return (
     <div>
       <div role="group" aria-label="Supported languages" className="space-y-2">
-        <label
-          className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 ${
-            data.englishOnly
-              ? "border-[var(--color-alexander-blue)] bg-[var(--color-alexander-info-bg)]"
-              : "border-[var(--color-alexander-border)] bg-white"
-          }`}
-        >
-          <input
-            type="checkbox"
-            checked={data.englishOnly}
-            onChange={() => toggleEnglishOnly()}
-            className="h-4 w-4 accent-[var(--color-alexander-blue)]"
-          />
-          <span className="text-sm text-[var(--color-alexander-navy)]">English only</span>
-        </label>
-        {(["english", "spanish", "other"] as CallerLanguageId[]).map((lang) => {
-          const label =
-            lang === "english" ? "English" : lang === "spanish" ? "Spanish" : "Other supported language";
-          const checked = !data.englishOnly && data.callerLanguages.includes(lang);
-          const disabled =
-            data.englishOnly || (lang === "other" && !otherLanguageAvailable);
+        {rows.map((row) => {
+          const checked =
+            row.id === "english_only"
+              ? data.englishOnly
+              : !data.englishOnly && data.callerLanguages.includes(row.id);
           return (
-            <div key={lang}>
-              <label
-                className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${
-                  disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-                } ${
-                  checked
-                    ? "border-[var(--color-alexander-blue)] bg-[var(--color-alexander-info-bg)]"
-                    : "border-[var(--color-alexander-border)] bg-white"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  disabled={disabled}
-                  onChange={() => toggleLang(lang)}
-                  className="h-4 w-4 accent-[var(--color-alexander-blue)]"
-                />
-                <span className="text-sm text-[var(--color-alexander-navy)]">{label}</span>
-              </label>
-              {lang === "other" && !otherLanguageAvailable && (
-                <p className="mt-1 px-1 text-xs text-[var(--color-alexander-muted)]">
-                  Additional languages can be enabled when verified for the selected voice.
-                </p>
-              )}
-            </div>
+            <label
+              key={row.id}
+              className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 ${
+                checked
+                  ? "border-[var(--color-alexander-blue)] bg-[var(--color-alexander-info-bg)]"
+                  : "border-[var(--color-alexander-border)] bg-white"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() =>
+                  row.id === "english_only" ? toggleEnglishOnly() : toggleLang(row.id)
+                }
+                className="h-4 w-4 accent-[var(--color-alexander-blue)]"
+              />
+              <span className="text-sm text-[var(--color-alexander-navy)]">{row.label}</span>
+            </label>
           );
         })}
       </div>
@@ -173,9 +155,7 @@ export function Section7Form({ mode = "form" }: { mode?: "form" | "review" }) {
           error={errors.callerLanguages}
           onChange={(patch) => updateSection7(patch, { immediate: true })}
         />
-        {data.callerLanguages.includes("other") &&
-          !data.englishOnly &&
-          isOtherSupportedLanguageOptionAvailable(resolveEffectiveVoiceId(data)) && (
+        {data.callerLanguages.includes("other") && !data.englishOnly && (
           <ConditionalPanel>
             <TextField
               id="otherSupportedLanguage"
@@ -219,8 +199,10 @@ export function Section7Form({ mode = "form" }: { mode?: "form" | "review" }) {
               }`}
             >
               <input
+                id="voiceSelection-another"
                 type="radio"
                 name="voiceSelection"
+                value={VOICE_CHOICE_ANOTHER}
                 checked={data.voiceSelection === VOICE_CHOICE_ANOTHER}
                 disabled={!hasAdditionalApprovedVoices()}
                 onChange={() =>
@@ -332,6 +314,7 @@ export function Section7Form({ mode = "form" }: { mode?: "form" | "review" }) {
       <QuestionCard
         title="Are there any company, people, city, neighborhood, or brand names that Alexander must pronounce correctly?"
         required
+        helpText={PRONUNCIATION_HELP}
       >
         <RadioGroup
           name="pronunciationMode"
@@ -412,6 +395,7 @@ export function Section7Form({ mode = "form" }: { mode?: "form" | "review" }) {
       <QuestionCard
         title="If a caller speaks a supported second language, what should Alexander normally do?"
         required
+        helpText={LANGUAGE_SWITCHING_HELP}
       >
         <RadioGroup
           name="languageSwitchingPolicy"

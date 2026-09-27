@@ -129,7 +129,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const runServerSave = useCallback(async (next: OnboardingDraft, route: string) => {
     const result = await putServerDraft(next, route);
     if (!result.redisAvailable) {
-      setSaveStatus("saved");
+      setSaveStatus("saved-local");
       setLastSavedAt(new Date());
       return;
     }
@@ -634,7 +634,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setSaveStatus("saving");
     saveLocalDraft(next);
     const result = await putServerDraft(next, currentRouteRef.current, { keepalive: true });
-    if (!result.redisAvailable || result.savedToRedis) {
+    if (!result.redisAvailable) {
+      setSaveStatus("saved-local");
+      setLastSavedAt(new Date());
+    } else if (result.savedToRedis) {
       setSaveStatus("saved");
       setLastSavedAt(new Date());
     } else {
@@ -659,7 +662,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       const result = await putServerDraft(next, currentRouteRef.current, {
         keepalive: true,
       });
-      if (!result.redisAvailable || result.savedToRedis) {
+      if (!result.redisAvailable) {
+        setSaveStatus("saved-local");
+        setLastSavedAt(new Date());
+      } else if (result.savedToRedis) {
         setSaveStatus("saved");
         setLastSavedAt(new Date());
       } else {

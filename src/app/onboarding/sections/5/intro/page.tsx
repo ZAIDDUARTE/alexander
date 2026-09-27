@@ -26,7 +26,7 @@ export default function Section5IntroPage() {
       <SectionIntro
         sectionNumber={5}
         title="Pricing and Payments"
-        description="Tell Alexander what he may explain about fees, estimates, payments, and financial policies. You decide whether Alexander may share specific prices, explain service fees, provide approved ranges, or send financial questions to your team. If your company does not want Alexander to discuss a particular financial topic, simply indicate that. He will not guess or improvise."
+        description="Tell Alexander what he may explain about fees, estimates, payments, and financial policies. You decide whether Alexander may share specific prices, explain service fees, provide approved ranges, collect payment information, or send financial questions to your team. If your company does not want Alexander to discuss a particular financial topic, simply indicate that. He will not guess or improvise."
         estimatedTime="10–15 minutes"
         ctaHref="/onboarding/sections/5/form"
         ctaLabel="Begin Pricing and Payments →"

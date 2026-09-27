@@ -8,7 +8,7 @@ import { hasPendingSubmissionChanges } from "@/lib/onboarding/submissionIntegrit
 import { useRouter } from "next/navigation";
 
 const CONFIRMATION_COPY =
-  "Thank you. We have received your setup information. Your Alexander configuration is now being prepared. Our team will review your answers and contact you if we need clarification. Before Alexander goes live, you will have the opportunity to review and approve how he represents your company. You have completed the most important part of the process. We’ll take it from here.";
+  "Your Alexander configuration is now being prepared. Our team will review your answers and contact you if we need clarification. Before Alexander goes live, you will have the opportunity to review and approve how he represents your company. You have completed the most important part of the process. We’ll take it from here.";
 
 export default function SubmittedPage() {
   const { draft, saveStatus, lastSavedAt } = useOnboarding();
@@ -25,7 +25,7 @@ export default function SubmittedPage() {
     >
       <ContentCard className="text-center">
         <h1 className="font-serif text-3xl font-semibold text-[var(--color-alexander-navy)]">
-          Questionnaire received
+          Thank you. We have received your setup information.
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[var(--color-alexander-muted)]">
           {CONFIRMATION_COPY}

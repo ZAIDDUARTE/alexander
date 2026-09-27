@@ -40,8 +40,8 @@ export default function WelcomePage() {
           </p>
           <p>
             This questionnaire gives us the information we need to configure Alexander around the
-            way your business actually operates - including your services, service area, scheduling
-            rules, emergency procedures, pricing policies, customer-care standards, voice, and team
+            way your business actually operates—including your services, service area, scheduling
+            rules, emergency procedures, pricing policies, customer-care standards, and team
             handoffs.
           </p>
           <p>

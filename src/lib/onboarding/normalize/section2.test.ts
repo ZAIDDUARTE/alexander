@@ -150,6 +150,6 @@ describe("normalizeSection2 — service area (F: applicability by mode)", () => 
     data.afterHoursServiceArea = "stale text from a previous 'smaller' selection";
     const normalized = normalizeSection2(data);
     assert.equal(normalized.serviceArea.afterHours.mode, "same");
-    assert.equal(normalized.serviceArea.afterHours.territory, null);
+    assert.equal(normalized.serviceArea.afterHours.geography, null);
   });
 });

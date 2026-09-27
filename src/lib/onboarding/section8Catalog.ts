@@ -8,7 +8,7 @@ export const CRM_FSM_OPTIONS = [
   { id: "hubspot", label: "HubSpot" },
   { id: "salesforce", label: "Salesforce" },
   { id: "custom", label: "Another system" },
-  { id: "none", label: "We do not use one" },
+  { id: "none", label: "We don’t use one" },
 ] as const;
 
 export type CrmFsmProvider = (typeof CRM_FSM_OPTIONS)[number]["id"] | "";
@@ -19,7 +19,7 @@ export const SCHEDULING_OPTIONS = [
   { id: "microsoft_outlook", label: "Microsoft Outlook / Microsoft 365" },
   { id: "cal_com", label: "Cal.com" },
   { id: "custom", label: "Another scheduling system" },
-  { id: "none", label: "We do not use scheduling software" },
+  { id: "none", label: "We don’t use scheduling software" },
 ] as const;
 
 export type SchedulingProvider = (typeof SCHEDULING_OPTIONS)[number]["id"] | "";
@@ -27,7 +27,7 @@ export type SchedulingProvider = (typeof SCHEDULING_OPTIONS)[number]["id"] | "";
 export const DISPATCH_OPTIONS = [
   { id: "same_as_scheduling", label: "Same system selected above" },
   { id: "custom", label: "We use another system" },
-  { id: "none", label: "We do not use dispatch software" },
+  { id: "none", label: "We don’t use dispatch software" },
 ] as const;
 
 export type DispatchProvider = (typeof DISPATCH_OPTIONS)[number]["id"] | "";
@@ -48,6 +48,7 @@ export type PhoneProvider = (typeof PHONE_OPTIONS)[number]["id"] | "";
 export const ADDITIONAL_SOFTWARE_CATEGORIES = [
   { id: "separate_customer_database", label: "Separate customer database" },
   { id: "price_book_estimating", label: "Separate price book / estimating software" },
+  { id: "membership", label: "Membership / service-plan software" },
   { id: "financing", label: "Financing system" },
   { id: "payment", label: "Payment system" },
   { id: "sms_texting", label: "SMS / texting platform" },
@@ -62,7 +63,7 @@ export const INTEGRATION_CAPABILITY_OPTIONS = [
   { id: "find_customer", label: "Find an existing customer" },
   { id: "view_customer_contact", label: "View customer contact information" },
   { id: "view_upcoming_appointments", label: "View upcoming appointments" },
-  { id: "view_job_history", label: "View previous jobs / service history" },
+  { id: "view_job_history", label: "View previous jobs/service history" },
   { id: "view_previous_technician", label: "View the technician who previously serviced a customer" },
   { id: "view_membership_status", label: "View membership/service-plan status" },
   { id: "view_warranty_info", label: "View relevant warranty information" },
@@ -103,13 +104,13 @@ export const FAILURE_FALLBACK_OPTIONS = [
 export type FailureFallbackMode = (typeof FAILURE_FALLBACK_OPTIONS)[number]["id"] | "";
 
 export const Q109_HELP =
-  "Selecting a capability authorizes configuration when technically supported; it does not guarantee the integration can provide it.";
+  "Selecting a capability authorizes/desires configuration; it does not guarantee that the connected software technically supports it.";
 
 export const Q111_NOTICE =
-  "You will connect supported software securely after submitting this questionnaire. Do not enter passwords or private API credentials here. Our team will handle configuration and testing.";
+  "You’ll connect supported software securely after submitting this questionnaire. For supported integrations, you’ll sign into your own software account and authorize Alexander to access the information and actions required for your setup. Do not enter passwords or private API credentials in this questionnaire. Our team will handle the configuration and testing for you.";
 
 export const Q112_HELP =
-  "Alexander will never claim an appointment, change, cancellation, dispatch, or other action succeeded unless it was actually confirmed.";
+  "Alexander will never tell a customer that an appointment was booked, changed, canceled, dispatched, or otherwise completed unless the action was actually confirmed.";
 
 export const Q114_CONFIRMATIONS = [
   {

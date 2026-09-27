@@ -15,10 +15,10 @@ const CLASSIFICATION_ORDER: EmergencyClassification[] = [
 
 export const EMERGENCY_CLASSIFICATION_LABELS: EmergencyClassificationLabels = {
   emergency: "Emergency",
-  urgent: "Urgent, but not an emergency",
+  urgent: "Urgent, not emergency",
   routine: "Routine",
-  human_review: "Human review required",
-  recommended_default: "Use Alexander's recommended default",
+  human_review: "Human review",
+  recommended_default: "Recommended default",
 };
 
 /**

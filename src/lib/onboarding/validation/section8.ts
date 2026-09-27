@@ -95,7 +95,9 @@ export function validateSection8(
   const categories = data.additionalSoftwareCategories;
   const hasNone = categories.includes("none");
   const positive = categories.filter((c) => c !== "none");
-  if (hasNone && positive.length > 0) {
+  if (categories.length === 0) {
+    errors.additionalSoftwareCategories = "Select at least one option, or None.";
+  } else if (hasNone && positive.length > 0) {
     errors.additionalSoftwareCategories = "None cannot be combined with other categories.";
   }
 
@@ -109,18 +111,6 @@ export function validateSection8(
       }
       if (!meaningfulText(card.systemName)) {
         errors[`additionalSoftware.${cat}.systemName`] = "Enter the software name.";
-      }
-      if (!meaningfulText(card.desiredAccess)) {
-        errors[`additionalSoftware.${cat}.desiredAccess`] =
-          "Describe what Alexander should be able to access.";
-      }
-      if (cat === "other") {
-        if (!meaningfulText(card.otherCategoryLabel)) {
-          errors[`additionalSoftware.${cat}.otherCategoryLabel`] = "Enter a category or name.";
-        }
-        if (!meaningfulText(card.otherDetails)) {
-          errors[`additionalSoftware.${cat}.otherDetails`] = "Enter additional details.";
-        }
       }
     }
   }
@@ -156,6 +146,8 @@ export function validateSection8(
 
   if (!data.failureFallback) {
     errors.failureFallback = "Select a fallback when software access fails.";
+  } else if (data.failureFallback === "custom" && !data.failureFallbackCustom.trim()) {
+    errors.failureFallbackCustom = "Describe the fallback rule Alexander should follow.";
   }
 
   return errors;

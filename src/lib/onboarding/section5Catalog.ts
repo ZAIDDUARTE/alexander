@@ -26,7 +26,7 @@ export const UNKNOWN_PRICE_OPTIONS: readonly CatalogItem[] = [
   {
     id: "fee_plus_separate_quote",
     label:
-      "Explain the applicable service / diagnostic fee and that additional work is quoted separately",
+      "Explain the applicable service/diagnostic fee and that additional work is quoted separately",
   },
   { id: "team_provides_pricing", label: "Arrange for our team to provide pricing" },
   { id: "custom", label: "Follow another rule" },
@@ -34,13 +34,13 @@ export const UNKNOWN_PRICE_OPTIONS: readonly CatalogItem[] = [
 
 /** Q68 optional category templates (category label only). */
 export const FEE_CATEGORY_TEMPLATES: readonly CatalogItem[] = [
-  { id: "diagnostic_service_call", label: "Diagnostic / service-call" },
-  { id: "emergency_after_hours", label: "Emergency / after-hours" },
-  { id: "travel", label: "Travel" },
-  { id: "cancellation_no_show", label: "Cancellation / no-show" },
+  { id: "diagnostic_service_call", label: "Diagnostic/service-call fee" },
+  { id: "emergency_after_hours", label: "Emergency or after-hours fee" },
+  { id: "travel", label: "Travel fee" },
+  { id: "cancellation_no_show", label: "Cancellation/no-show fee" },
   { id: "minimum_service_charge", label: "Minimum service charge" },
-  { id: "permit_inspection", label: "Permit / inspection" },
-  { id: "other", label: "Other" },
+  { id: "permit_inspection", label: "Permit or inspection fee" },
+  { id: "other", label: "Other fee" },
 ] as const;
 
 export const FEE_AMOUNT_KIND_OPTIONS: readonly CatalogItem[] = [
@@ -52,7 +52,7 @@ export const FEE_AMOUNT_KIND_OPTIONS: readonly CatalogItem[] = [
 
 export const FEE_QUOTE_AUTHORITY_OPTIONS: readonly CatalogItem[] = [
   { id: "yes", label: "Yes, Alexander may quote it" },
-  { id: "no", label: "No" },
+  { id: "no", label: "No, Alexander should not quote it" },
   { id: "after_confirmation", label: "Only after team confirmation" },
 ] as const;
 
@@ -71,11 +71,11 @@ export const FEE_WAIVER_OPTIONS: readonly CatalogItem[] = [
 /** Q70 visit-type matrix columns. */
 export const VISIT_TYPE_OPTIONS: readonly CatalogItem[] = [
   { id: "free_estimate", label: "Free estimate" },
-  { id: "paid_diagnostic", label: "Paid diagnostic / service visit" },
+  { id: "paid_diagnostic", label: "Paid diagnostic visit" },
   { id: "inspection", label: "Inspection visit" },
   { id: "normal_service", label: "Normal service appointment" },
   { id: "ask_team", label: "Ask our team first" },
-  { id: "not_offered", label: "We do not offer this" },
+  { id: "not_offered", label: "We don’t offer this" },
 ] as const;
 
 /** Q72 general pricing authority. */
@@ -103,12 +103,12 @@ export const FORBIDDEN_PRICING_STATEMENT_OPTIONS: readonly CatalogItem[] = [
   {
     id: "no_guarantee_before_diagnosis",
     label:
-      "Never guarantee a final repair price before diagnosis unless it is an approved fixed price",
+      "Never guarantee a final repair price before diagnosis unless it’s an approved fixed price",
   },
   { id: "never_invent_price", label: "Never invent a price" },
-  { id: "no_promise_no_additional", label: "Never promise there will not be additional charges" },
+  { id: "no_promise_no_additional", label: "Never promise that there won’t be additional charges" },
   { id: "no_disclose_markup", label: "Never disclose internal material markup" },
-  { id: "no_unauthorized_discount", label: "Never promise a discount that has not been authorized" },
+  { id: "no_unauthorized_discount", label: "Never promise a discount that hasn’t been authorized" },
   { id: "other", label: "Other" },
 ] as const;
 

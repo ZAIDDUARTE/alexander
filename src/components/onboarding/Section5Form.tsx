@@ -18,9 +18,7 @@ import { addCompletedSection } from "@/lib/onboarding/draft-utils";
 import { getPricingDiscussEligibleServices } from "@/lib/onboarding/pricingServices";
 import { getTerritorySuggestions } from "@/lib/onboarding/territorySuggestions";
 import {
-  FINANCING_PERMISSION_OPTIONS,
   FORBIDDEN_PRICING_STATEMENT_OPTIONS,
-  GENERAL_PRICING_AUTHORITY_OPTIONS,
   PAYMENT_DUE_OPTIONS,
   PAYMENT_METHOD_OPTIONS,
   PRICING_MODEL_OPTIONS,
@@ -33,9 +31,7 @@ import {
   createAreaPricingRowId,
   createPromotionId,
   type AreaPricingRow,
-  type FinancingPermissionId,
   type ForbiddenStatementId,
-  type GeneralPricingAuthorityId,
   type MaterialMarkupPolicy,
   type PaymentDueId,
   type PaymentMethodId,
@@ -60,7 +56,40 @@ const MATERIAL_MARKUP_OPTIONS: { value: MaterialMarkupPolicy; label: string }[] 
   { value: "no", label: "No" },
 ];
 
-const FINANCING_HELP = "Alexander must not promise financing approval.";
+function geographyChoices(section2: {
+  serviceAreaZipCodes: string[];
+  serviceAreaCities: string[];
+  conditionalTerritories: { area: string }[];
+  afterHoursZipCodes: string[];
+  afterHoursCities: string[];
+  serviceAreaDefinitionMode: string;
+  serviceAreaDistance: { address: string; radiusMiles: string };
+  afterHoursDefinitionMode: string;
+  afterHoursDistance: { address: string; radiusMiles: string };
+}) {
+  const seen = new Set<string>();
+  const out: { value: string; label: string }[] = [];
+  const push = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed || seen.has(trimmed)) return;
+    seen.add(trimmed);
+    out.push({ value: trimmed, label: trimmed });
+  };
+  for (const zip of section2.serviceAreaZipCodes) push(zip);
+  for (const city of section2.serviceAreaCities) push(city);
+  for (const territory of section2.conditionalTerritories) push(territory.area);
+  for (const zip of section2.afterHoursZipCodes) push(zip);
+  for (const city of section2.afterHoursCities) push(city);
+  if (section2.serviceAreaDefinitionMode === "distance") {
+    const address = section2.serviceAreaDistance.address.trim();
+    if (address) push(`${address} (${section2.serviceAreaDistance.radiusMiles} miles)`);
+  }
+  if (section2.afterHoursDefinitionMode === "distance") {
+    const address = section2.afterHoursDistance.address.trim();
+    if (address) push(`${address} (${section2.afterHoursDistance.radiusMiles} miles)`);
+  }
+  return out;
+}
 
 function mapFinancialApproverErrors(errors: FieldErrors): ContactCardErrors | undefined {
   const out: ContactCardErrors = {};
@@ -333,10 +362,6 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
     value: o.id as UnknownPriceBehaviorId,
     label: o.label,
   }));
-  const generalAuthorityOptions = GENERAL_PRICING_AUTHORITY_OPTIONS.map((o) => ({
-    value: o.id as GeneralPricingAuthorityId,
-    label: o.label,
-  }));
   const forbiddenOptions = FORBIDDEN_PRICING_STATEMENT_OPTIONS.map((o) => ({
     value: o.id as ForbiddenStatementId,
     label: o.label,
@@ -357,11 +382,6 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
     value: o.id as PromotionModificationId,
     label: o.label,
   }));
-  const financingPermissionOptions = FINANCING_PERMISSION_OPTIONS.map((o) => ({
-    value: o.id as FinancingPermissionId,
-    label: o.label,
-  }));
-
   const due = data.paymentDuePolicies;
 
   return (
@@ -379,7 +399,8 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </header>
 
       <QuestionCard
-        title="How does your company normally determine what a customer pays?"
+        title="How does your company normally price plumbing work?"
+        helpText="How does your company normally determine what a customer pays?"
         required
       >
         <CheckboxGroup
@@ -443,7 +464,7 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="If Alexander does not know the exact price, what should he normally tell the customer?"
+        title="If Alexander doesn’t know the exact price, what should he normally tell the customer?"
         required
       >
         <RadioGroup
@@ -481,7 +502,15 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
           fees={fees}
           section4={draft.section4}
           noSeparateFees={data.noSeparateFees}
-          onNoSeparateFeesChange={(v) => updateSection5({ noSeparateFees: v }, { immediate: true })}
+          onNoSeparateFeesChange={(v) =>
+            updateSection5(
+              {
+                noSeparateFees: v,
+                ...(v ? { paidDiagnosticFeeId: "" } : {}),
+              },
+              { immediate: true },
+            )
+          }
           onAddFee={() => addFee({ immediate: true })}
           onRemoveFee={(id) => removeFee(id, { immediate: true })}
           onDuplicateFee={(id) => duplicateFee(id, { immediate: true })}
@@ -529,14 +558,35 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
                     )}
                   </div>
                   <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-3">
-                    <TextField
-                      id={`area-${row.id}`}
-                      label="Area"
-                      value={row.area}
-                      onChange={(v) => updateAreaRow(row.id, { area: v })}
-                      placeholder="City, ZIP, or region"
-                      error={submitted ? errors[`areaPricingRows.${row.id}`] : undefined}
-                    />
+                    <div>
+                      <label
+                        htmlFor={`area-${row.id}`}
+                        className="block text-sm font-medium text-[var(--color-alexander-navy)]"
+                      >
+                        Area
+                        <span className="ml-1 text-[var(--color-alexander-required)]" aria-hidden>
+                          *
+                        </span>
+                      </label>
+                      <select
+                        id={`area-${row.id}`}
+                        value={row.area}
+                        onChange={(e) => updateAreaRow(row.id, { area: e.target.value })}
+                        className="mt-2 w-full rounded-lg border border-[var(--color-alexander-border)] bg-white px-4 py-3 text-base text-[var(--color-alexander-navy)]"
+                      >
+                        <option value="">Select a saved service area</option>
+                        {geographyChoices(draft.section2).map((choice) => (
+                          <option key={choice.value} value={choice.value}>
+                            {choice.label}
+                          </option>
+                        ))}
+                      </select>
+                      {submitted && errors[`areaPricingRows.${row.id}`] && (
+                        <p className="mt-2 text-sm text-[var(--color-alexander-required)]" role="alert">
+                          {errors[`areaPricingRows.${row.id}`]}
+                        </p>
+                      )}
+                    </div>
                     <TextField
                       id={`travel-${row.id}`}
                       label="Travel fee ($)"
@@ -581,17 +631,24 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
       <QuestionCard title="How should Alexander handle these types of visits?" required>
         <VisitTypeMatrix
           value={data.visitTypeByServiceId}
-          onChange={(serviceId, visitType) =>
+          onChange={(serviceId, visitType) => {
+            const visitTypeByServiceId = {
+              ...data.visitTypeByServiceId,
+              [serviceId]: visitType,
+            };
+            const stillPaid = Object.values(visitTypeByServiceId).some(
+              (value) => value === "paid_diagnostic",
+            );
             updateSection5(
               {
-                visitTypeByServiceId: {
-                  ...data.visitTypeByServiceId,
-                  [serviceId]: visitType,
-                },
+                visitTypeByServiceId,
+                ...(stillPaid
+                  ? {}
+                  : { paidDiagnosticExplanation: "", paidDiagnosticFeeId: "" }),
               },
               { immediate: true },
-            )
-          }
+            );
+          }}
           highlightIncomplete={submitted}
           rowErrors={visitTypeRowErrors}
           groupError={submitted ? errors.visitTypeByServiceId : undefined}
@@ -603,36 +660,54 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
           title="What should Alexander tell customers about paid diagnostic visits?"
           required
         >
+          {(() => {
+            const linkableFees = fees.filter(
+              (fee) => fee.active && fee.name.trim() && !data.noSeparateFees,
+            );
+            const linkedFeeId = linkableFees.some((fee) => fee.id === data.paidDiagnosticFeeId)
+              ? data.paidDiagnosticFeeId
+              : "";
+            return (
+              <div className="mb-4">
+                <label
+                  htmlFor="paidDiagnosticFeeId"
+                  className="block text-sm font-medium text-[var(--color-alexander-navy)]"
+                >
+                  Which fee already entered above applies?
+                </label>
+                <select
+                  id="paidDiagnosticFeeId"
+                  value={linkedFeeId}
+                  onChange={(e) =>
+                    updateSection5({ paidDiagnosticFeeId: e.target.value }, { immediate: true })
+                  }
+                  className="mt-2 w-full rounded-lg border border-[var(--color-alexander-border)] bg-white px-4 py-3 text-base text-[var(--color-alexander-navy)]"
+                >
+                  <option value="">
+                    {linkableFees.length === 0
+                      ? "No fee has been added yet"
+                      : "No linked fee"}
+                  </option>
+                  {linkableFees.map((fee) => (
+                    <option key={fee.id} value={fee.id}>
+                      {fee.name.trim()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            );
+          })()}
           <TextareaField
             id="paidDiagnosticExplanation"
-            label="Approved customer explanation"
+            label="What should Alexander tell customers?"
             required
             rows={3}
             value={data.paidDiagnosticExplanation}
             onChange={(v) => updateSection5({ paidDiagnosticExplanation: v })}
-            helpText="Reference your fee records from the fee list above — do not re-enter diagnostic amounts here."
             error={submitted ? errors.paidDiagnosticExplanation : undefined}
           />
         </QuestionCard>
       )}
-
-      <QuestionCard
-        title='When a customer asks “How much will this cost?”, what is Alexander normally allowed to do?'
-        required
-      >
-        <RadioGroup
-          name="generalPricingAuthority"
-          options={generalAuthorityOptions}
-          value={data.generalPricingAuthority}
-          onChange={(v) =>
-            updateSection5(
-              { generalPricingAuthority: v as GeneralPricingAuthorityId },
-              { immediate: true },
-            )
-          }
-          error={submitted ? errors.generalPricingAuthority : undefined}
-        />
-      </QuestionCard>
 
       <QuestionCard title="Which service prices may Alexander discuss with customers?" required>
         <ServicePricingCards
@@ -932,7 +1007,7 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="Do you offer financing?" required helpText={FINANCING_HELP}>
+      <QuestionCard title="Do you offer financing?" required>
         <RadioGroup
           name="offersFinancing"
           options={YES_NO_OPTIONS}
@@ -966,40 +1041,6 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
               onChange={(v) => updateSection5({ financingProviderTerms: v })}
               error={submitted ? errors.financingProviderTerms : undefined}
             />
-            <CheckboxGroup
-              name="financingPermissions"
-              options={financingPermissionOptions}
-              value={data.financingPermissions}
-              onChange={(v) =>
-                updateSection5(
-                  {
-                    financingPermissions: v,
-                    ...(!v.includes("other") ? { financingPermissionOtherDetail: "" } : {}),
-                  },
-                  { immediate: true },
-                )
-              }
-              error={submitted ? errors.financingPermissions : undefined}
-            />
-            {data.financingPermissions.includes("other") && (
-              <TextField
-                id="financingPermissionOtherDetail"
-                label="Other financing permission"
-                required
-                value={data.financingPermissionOtherDetail}
-                onChange={(v) => updateSection5({ financingPermissionOtherDetail: v })}
-                error={submitted ? errors.financingPermissionOtherDetail : undefined}
-              />
-            )}
-            <TextareaField
-              id="financingEligibilityStatement"
-              label="Approved eligibility statement Alexander may use"
-              required
-              rows={2}
-              value={data.financingEligibilityStatement}
-              onChange={(v) => updateSection5({ financingEligibilityStatement: v })}
-              error={submitted ? errors.financingEligibilityStatement : undefined}
-            />
           </ConditionalPanel>
         )}
       </QuestionCard>
@@ -1032,7 +1073,7 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
 
       {showFinancialApprover && (
         <QuestionCard
-          title="Who should Alexander contact when human approval is required for a financial remedy?"
+          title="Who should Alexander contact when human approval is required?"
           required
         >
           <ContactPicker

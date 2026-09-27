@@ -13,6 +13,8 @@ export function SaveStatusIndicator({ status, lastSavedAt }: Props) {
   let text = "Saving…";
   if (status === "saved" && lastSavedAt) {
     text = `Saved just now`;
+  } else if (status === "saved-local") {
+    text = "Saved in this browser";
   } else if (status === "server-pending") {
     text = "Not saved to server yet";
   } else if (status === "error") {

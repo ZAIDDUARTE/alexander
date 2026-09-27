@@ -74,11 +74,11 @@ describe("getSection3Progress — Q: conditional units affect the denominator", 
     const approvalApplicable = getSection3ProgressUnits(approval, [primary]).filter((u) => u.applicable);
 
     const none = createDefaultSection3(primary.id);
-    none.capacityMode = "no_override";
+    none.capacityMode = "arrange_callback";
     const noneApplicable = getSection3ProgressUnits(none, [primary]).filter((u) => u.applicable);
 
     // Each of reserved/override/approval adds exactly one applicable
-    // unit relative to "no_override" (which adds none of the three).
+    // unit relative to "arrange_callback" (which adds none of the three).
     assert.equal(reservedApplicable.length, noneApplicable.length + 1);
     assert.equal(overrideApplicable.length, noneApplicable.length + 1);
     assert.equal(approvalApplicable.length, noneApplicable.length + 1);
@@ -87,7 +87,7 @@ describe("getSection3Progress — Q: conditional units affect the denominator", 
   it("selecting a conditional option without filling it in never scores higher than a non-conditional choice", () => {
     const primary = validContact();
     const noOverride = createDefaultSection3(primary.id);
-    noOverride.capacityMode = "no_override";
+    noOverride.capacityMode = "arrange_callback";
 
     const reservedUnfilled = createDefaultSection3(primary.id);
     reservedUnfilled.capacityMode = "reserved_capacity";
@@ -145,7 +145,7 @@ describe("getSection3Progress — reaches 1 when fully answered", () => {
     data.hasBackupContact = "no";
     data.nobodyRespondsFallback = "callback";
     data.retryRule = "move_immediately_to_next";
-    data.capacityMode = "no_override";
+    data.capacityMode = "arrange_callback";
 
     assert.equal(getSection3Progress(data, [primary]), 1);
   });

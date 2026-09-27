@@ -35,15 +35,16 @@ export function AppointmentWindowEditor({
     <div className="space-y-4">
       {value.map((window, index) => {
         const timesError = errors[`appointmentWindows.${window.id}.times`];
-        const overlapErrors = Object.entries(errors)
-          .filter(([key]) => key.startsWith("appointmentWindows.overlap.") && key.includes(window.id))
-          .map(([, msg]) => msg)
-          .filter(Boolean);
+        const overlapError = errors[`appointmentWindows.${window.id}.overlap`];
 
         return (
           <div
             key={window.id}
-            className="rounded-lg border border-[var(--color-alexander-border)] bg-white p-4"
+            className={`rounded-lg border bg-white p-4 ${
+              timesError || overlapError
+                ? "border-[var(--color-alexander-required)]"
+                : "border-[var(--color-alexander-border)]"
+            }`}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-medium text-[var(--color-alexander-navy)]">
@@ -143,11 +144,11 @@ export function AppointmentWindowEditor({
                 {timesError}
               </p>
             )}
-            {overlapErrors.map((msg, i) => (
-              <p key={i} className="mt-2 text-sm text-[var(--color-alexander-required)]" role="alert">
-                {msg}
+            {overlapError && (
+              <p className="mt-2 text-sm text-[var(--color-alexander-required)]" role="alert">
+                {overlapError}
               </p>
-            ))}
+            )}
           </div>
         );
       })}

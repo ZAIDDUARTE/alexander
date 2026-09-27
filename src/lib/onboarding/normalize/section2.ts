@@ -35,8 +35,13 @@ export type NormalizedServiceArea = {
   conditionalTerritories: { area: string; condition: string }[] | null;
   afterHours: {
     mode: AfterHoursAreaMode | null;
-    /** non-null only when mode === "smaller" */
-    territory: string | null;
+    /** Structured geography, present only when mode === "smaller". */
+    geography: {
+      definitionMode: ServiceAreaDefinitionMode | null;
+      zipCodes: string[] | null;
+      cities: string[] | null;
+      distance: { address: string; radiusMiles: number } | null;
+    } | null;
   };
 };
 
@@ -113,6 +118,28 @@ function normalizeServiceArea(data: Section2Data): NormalizedServiceArea {
       : null;
 
   const afterHoursMode = data.afterHoursAreaMode || null;
+  const afterHoursGeography =
+    afterHoursMode === "smaller"
+      ? {
+          definitionMode: data.afterHoursDefinitionMode || null,
+          zipCodes:
+            data.afterHoursDefinitionMode === "zip_codes"
+              ? dedupeNonBlank(data.afterHoursZipCodes)
+              : null,
+          cities:
+            data.afterHoursDefinitionMode === "cities"
+              ? dedupeNonBlank(data.afterHoursCities)
+              : null,
+          distance:
+            data.afterHoursDefinitionMode === "distance" &&
+            data.afterHoursDistance.address.trim()
+              ? {
+                  address: data.afterHoursDistance.address.trim(),
+                  radiusMiles: Number(data.afterHoursDistance.radiusMiles) || 0,
+                }
+              : null,
+        }
+      : null;
 
   return {
     definitionMode: mode,
@@ -124,8 +151,7 @@ function normalizeServiceArea(data: Section2Data): NormalizedServiceArea {
     conditionalTerritories,
     afterHours: {
       mode: afterHoursMode,
-      territory:
-        afterHoursMode === "smaller" ? data.afterHoursServiceArea.trim() || null : null,
+      geography: afterHoursGeography,
     },
   };
 }

@@ -68,11 +68,17 @@ export function ServicePricingCards({
         const rule = rules[service.id] ?? emptyRule();
         const prefix = `servicePricingRules.${service.id}`;
         const instructionError = errors[`${prefix}.instruction`];
+        const cardHasError =
+          showErrors && Object.keys(errors).some((key) => key.startsWith(`${prefix}.`));
 
         return (
           <li
             key={service.id}
-            className="min-w-0 rounded-lg border border-[var(--color-alexander-border)] bg-white p-4 sm:p-5"
+            className={`min-w-0 rounded-lg border bg-white p-4 sm:p-5 ${
+              cardHasError
+                ? "border-[var(--color-alexander-required)]"
+                : "border-[var(--color-alexander-border)]"
+            }`}
           >
             <p className="mb-3 text-sm font-semibold text-[var(--color-alexander-navy)]">
               {service.label}

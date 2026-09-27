@@ -98,7 +98,8 @@ export function Section6Form({ mode = "form" }: { mode?: "form" | "review" }) {
   return (
     <div className="space-y-6">
       <QuestionCard
-        title="When a customer calls about a problem with previous work, what should Alexander normally do first?"
+        title="What should Alexander do when a customer says there’s a problem with work your company already performed?"
+        helpText="When a customer calls about a problem with previous work, what should Alexander normally do first?"
         required
       >
         <RadioGroup
@@ -175,7 +176,11 @@ export function Section6Form({ mode = "form" }: { mode?: "form" | "review" }) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="When should Alexander escalate an unhappy customer to your team?" required>
+      <QuestionCard
+        title="When should Alexander involve someone on your team because a customer is unhappy?"
+        required
+        helpText="When should Alexander escalate an unhappy customer to your team?"
+      >
         <CheckboxGroup
           name="escalationTriggers"
           options={ESCALATION_OPTIONS}
@@ -364,7 +369,8 @@ export function Section6Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Is there anything else Alexander should know about calls that do not fit your normal service process?"
+        title="Are there any other rules Alexander should follow for unusual calls?"
+        helpText="Anything else Alexander should know about calls that don’t fit your normal service process?"
         optional
       >
         <TextareaField

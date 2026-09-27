@@ -11,14 +11,6 @@ import { section5IsValid } from "@/lib/onboarding/validation/section5";
 import { getSection5Progress } from "@/lib/onboarding/progress/section5";
 import { addCompletedSection } from "@/lib/onboarding/draft-utils";
 
-const SUMMARY_ITEMS = [
-  "Pricing models and material markup policies set",
-  "Fees, travel, and area minimum charges configured",
-  "Visit types and service pricing rules defined",
-  "Forbidden pricing statements selected",
-  "Promotions, payment methods, and due policies set",
-  "Financing and financial remedy authority configured",
-];
 
 export default function Section5CompletePage() {
   const { draft, saveStatus, lastSavedAt, markSectionComplete } = useOnboarding();
@@ -75,7 +67,7 @@ export default function Section5CompletePage() {
           Alexander now understands your financial boundaries
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[var(--color-alexander-muted)]">
-          Alexander now understands your financial boundaries. He knows which fees and payment
+          He knows which fees and payment
           information he may explain, which prices require an estimate or human review, and which
           discounts, credits, refunds, or exceptions require authorization. This helps Alexander
           provide useful information without making financial promises your company has not
@@ -85,23 +77,12 @@ export default function Section5CompletePage() {
           Progress: {completedSections.length} of {TOTAL_SECTIONS} sections complete
         </p>
 
-        <ul className="mx-auto mt-8 max-w-md space-y-3 text-left">
-          {SUMMARY_ITEMS.map((item) => (
-            <li
-              key={item}
-              className="flex items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] bg-[var(--color-alexander-success-bg)] px-4 py-3 text-sm text-[var(--color-alexander-navy)]"
-            >
-              <span className="mt-0.5 text-[var(--color-alexander-success)]" aria-hidden>✓</span>
-              {item}
-            </li>
-          ))}
-        </ul>
 
         <p className="mt-6 text-sm text-[var(--color-alexander-muted)]">Next: Customer Care</p>
 
         <div className="mx-auto mt-10 flex max-w-md flex-col gap-3">
           <PrimaryButton onClick={() => router.push("/onboarding/sections/6/intro")}>
-            Continue to Section 6 →
+            Continue to Customer Care →
           </PrimaryButton>
           <SecondaryButton onClick={() => router.push("/onboarding/sections/5/review")}>
             Review Section 5

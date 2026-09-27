@@ -32,7 +32,7 @@ function fullyValidSection3(primaryId: string): Section3Data {
   data.hasBackupContact = "no";
   data.nobodyRespondsFallback = "callback";
   data.retryRule = "move_immediately_to_next";
-  data.capacityMode = "no_override";
+  data.capacityMode = "arrange_callback";
   return data;
 }
 

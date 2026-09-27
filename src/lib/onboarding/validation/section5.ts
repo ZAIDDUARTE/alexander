@@ -1,6 +1,5 @@
 import {
   FINANCIAL_REMEDY_ROWS,
-  GENERAL_PRICING_AUTHORITY_OPTIONS,
   PAYMENT_DUE_OPTIONS,
   PAYMENT_METHOD_OPTIONS,
   PRICING_MODEL_OPTIONS,
@@ -40,7 +39,6 @@ export type FieldErrors = Partial<Record<string, string>>;
 const PRICING_MODEL_IDS = new Set(PRICING_MODEL_OPTIONS.map((o) => o.id));
 const UNKNOWN_PRICE_IDS = new Set(UNKNOWN_PRICE_OPTIONS.map((o) => o.id));
 const VISIT_TYPE_IDS = new Set(VISIT_TYPE_OPTIONS.map((o) => o.id));
-const GENERAL_AUTHORITY_IDS = new Set(GENERAL_PRICING_AUTHORITY_OPTIONS.map((o) => o.id));
 const INSTRUCTION_IDS = new Set(SERVICE_PRICING_INSTRUCTION_OPTIONS.map((o) => o.id));
 const PAYMENT_METHOD_IDS = new Set(PAYMENT_METHOD_OPTIONS.map((o) => o.id));
 const PAYMENT_DUE_IDS = new Set(PAYMENT_DUE_OPTIONS.map((o) => o.id));
@@ -89,6 +87,7 @@ function validateAreaPricingRows(data: Section5Data, errors: FieldErrors): void 
 
 function validateServicePricingRule(
   serviceId: string,
+  serviceName: string,
   rule: Section5Data["servicePricingRules"][string] | undefined,
   fees: FeeRecord[],
   errors: FieldErrors,
@@ -108,21 +107,23 @@ function validateServicePricingRule(
     }
     if (mode === "exact") {
       if (!isPositiveMoney(rule?.approvedPriceExact ?? "")) {
-        errors[`${prefix}.approvedPriceExact`] = "Enter a valid approved price greater than zero.";
+        errors[`${prefix}.approvedPriceExact`] =
+          `Enter a valid approved price greater than zero for ${serviceName}.`;
       }
     } else {
       if (!isPositiveMoney(rule?.approvedPriceMin ?? "")) {
-        errors[`${prefix}.approvedPriceMin`] = "Enter a valid minimum price.";
+        errors[`${prefix}.approvedPriceMin`] = `Enter a valid minimum price for ${serviceName}.`;
       }
       if (!isPositiveMoney(rule?.approvedPriceMax ?? "")) {
-        errors[`${prefix}.approvedPriceMax`] = "Enter a valid maximum price.";
+        errors[`${prefix}.approvedPriceMax`] = `Enter a valid maximum price for ${serviceName}.`;
       }
       if (
         isPositiveMoney(rule?.approvedPriceMin ?? "") &&
         isPositiveMoney(rule?.approvedPriceMax ?? "") &&
         parseFloat(rule!.approvedPriceMin) > parseFloat(rule!.approvedPriceMax)
       ) {
-        errors[`${prefix}.approvedPriceRange`] = "Minimum must be less than or equal to maximum.";
+        errors[`${prefix}.approvedPriceRange`] =
+          `Minimum must be less than or equal to maximum for ${serviceName}.`;
       }
     }
   } else if (instruction === "explain_fee_only") {
@@ -221,13 +222,6 @@ export function validateSection5(
       : "Remove active fee records or turn off “no separate fees” — these choices cannot both apply.";
     errors.fees = "Resolve the conflict between fee cards and “no separate fees”.";
   } else if (!data.noSeparateFees) {
-    if (meaningfulActive.length === 0) {
-      const anyStarted = fees.some((f) => f.active && feeCardStarted(f));
-      if (!anyStarted) {
-        errors.fees =
-          "Add at least one fee, or select that your company does not charge separate fees.";
-      }
-    }
     for (const fee of fees) {
       if (!fee.active && !feeCardStarted(fee)) continue;
       if (!fee.active && feeCardStarted(fee)) {
@@ -273,17 +267,11 @@ export function validateSection5(
       "Explain what Alexander should tell customers about paid diagnostic visits.";
   }
 
-  // Q72
-  if (!data.generalPricingAuthority) {
-    errors.generalPricingAuthority = "Select an option.";
-  } else if (!GENERAL_AUTHORITY_IDS.has(data.generalPricingAuthority)) {
-    errors.generalPricingAuthority = "Select a valid option.";
-  }
-
   // Q73
   for (const service of eligibleServices) {
     validateServicePricingRule(
       service.id,
+      service.label,
       data.servicePricingRules[service.id],
       fees,
       errors,
@@ -388,19 +376,6 @@ export function validateSection5(
   } else if (data.offersFinancing === "yes") {
     if (!data.financingProviderTerms.trim()) {
       errors.financingProviderTerms = "Enter financing provider and terms.";
-    }
-    if (data.financingPermissions.length === 0) {
-      errors.financingPermissions = "Select at least one permission for Alexander.";
-    }
-    if (
-      data.financingPermissions.includes("other") &&
-      !data.financingPermissionOtherDetail.trim()
-    ) {
-      errors.financingPermissionOtherDetail = "Describe the other financing permission.";
-    }
-    if (!data.financingEligibilityStatement.trim()) {
-      errors.financingEligibilityStatement =
-        "Enter the approved eligibility statement Alexander may use.";
     }
   }
 

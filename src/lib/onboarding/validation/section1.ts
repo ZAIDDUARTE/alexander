@@ -1,6 +1,7 @@
 import type { Section1Data, ApprovedClaim } from "../types";
 import {
   DAYS,
+  DAY_LABELS,
   hasAnyOpenOfficeDay,
   isOfficeDayValid,
   isServiceDayValid,
@@ -14,17 +15,17 @@ export type FieldErrors = Partial<Record<string, string>>;
 function officeDayError(label: string, day: OfficeDaySchedule): string | null {
   if (isOfficeDayValid(day)) return null;
   if (!day.start || !day.end) {
-    return `${label}: start and end times are required when open.`;
+    return `${label}: opening and closing times are required when the office is open.`;
   }
-  return `${label}: end time must be after start time.`;
+  return `${label}: closing time must be after opening time.`;
 }
 
 function serviceDayError(label: string, day: ServiceDaySchedule): string | null {
   if (isServiceDayValid(day)) return null;
   if (!day.start || !day.end) {
-    return `${label}: From and To are required for regular service hours.`;
+    return `${label}: service start and end times are required for normal hours.`;
   }
-  return `${label}: To must be after From.`;
+  return `${label}: service end time must be after the start time.`;
 }
 
 export function validateSection1(data: Section1Data): FieldErrors {
@@ -60,12 +61,12 @@ export function validateSection1(data: Section1Data): FieldErrors {
   }
 
   for (const day of DAYS) {
-    const officeErr = officeDayError(day, data.officeHours[day]);
+    const officeErr = officeDayError(DAY_LABELS[day], data.officeHours[day]);
     if (officeErr) errors[`officeHours.${day}`] = officeErr;
   }
 
   for (const day of DAYS) {
-    const serviceErr = serviceDayError(day, data.serviceHours[day]);
+    const serviceErr = serviceDayError(DAY_LABELS[day], data.serviceHours[day]);
     if (serviceErr) errors[`serviceHours.${day}`] = serviceErr;
   }
 
@@ -75,7 +76,7 @@ export function validateSection1(data: Section1Data): FieldErrors {
 
   if (data.answeringMode === "specific_hours") {
     for (const day of DAYS) {
-      const err = officeDayError(day, data.answeringSchedule[day]);
+      const err = officeDayError(DAY_LABELS[day], data.answeringSchedule[day]);
       if (err) errors[`answeringSchedule.${day}`] = err;
     }
     const hasOpenDay = hasAnyOpenOfficeDay(data.answeringSchedule);

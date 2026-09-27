@@ -38,7 +38,7 @@ export function OnboardingGlobalReview() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const sectionResults = useMemo(() => validateAllSections(draft), [draft]);
-  const cards = useMemo(() => buildGlobalReviewCards(draft), [draft]);
+  const cards = useMemo(() => buildGlobalReviewCards(), []);
   const submitReady = canSubmitQuestionnaire(draft);
   const pendingResubmit = hasPendingSubmissionChanges(draft);
 
@@ -148,22 +148,30 @@ export function OnboardingGlobalReview() {
         <h2 className="text-lg font-semibold text-[var(--color-alexander-navy)]">Confirm your answers</h2>
         <fieldset className="mt-4 space-y-4">
           <legend className="sr-only">Final confirmations</legend>
-          {Q114_CONFIRMATIONS.map((item) => (
-            <label
-              key={item.key}
-              className="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] px-4 py-4"
-            >
-              <input
-                type="checkbox"
-                className="mt-0.5 h-5 w-5 accent-[var(--color-alexander-blue)]"
-                checked={draft.submission.confirmations[item.key]}
-                onChange={(e) =>
-                  updateSubmissionConfirmations({ [item.key]: e.target.checked }, { immediate: true })
-                }
-              />
-              <span className="text-sm text-[var(--color-alexander-navy)]">{item.label}</span>
-            </label>
-          ))}
+          {Q114_CONFIRMATIONS.map((item) => {
+            const inputId = `confirm-${item.key}`;
+            return (
+              <div
+                key={item.key}
+                className="flex items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] px-4 py-4"
+              >
+                <input
+                  id={inputId}
+                  name={inputId}
+                  type="checkbox"
+                  value={item.key}
+                  className="mt-0.5 h-5 w-5 accent-[var(--color-alexander-blue)]"
+                  checked={draft.submission.confirmations[item.key]}
+                  onChange={(e) =>
+                    updateSubmissionConfirmations({ [item.key]: e.target.checked }, { immediate: true })
+                  }
+                />
+                <label htmlFor={inputId} className="cursor-pointer text-sm text-[var(--color-alexander-navy)]">
+                  {item.label}
+                </label>
+              </div>
+            );
+          })}
         </fieldset>
 
         {submitError && (

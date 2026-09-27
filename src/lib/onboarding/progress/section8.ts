@@ -29,16 +29,12 @@ function q107Complete(data: Section8Data): boolean {
 
 function q108Complete(data: Section8Data): boolean {
   const cats = data.additionalSoftwareCategories;
-  if (cats.length === 0) return true;
+  if (cats.length === 0) return false;
   if (cats.includes("none")) return cats.length === 1;
   return cats.every((cat) => {
     const card = data.additionalSoftwareCards.find((c) => c.categoryId === cat);
     if (!card) return false;
-    if (card.systemName.trim().length < 2 || card.desiredAccess.trim().length < 2) return false;
-    if (cat === "other") {
-      return card.otherCategoryLabel.trim().length >= 2 && card.otherDetails.trim().length >= 2;
-    }
-    return true;
+    return card.systemName.trim().length >= 2;
   });
 }
 

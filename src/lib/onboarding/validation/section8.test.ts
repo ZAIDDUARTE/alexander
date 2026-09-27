@@ -290,12 +290,12 @@ describe("Section 8 validation", () => {
 
 describe("Global review and submission", () => {
   it("AB: global review has exactly 8 section cards", () => {
-    const cards = buildGlobalReviewCards(createDefaultDraft());
+    const cards = buildGlobalReviewCards();
     assert.equal(cards.length, 8);
   });
 
   it("AC: Edit actions target correct section forms", () => {
-    const cards = buildGlobalReviewCards(createDefaultDraft());
+    const cards = buildGlobalReviewCards();
     assert.equal(cards[0].editHref, "/onboarding/sections/1/form");
     assert.equal(cards[7].editHref, "/onboarding/sections/8/form");
   });

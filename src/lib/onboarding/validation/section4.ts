@@ -252,20 +252,34 @@ export function validateSection4(
     }
 
     if (!windowConfigInvalid) {
-      const intervals: { id: string; interval: { start: string; end: string } }[] = [];
+      const intervals: { id: string; label: string; interval: { start: string; end: string } }[] = [];
       for (const window of data.appointmentWindows) {
         const interval = windowInterval(window);
-        if (interval) intervals.push({ id: window.id, interval });
+        if (interval) {
+          intervals.push({
+            id: window.id,
+            label: window.label.trim() || "This window",
+            interval,
+          });
+        }
       }
+      const partners = new Map<string, string[]>();
       for (let i = 0; i < intervals.length; i++) {
         for (let j = i + 1; j < intervals.length; j++) {
-          if (intervalsOverlap(intervals[i].interval, intervals[j].interval)) {
-            errors[`appointmentWindows.overlap.${intervals[i].id}.${intervals[j].id}`] =
-              "This window overlaps another enabled window.";
-            errors[`appointmentWindows.overlap.${intervals[j].id}.${intervals[i].id}`] =
-              "This window overlaps another enabled window.";
-          }
+          if (!intervalsOverlap(intervals[i].interval, intervals[j].interval)) continue;
+          const left = partners.get(intervals[i].id) ?? [];
+          left.push(intervals[j].label);
+          partners.set(intervals[i].id, left);
+          const right = partners.get(intervals[j].id) ?? [];
+          right.push(intervals[i].label);
+          partners.set(intervals[j].id, right);
         }
+      }
+      for (const interval of intervals) {
+        const others = partners.get(interval.id);
+        if (!others?.length) continue;
+        errors[`appointmentWindows.${interval.id}.overlap`] =
+          `${interval.label} overlaps ${others.join(" and ")}.`;
       }
     }
   }
@@ -472,7 +486,7 @@ export const EXCEPTION_AUTHORITY_OPTIONS = [
   { value: "dispatcher" as const, label: "Dispatcher" },
   { value: "manager" as const, label: "Manager" },
   { value: "owner" as const, label: "Owner" },
-  { value: "another_person" as const, label: "Another person / role" },
+  { value: "another_person" as const, label: "Another person/role" },
   { value: "never_allowed" as const, label: "Never allowed" },
 ];
 
@@ -483,7 +497,7 @@ export const APPROVER_UNAVAILABLE_OPTIONS = [
 ];
 
 export const CALLER_PERMISSION_OPTIONS = [
-  { value: "schedule_service" as const, label: "Request / schedule service" },
+  { value: "schedule_service" as const, label: "Request / schedule" },
   { value: "approve_diagnostic_fee" as const, label: "Approve diagnostic fee" },
   { value: "authorize_repair" as const, label: "Authorize repair" },
   { value: "agree_to_pay" as const, label: "Agree to pay" },
@@ -496,7 +510,7 @@ export const EMERGENCY_AUTH_OPTIONS = [
   { value: "special_rules" as const, label: "No — emergencies have special rules" },
   {
     value: "human_review_always" as const,
-    label: "Human review is always required for emergency authorization",
+    label: "Human review is always required when the work is classified as an emergency",
   },
 ];
 
@@ -519,12 +533,22 @@ export const CAPACITY_OFFER_OPTIONS = [
   { value: "not_offered" as const, label: "Not offered" },
 ];
 
-export const CHANGE_AUTHORITY_OPTIONS = [
-  { value: "direct" as const, label: "Reschedule or cancel directly" },
-  { value: "conditional" as const, label: "Only under certain conditions" },
+export const RESCHEDULE_AUTHORITY_OPTIONS = [
+  { value: "direct" as const, label: "Reschedule the appointment directly" },
+  { value: "conditional" as const, label: "Reschedule only under certain conditions" },
   { value: "human_approval" as const, label: "Submit the request for human approval" },
   { value: "callback" as const, label: "Arrange a callback" },
 ];
+
+export const CANCELLATION_AUTHORITY_OPTIONS = [
+  { value: "direct" as const, label: "Cancel the appointment directly" },
+  { value: "conditional" as const, label: "Cancel only under certain conditions" },
+  { value: "human_approval" as const, label: "Submit the request for human approval" },
+  { value: "callback" as const, label: "Arrange a callback" },
+];
+
+/** @deprecated Use RESCHEDULE_AUTHORITY_OPTIONS or CANCELLATION_AUTHORITY_OPTIONS. */
+export const CHANGE_AUTHORITY_OPTIONS = RESCHEDULE_AUTHORITY_OPTIONS;
 
 export const FEE_CHARGE_OPTIONS = [
   { value: "yes" as const, label: "Yes" },
@@ -544,7 +568,7 @@ export const SPECIFIC_TECH_OPTIONS = [
     label: "Try to honor the request, but another technician may be assigned",
   },
   { value: "submit_for_review" as const, label: "Submit the request for team review" },
-  { value: "do_not_accept" as const, label: "We do not accept specific-technician requests" },
+  { value: "do_not_accept" as const, label: "We don’t accept specific-technician requests" },
 ];
 
 export const MULTI_ISSUE_OPTIONS = [

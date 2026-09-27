@@ -117,7 +117,7 @@ export function normalizeSection8(
 /** Human-readable CRM label for review UI. */
 export function formatCrmSelection(data: Section8Data): string {
   if (!data.crmFsmProvider) return "Not answered";
-  if (data.crmFsmProvider === "none") return "We do not use one";
+  if (data.crmFsmProvider === "none") return "We don’t use one";
   if (data.crmFsmProvider === "custom") return data.crmFsmCustomName.trim() || "Another system";
   return providerLabel(data.crmFsmProvider);
 }

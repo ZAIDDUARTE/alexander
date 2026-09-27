@@ -16,7 +16,7 @@ export const CONTACT_CATEGORY_OPTIONS: { value: ContactCategory; label: string }
   { value: "customer_complaints", label: "Customer complaints" },
   // Source transcript said "Warranty/callback issues" — removed from
   // the final MVP per the MD; use this wording instead.
-  { value: "callback_previous_work", label: "Callback / previous-work issues" },
+  { value: "callback_previous_work", label: "Warranty or callback issues" },
   { value: "other", label: "Other" },
 ];
 
@@ -97,6 +97,7 @@ export function ContactCardEditor({
             </p>
             <div className="mt-2">
               <OfficeWeeklySchedule
+                idPrefix={`${idPrefix}-hours`}
                 schedule={contact.availability}
                 onChange={(s) => onChange({ availability: s })}
                 dayError={errors?.scheduleDay}

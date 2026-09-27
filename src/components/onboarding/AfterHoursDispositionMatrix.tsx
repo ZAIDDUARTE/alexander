@@ -10,7 +10,7 @@ const ROW_ORDER: AfterHoursCallClass[] = ["emergency", "urgent_contained", "rout
 
 export const AFTER_HOURS_CALL_CLASS_LABELS: Record<AfterHoursCallClass, string> = {
   emergency: "Emergency",
-  urgent_contained: "Urgent, but contained",
+  urgent_contained: "Urgent but contained",
   routine: "Routine / non-urgent",
 };
 

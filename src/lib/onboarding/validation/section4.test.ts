@@ -237,9 +237,13 @@ describe("validateSection4 — J: Q48 enabled window validation + reorder identi
     b.start = "09:00";
     b.end = "11:00";
     const errors = validateSection4(data, [owner], []);
-    assert.ok(
-      errors["appointmentWindows.overlap.morning.late_morning"] ||
-        errors["appointmentWindows.overlap.late_morning.morning"],
+    assert.match(
+      errors["appointmentWindows.morning.overlap"] ?? "",
+      /Morning overlaps/,
+    );
+    assert.match(
+      errors["appointmentWindows.late_morning.overlap"] ?? "",
+      /Late morning overlaps Morning/,
     );
   });
 

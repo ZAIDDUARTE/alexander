@@ -283,6 +283,39 @@ function migrateV9(raw: LegacyDraftV9): OnboardingDraft {
  * into the current OnboardingDraft shape, preserving customer answers
  * wherever a deterministic upgrade path exists.
  */
+function sanitizeCurrentDraft(draft: OnboardingDraft): OnboardingDraft {
+  const capacityMode = draft.section3.capacityMode as string;
+  const section3 =
+    capacityMode === "no_override"
+      ? { ...draft.section3, capacityMode: "arrange_callback" as const }
+      : draft.section3;
+  const paidDiagnosticActive = Object.values(draft.section5.visitTypeByServiceId).some(
+    (value) => value === "paid_diagnostic",
+  );
+  const feeStillActive =
+    !draft.section5.noSeparateFees &&
+    draft.fees.some(
+      (fee) => fee.active && fee.id === draft.section5.paidDiagnosticFeeId && fee.name.trim(),
+    );
+  return {
+    ...draft,
+    section3,
+    section5: {
+      ...draft.section5,
+      generalPricingAuthority: "",
+      financingPermissions: [],
+      financingPermissionOtherDetail: "",
+      financingEligibilityStatement: "",
+      paidDiagnosticExplanation: paidDiagnosticActive
+        ? draft.section5.paidDiagnosticExplanation
+        : "",
+      paidDiagnosticFeeId: paidDiagnosticActive && feeStillActive
+        ? draft.section5.paidDiagnosticFeeId
+        : "",
+    },
+  };
+}
+
 export function migrateDraft(raw: unknown): OnboardingDraft {
   if (!raw || typeof raw !== "object") {
     return createDefaultDraft();
@@ -292,42 +325,42 @@ export function migrateDraft(raw: unknown): OnboardingDraft {
 
   if (version === SCHEMA_VERSION) {
     const merged = mergeWithDefaults(raw as Partial<OnboardingDraft>);
-    return {
+    return sanitizeCurrentDraft({
       ...merged,
       fees: merged.fees.map(migrateFeeRecordV6ToV7),
-    };
+    });
   }
 
   if (version === 9) {
-    return migrateV9(raw as LegacyDraftV9);
+    return sanitizeCurrentDraft(migrateV9(raw as LegacyDraftV9));
   }
 
   if (version === 8) {
-    return migrateV8(raw as LegacyDraftV8);
+    return sanitizeCurrentDraft(migrateV8(raw as LegacyDraftV8));
   }
 
   if (version === 7) {
-    return migrateV7(raw as LegacyDraftV7);
+    return sanitizeCurrentDraft(migrateV7(raw as LegacyDraftV7));
   }
 
   if (version === 6) {
-    return migrateV6(raw as LegacyDraftV6);
+    return sanitizeCurrentDraft(migrateV6(raw as LegacyDraftV6));
   }
 
   if (version === 5) {
-    return migrateV5(raw as LegacyDraftV5);
+    return sanitizeCurrentDraft(migrateV5(raw as LegacyDraftV5));
   }
 
   if (version === 4) {
-    return migrateV4(raw as LegacyDraftV4);
+    return sanitizeCurrentDraft(migrateV4(raw as LegacyDraftV4));
   }
 
   if (version === 3) {
-    return migrateV3(raw as LegacyDraftV3);
+    return sanitizeCurrentDraft(migrateV3(raw as LegacyDraftV3));
   }
 
   if (version === 2) {
-    return migrateV2(raw as LegacyDraftV2);
+    return sanitizeCurrentDraft(migrateV2(raw as LegacyDraftV2));
   }
 
   // v1 (double-boolean service schedule) or any unrecognized/missing

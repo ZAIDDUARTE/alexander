@@ -11,13 +11,6 @@ import { section6IsValid } from "@/lib/onboarding/validation/section6";
 import { getSection6Progress } from "@/lib/onboarding/progress/section6";
 import { addCompletedSection } from "@/lib/onboarding/draft-utils";
 
-const SUMMARY_ITEMS = [
-  "Previous-work and callback policies configured",
-  "Unhappy-customer escalation and prohibited promises set",
-  "Non-service call routing defined",
-  "Customer history and privacy boundaries recorded",
-  "Additional-service recommendation policy chosen",
-];
 
 export default function Section6CompletePage() {
   const { draft, saveStatus, lastSavedAt, markSectionComplete } = useOnboarding();
@@ -61,23 +54,12 @@ export default function Section6CompletePage() {
           Progress: {completedSections.length} of {TOTAL_SECTIONS} sections complete
         </p>
 
-        <ul className="mx-auto mt-8 max-w-md space-y-3 text-left">
-          {SUMMARY_ITEMS.map((item) => (
-            <li
-              key={item}
-              className="flex items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] bg-[var(--color-alexander-success-bg)] px-4 py-3 text-sm text-[var(--color-alexander-navy)]"
-            >
-              <span className="mt-0.5 text-[var(--color-alexander-success)]" aria-hidden>✓</span>
-              {item}
-            </li>
-          ))}
-        </ul>
 
         <p className="mt-6 text-sm text-[var(--color-alexander-muted)]">Next: Voice and Conversation</p>
 
         <div className="mx-auto mt-10 flex max-w-md flex-col gap-3">
           <PrimaryButton onClick={() => router.push("/onboarding/sections/7/intro")}>
-            Continue to Section 7 →
+            Continue to Voice and Conversation →
           </PrimaryButton>
           <SecondaryButton onClick={() => router.push("/onboarding/sections/6/review")}>
             Review Section 6

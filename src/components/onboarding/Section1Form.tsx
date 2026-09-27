@@ -99,6 +99,7 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
         <TextField
           id="customerFacingName"
           label=""
+          ariaLabel="What name do your customers know your company by?"
           value={data.customerFacingName}
           onChange={(v) => updateSection1({ customerFacingName: v })}
           error={submitted ? errors.customerFacingName : undefined}
@@ -111,13 +112,14 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
           label=""
           value={data.legalName}
           onChange={(v) => updateSection1({ legalName: v })}
-          helpText="Leave blank if it is the same as the name above."
+          helpText="Leave blank if it's the same as the name above."
         />
       </QuestionCard>
 
       <QuestionCard title="What is your main business phone number?" required>
         <PhoneField
           id="mainPhone"
+          ariaLabel="What is your main business phone number?"
           value={data.mainPhone}
           onChange={(v) => updateSection1({ mainPhone: v })}
           error={submitted ? errors.mainPhone : undefined}
@@ -136,7 +138,8 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Which of these may Alexander tell customers about your company?"
+        title="Which of these may Alexander tell customers?"
+        helpText="Which of these may Alexander tell customers about your company?"
         required
       >
         <CheckboxGroup
@@ -150,7 +153,8 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
           <ConditionalPanel>
             <TextField
               id="otherApprovedClaim"
-              label="What else may Alexander tell customers about your company?"
+              label="What other credential or trust claim may Alexander tell customers?"
+              helpText="What else may Alexander tell customers about your company?"
               value={data.otherApprovedClaim}
               onChange={(v) => updateSection1({ otherApprovedClaim: v })}
               placeholder="Serving the Antelope Valley for more than 25 years."
@@ -170,12 +174,13 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
           label=""
           value={data.licensingDetails}
           onChange={(v) => updateSection1({ licensingDetails: v })}
-          helpText="For example: California Contractor License #123456 - C-36 Plumbing."
+          helpText="Example: California Contractor License #123456 — C-36 Plumbing."
         />
       </QuestionCard>
 
       <QuestionCard
-        title="Is there anything Alexander should never claim about your company's credentials, awards, guarantees, experience, or affiliations?"
+        title="Is there anything Alexander should never claim about your company?"
+        helpText="Is there anything Alexander should never claim about your company's credentials, awards, guarantees, experience, or affiliations?"
         optional
       >
         <TextareaField
@@ -193,6 +198,7 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
         helpText="When can customers normally reach someone in your office?"
       >
         <OfficeWeeklySchedule
+          idPrefix="office-hours"
           schedule={data.officeHours}
           onChange={(s) => updateSection1({ officeHours: s }, { immediate: true })}
           dayError={submitted ? officeDayErrors : undefined}
@@ -202,9 +208,10 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
       <QuestionCard
         title="When are service appointments normally available?"
         required
-        helpText="This may be different from your office hours."
+        helpText="When can customers normally receive plumbing service? This may be different from your office hours."
       >
         <ServiceWeeklySchedule
+          idPrefix="service-hours"
           schedule={data.serviceHours}
           onChange={(s) => updateSection1({ serviceHours: s }, { immediate: true })}
           dayError={submitted ? serviceDayErrors : undefined}
@@ -221,11 +228,15 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
         />
         {showAnsweringSchedule && (
           <ConditionalPanel>
-            <p className="mb-4 text-sm font-medium text-[var(--color-alexander-navy)]">
-              What hours should Alexander answer your calls?
+            <p className="mb-1 text-sm font-medium text-[var(--color-alexander-navy)]">
+              What hours should Alexander answer?
               <span className="ml-1 text-[var(--color-alexander-required)]" aria-hidden>*</span>
             </p>
+            <p className="mb-4 text-sm text-[var(--color-alexander-muted)]">
+              What hours should Alexander answer your calls?
+            </p>
             <OfficeWeeklySchedule
+              idPrefix="alexander-hours"
               schedule={data.answeringSchedule}
               onChange={(s) => updateSection1({ answeringSchedule: s }, { immediate: true })}
               dayError={submitted ? answeringDayErrors : undefined}
@@ -240,7 +251,8 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Is there anything else Alexander should know about your normal hours or availability?"
+        title="Is there any recurring availability rule Alexander should know?"
+        helpText="Is there anything else Alexander should know about your normal hours or availability?"
         optional
       >
         <TextareaField

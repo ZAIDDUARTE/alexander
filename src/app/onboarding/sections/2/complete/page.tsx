@@ -11,15 +11,6 @@ import { section2IsValid } from "@/lib/onboarding/validation/section2";
 import { getSection2Progress } from "@/lib/onboarding/progress/section2";
 import { addCompletedSection } from "@/lib/onboarding/draft-utils";
 
-const SUMMARY_ITEMS = [
-  "Plumbing services configured",
-  "Diagnostic, drain, and inspection services configured",
-  "Customer and property types configured",
-  "Customer-supplied materials policy set",
-  "Corrective work policy set",
-  "Service area defined",
-  "After-hours coverage policy set",
-];
 
 export default function Section2CompletePage() {
   const { draft, saveStatus, lastSavedAt, markSectionComplete } = useOnboarding();
@@ -54,7 +45,7 @@ export default function Section2CompletePage() {
           Alexander now understands the work your company does
         </h1>
         <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[var(--color-alexander-muted)]">
-          Alexander now understands the work your company does. He knows which services you offer,
+          He knows which services you offer,
           which customers and properties you serve, where you normally work, and which requests
           require special conditions or human review. This helps Alexander qualify opportunities
           without promising work your company does not provide.
@@ -63,22 +54,11 @@ export default function Section2CompletePage() {
           Progress: {completedSections.length} of {TOTAL_SECTIONS} sections complete
         </p>
 
-        <ul className="mx-auto mt-8 max-w-md space-y-3 text-left">
-          {SUMMARY_ITEMS.map((item) => (
-            <li
-              key={item}
-              className="flex items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] bg-[var(--color-alexander-success-bg)] px-4 py-3 text-sm text-[var(--color-alexander-navy)]"
-            >
-              <span className="mt-0.5 text-[var(--color-alexander-success)]" aria-hidden>✓</span>
-              {item}
-            </li>
-          ))}
-        </ul>
 
         <p className="mt-6 text-sm text-[var(--color-alexander-muted)]">Next: Emergencies</p>
 
         <div className="mx-auto mt-10 flex max-w-md flex-col gap-3">
-          <PrimaryLink href="/onboarding/sections/3/intro">Continue to Section 3 →</PrimaryLink>
+          <PrimaryLink href="/onboarding/sections/3/intro">Continue to Emergencies →</PrimaryLink>
           <SecondaryButton onClick={() => router.push("/onboarding/sections/2/review")}>
             Review Section 2
           </SecondaryButton>

@@ -13,7 +13,8 @@ describe("getSection5Progress — fresh section", () => {
     const progress = getSection5Progress(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []);
     assert.ok(progress > 0);
     assert.ok(progress < 1);
-    assert.equal(getSection5ProgressUnits(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [])[9].complete, true);
+    // Q74 forbidden-statement defaults are preselected, so that unit starts complete.
+    assert.equal(getSection5ProgressUnits(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [])[8].complete, true);
   });
 });
 

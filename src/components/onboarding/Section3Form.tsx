@@ -32,11 +32,8 @@ import {
   type FieldErrors,
 } from "@/lib/onboarding/validation/section3";
 
-const DISPATCH_APPROVAL_HELP_TEXT =
-  "Alexander can still recognize the emergency and take appropriate safety steps. This setting controls whether a person must approve the dispatch commitment.";
-
 const NOBODY_RESPONDS_HELP_TEXT =
-  "Alexander will never tell the customer that someone has been reached, dispatched, or is handling the situation unless that action has actually been confirmed.";
+  "Never tell the customer that someone has been reached, dispatched, or is handling the situation unless that action is confirmed.";
 
 function mapScheduleErrors(errors: FieldErrors, prefix: string): Partial<Record<DayKey, string>> {
   const out: Partial<Record<DayKey, string>> = {};
@@ -155,7 +152,11 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
         </p>
       </header>
 
-      <QuestionCard title="How should Alexander treat each of these situations?" required>
+      <QuestionCard
+        title="How should Alexander treat each of these situations?"
+        required
+        helpText="Choose how you want Alexander to handle each situation. If you’re comfortable using Alexander’s built-in safety rules, choose Use Alexander’s recommended default."
+      >
         <EmergencyClassificationGroup
           scenarios={EMERGENCY_SCENARIOS}
           value={data.emergencyClassifications}
@@ -176,9 +177,9 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Are there any emergencies where someone on your team must approve emergency dispatch?"
+        title="Are there any emergencies where Alexander must get human approval before arranging emergency dispatch?"
         required
-        helpText={DISPATCH_APPROVAL_HELP_TEXT}
+        helpText="Are there any emergencies where someone on your team must approve emergency dispatch?"
       >
         <CheckboxGroup
           name="dispatchApproval"
@@ -191,7 +192,7 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
           <ConditionalPanel>
             <TextareaField
               id="dispatchApprovalOtherDetail"
-              label="Which situations?"
+              label="Other situation"
               required
               rows={2}
               value={data.dispatchApprovalOtherDetail}
@@ -203,7 +204,7 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="What should Alexander do when someone calls outside your normal office hours?"
+        title="What should Alexander do with calls that come in after hours?"
         required
       >
         <AfterHoursDispositionMatrix
@@ -220,7 +221,7 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="When can your company actually send someone out for an after-hours emergency?"
+        title="When is after-hours emergency field service available?"
         required
       >
         <RadioGroup
@@ -233,10 +234,11 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
         {data.emergencyServiceMode === "certain_hours" && (
           <ConditionalPanel>
             <p className="mb-4 text-sm font-medium text-[var(--color-alexander-navy)]">
-              When can your company provide after-hours emergency service?
+              When is after-hours emergency service available?
               <span className="ml-1 text-[var(--color-alexander-required)]" aria-hidden>*</span>
             </p>
             <OfficeWeeklySchedule
+              idPrefix="emergency-service-hours"
               schedule={data.emergencyServiceSchedule}
               onChange={(s) => updateSection3({ emergencyServiceSchedule: s }, { immediate: true })}
               dayError={submitted ? emergencyScheduleDayErrors : undefined}
@@ -251,7 +253,7 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Who should Alexander contact first when a call requires immediate human attention?"
+        title="Who should Alexander contact first?"
         required
       >
         {primaryContact && (
@@ -264,7 +266,7 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="If the first person does not respond, should Alexander contact someone else?" required>
+      <QuestionCard title="Is there a backup person Alexander should contact?" required>
         <RadioGroup
           name="hasBackupContact"
           options={HAS_BACKUP_CONTACT_OPTIONS}
@@ -292,7 +294,7 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="If Alexander cannot reach anyone on your team, what should he do?"
+        title="What should Alexander do if nobody on your team answers?"
         required
         helpText={NOBODY_RESPONDS_HELP_TEXT}
       >
@@ -318,7 +320,7 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="If an urgent escalation is not answered, how should Alexander retry?" required>
+      <QuestionCard title="How should Alexander retry an unanswered contact?" required>
         <RadioGroup
           name="retryRule"
           options={RETRY_RULE_OPTIONS}
@@ -342,7 +344,7 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="If an emergency comes in when your normal schedule is already full, what should Alexander do?"
+        title="What should Alexander do if an emergency comes in and your schedule is already full?"
         required
       >
         <RadioGroup
@@ -356,7 +358,7 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
           <ConditionalPanel>
             <TextareaField
               id="reservedCapacityText"
-              label="How much capacity do you normally protect for emergencies?"
+              label="How much capacity do you reserve for emergencies?"
               required
               rows={2}
               value={data.reservedCapacityText}
@@ -370,7 +372,7 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
           <ConditionalPanel>
             <TextareaField
               id="overrideConditionsText"
-              label="When may Alexander use an emergency override?"
+              label="When is an emergency override allowed?"
               required
               rows={3}
               value={data.overrideConditionsText}
