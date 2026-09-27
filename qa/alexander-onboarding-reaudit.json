@@ -1,0 +1,66 @@
+{
+  "summary": {
+    "reauditDate": "2026-09-26",
+    "originalAudit": "qa/alexander-onboarding-audit.json",
+    "originalResult": "FAIL",
+    "branch": "main",
+    "baseCommit": "848a71208af0b4dc90a523edb8173b14aa7d5941",
+    "sectionsChecked": 8,
+    "specificationItemsChecked": 114,
+    "resolvableItemsCompliant": 112,
+    "unresolvedSpecificationItems": 1,
+    "remainingImplementationDefects": 1,
+    "originalDefects": { "blocker": 0, "critical": 0, "high": 22, "medium": 20, "low": 4 },
+    "remaining": { "blocker": 0, "critical": 0, "high": 1, "medium": 0, "low": 0 },
+    "exactCopyMismatchesRemaining": 0,
+    "missingSpecItemsRemaining": 1,
+    "extraObsoleteItemsRemaining": 0,
+    "conditionalDefectsRemaining": 0,
+    "validationDefaultDefectsRemaining": 0,
+    "dataModelDefectsRemaining": 0,
+    "responsiveUxDefectsRemaining": 0,
+    "newRegressions": 0,
+    "result": "FAIL",
+    "checks": {
+      "tests": "428 passed",
+      "typecheck": "PASS",
+      "lint": "PASS",
+      "build": "PASS",
+      "saveResume": "PASS",
+      "submission": "PASS"
+    },
+    "q51": {
+      "currentImplementation": "Morning",
+      "status": "Awaiting authoritative video confirmation",
+      "actionTaken": "None"
+    }
+  },
+  "defects": [
+    {
+      "id": "QA-031",
+      "status": "REMAINING",
+      "severity": "HIGH",
+      "category": "Missing audio",
+      "question": "Q130",
+      "expected": "Single choice with audio previews.",
+      "actual": "Voice A, Voice B, and Voice C render with Preview coming soon. previewSrc is null. No audio asset is in the repository.",
+      "verification": "Rendered Section 7. Repository glob for mp3, wav, m4a, and ogg returned no files."
+    },
+    {
+      "id": "QA-019",
+      "status": "SPECIFICATION_BLOCKED",
+      "severity": "HIGH",
+      "category": "Specification clarification",
+      "question": "Q51",
+      "note": "Not counted as an implementation failure. First window label remains Morning."
+    }
+  ],
+  "fixedDefectIds": [
+    "QA-001", "QA-002", "QA-003", "QA-004", "QA-005", "QA-006", "QA-007", "QA-008",
+    "QA-009", "QA-010", "QA-011", "QA-012", "QA-013", "QA-014", "QA-015", "QA-016",
+    "QA-017", "QA-018", "QA-020", "QA-021", "QA-022", "QA-023", "QA-024", "QA-025",
+    "QA-026", "QA-027", "QA-028", "QA-029", "QA-030", "QA-032", "QA-033", "QA-034",
+    "QA-035", "QA-036", "QA-037", "QA-038", "QA-039", "QA-040", "QA-041", "QA-042",
+    "QA-043", "QA-044", "QA-046", "QA-048"
+  ]
+}

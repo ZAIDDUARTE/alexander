@@ -1,0 +1,902 @@
+{
+  "summary": {
+    "auditDate": "2026-09-26T09:12:00+05:00",
+    "specification": "Alexander_Onboarding_Final_Implementation_Specification(1).docx",
+    "branch": "main",
+    "commit": "848a712",
+    "sectionsExpected": 8,
+    "sectionsFound": 8,
+    "activeQuestionsExpected": 114,
+    "implementedQuestionsFound": 114,
+    "exactMatchQuestions": 22,
+    "totalDefects": 46,
+    "blocker": 0,
+    "critical": 0,
+    "high": 22,
+    "medium": 20,
+    "low": 4,
+    "exactCopyMismatches": 72,
+    "result": "FAIL",
+    "questionnaireCodeModified": false,
+    "specCensus": {
+      "activeSections": 8,
+      "activeTopLevelQuestions": 114,
+      "alwaysShownRequired": 84,
+      "alwaysShownOptional": 14,
+      "conditionalTopLevel": 16,
+      "repeatableComponents": 8,
+      "legacyIds": 26,
+      "legacyMerged": 7,
+      "legacyDeleted": 19
+    }
+  },
+  "sections": [
+    {
+      "section": 1,
+      "name": "Your Company",
+      "specItems": 13,
+      "implemented": 13,
+      "exactMatch": 5,
+      "defectIds": [
+        "QA-002",
+        "QA-003",
+        "QA-004",
+        "QA-044"
+      ],
+      "status": "FAIL"
+    },
+    {
+      "section": 2,
+      "name": "Your Services",
+      "specItems": 12,
+      "implemented": 12,
+      "exactMatch": 3,
+      "defectIds": [
+        "QA-005",
+        "QA-006",
+        "QA-007",
+        "QA-008",
+        "QA-009",
+        "QA-010",
+        "QA-011",
+        "QA-012",
+        "QA-041"
+      ],
+      "status": "FAIL"
+    },
+    {
+      "section": 3,
+      "name": "Emergencies",
+      "specItems": 13,
+      "implemented": 13,
+      "exactMatch": 1,
+      "defectIds": [
+        "QA-013",
+        "QA-014",
+        "QA-015",
+        "QA-016",
+        "QA-043",
+        "QA-048"
+      ],
+      "status": "FAIL"
+    },
+    {
+      "section": 4,
+      "name": "Scheduling",
+      "specItems": 26,
+      "implemented": 26,
+      "exactMatch": 5,
+      "defectIds": [
+        "QA-017",
+        "QA-018",
+        "QA-019",
+        "QA-020",
+        "QA-021",
+        "QA-022",
+        "QA-042",
+        "QA-046"
+      ],
+      "status": "FAIL"
+    },
+    {
+      "section": 5,
+      "name": "Pricing and Payments",
+      "specItems": 17,
+      "implemented": 17,
+      "exactMatch": 3,
+      "defectIds": [
+        "QA-023",
+        "QA-024",
+        "QA-025",
+        "QA-026",
+        "QA-027",
+        "QA-028"
+      ],
+      "status": "FAIL"
+    },
+    {
+      "section": 6,
+      "name": "Customer Care",
+      "specItems": 9,
+      "implemented": 9,
+      "exactMatch": 3,
+      "defectIds": [
+        "QA-022",
+        "QA-029",
+        "QA-048"
+      ],
+      "status": "FAIL"
+    },
+    {
+      "section": 7,
+      "name": "Voice and Conversation",
+      "specItems": 12,
+      "implemented": 12,
+      "exactMatch": 1,
+      "defectIds": [
+        "QA-002",
+        "QA-003",
+        "QA-030",
+        "QA-031",
+        "QA-032"
+      ],
+      "status": "FAIL"
+    },
+    {
+      "section": 8,
+      "name": "Integration Systems and Final Setup",
+      "specItems": 12,
+      "implemented": 12,
+      "exactMatch": 1,
+      "defectIds": [
+        "QA-033",
+        "QA-034",
+        "QA-035",
+        "QA-036",
+        "QA-037",
+        "QA-038",
+        "QA-039",
+        "QA-048"
+      ],
+      "status": "FAIL"
+    }
+  ],
+  "defects": [
+    {
+      "id": "QA-001",
+      "section": 0,
+      "sectionLabel": "Welcome",
+      "question": "Welcome body",
+      "severity": "MEDIUM",
+      "category": "Wording",
+      "expected": "“operates—including your services, service area, scheduling rules, emergency procedures, pricing policies, customer-care standards, and team handoffs.”",
+      "actual": "“operates - including … customer-care standards, voice, and team handoffs.”",
+      "file": "`src/app/onboarding/page.tsx`",
+      "line": null,
+      "reproduction": [
+        "Open `/onboarding`"
+      ],
+      "recommendedFix": "Restore the em dash and remove “voice,”"
+    },
+    {
+      "id": "QA-002",
+      "section": 1,
+      "sectionLabel": "1–7",
+      "question": "Section complete CTA",
+      "severity": "MEDIUM",
+      "category": "Wording",
+      "expected": "“Continue to Your Services →”, “Continue to Emergencies →”, and the same pattern through Section 7",
+      "actual": "“Continue to Section 2 →” through “Continue to Section 7 →”; Section 8 uses “Review Your Setup →”",
+      "file": "`src/app/onboarding/sections/*/complete/page.tsx`",
+      "line": null,
+      "reproduction": [
+        "Finish any section"
+      ],
+      "recommendedFix": "Use the named next-section buttons from the DOCX"
+    },
+    {
+      "id": "QA-003",
+      "section": 1,
+      "sectionLabel": "1–7",
+      "question": "Section complete body",
+      "severity": "LOW",
+      "category": "Extra copy",
+      "expected": "One completion paragraph, progress, next section, and the continue button",
+      "actual": "The heading sentence is repeated inside the paragraph, and Sections 1–6 add a checklist that is not in the DOCX",
+      "file": "same complete pages",
+      "line": null,
+      "reproduction": [
+        "Open any section complete URL with a valid draft"
+      ],
+      "recommendedFix": "Remove the repeated sentence and the extra checklist"
+    },
+    {
+      "id": "QA-004",
+      "section": 1,
+      "sectionLabel": "1",
+      "question": "Q10",
+      "severity": "MEDIUM",
+      "category": "Missing help",
+      "expected": "Help/prompt: “When can customers normally receive plumbing service?” plus “This may be different from your office hours.”",
+      "actual": "Only “This may be different from your office hours.”",
+      "file": "`src/components/onboarding/Section1Form.tsx`",
+      "line": null,
+      "reproduction": [
+        "Open Section 1 form"
+      ],
+      "recommendedFix": "Add the missing sentence"
+    },
+    {
+      "id": "QA-005",
+      "section": 2,
+      "sectionLabel": "2",
+      "question": "Q14 service names",
+      "severity": "HIGH",
+      "category": "Wording / catalog",
+      "expected": "“Water filtration / softening / reverse osmosis”; “Remodel or project plumbing”; “Specialty plumbing”",
+      "actual": "“Water filtration, softening or RO”; “Remodel or project work”; “Other specialty plumbing”",
+      "file": "`src/lib/onboarding/section2Catalog.ts`",
+      "line": null,
+      "reproduction": [
+        "Open Section 2 and scroll the plumbing list"
+      ],
+      "recommendedFix": "Restore the three approved labels"
+    },
+    {
+      "id": "QA-006",
+      "section": 2,
+      "sectionLabel": "2",
+      "question": "Q14 / Q16 state labels",
+      "severity": "HIGH",
+      "category": "Options",
+      "expected": "“With conditions”; “We don’t offer this”",
+      "actual": "“Yes, with conditions”; “We do not offer this”",
+      "file": "`src/lib/onboarding/validation/section2.ts` `SERVICE_OFFER_LABELS`",
+      "line": null,
+      "reproduction": [
+        "Open any plumbing row. Screenshot `qa/screenshots/s2-form-390.png`"
+      ],
+      "recommendedFix": "Use the four approved state labels"
+    },
+    {
+      "id": "QA-007",
+      "section": 2,
+      "sectionLabel": "2",
+      "question": "Q16",
+      "severity": "HIGH",
+      "category": "Wording / catalog",
+      "expected": "Question: “Which of these services does your company provide?” Rows: “General diagnostic/service visit”; “Plumbing inspection”; “Sewer/drain camera inspection”; “Hydro-jetting”",
+      "actual": "Question: “Which diagnostic, drain, and inspection services does your company provide?” Rows add plurals and “Hydro-jetting / advanced drain cleaning”",
+      "file": "`Section2Form.tsx`, `section2Catalog.ts`",
+      "line": null,
+      "reproduction": [
+        "Open the second service matrix"
+      ],
+      "recommendedFix": "Restore the question and the four row labels"
+    },
+    {
+      "id": "QA-008",
+      "section": 2,
+      "sectionLabel": "2",
+      "question": "Q18",
+      "severity": "HIGH",
+      "category": "Options",
+      "expected": "“We serve this”; “With conditions”; “We don’t serve this”",
+      "actual": "“We serve these normally”; “Yes, with conditions”; “We do not serve these”",
+      "file": "`CUSTOMER_SERVE_LABELS`",
+      "line": null,
+      "reproduction": [
+        "Open “Who does your company serve?”"
+      ],
+      "recommendedFix": "Restore the four approved column labels"
+    },
+    {
+      "id": "QA-009",
+      "section": 2,
+      "sectionLabel": "2",
+      "question": "Q20",
+      "severity": "HIGH",
+      "category": "Wording",
+      "expected": "“Will you install or work with items supplied by the customer?”",
+      "actual": "“Will you install or work with fixtures, equipment, or materials supplied by the customer?”",
+      "file": "`Section2Form.tsx`",
+      "line": null,
+      "reproduction": [
+        "Open Q20"
+      ],
+      "recommendedFix": "Restore “items supplied by the customer”"
+    },
+    {
+      "id": "QA-010",
+      "section": 2,
+      "sectionLabel": "2",
+      "question": "Q25, Q26, Q27",
+      "severity": "MEDIUM",
+      "category": "Wording",
+      "expected": "Q25 “Are there areas you serve only under certain conditions?” Q26 “Tell us about those conditional service areas.” Q27 “Is your after-hours service area different?” Option “We don’t provide after-hours field service”",
+      "actual": "Q25 “Are there any areas you sometimes serve, but only under certain conditions?” Q26 “Which areas are conditional, and what are the conditions?” Q27 “When you are providing after-hours service, where will you go?” Option “We do not provide…”",
+      "file": "`Section2Form.tsx`, `validation/section2.ts`",
+      "line": null,
+      "reproduction": [
+        "Open the last three Section 2 questions"
+      ],
+      "recommendedFix": "Restore the approved questions and the contraction in the Q27 option"
+    },
+    {
+      "id": "QA-011",
+      "section": 2,
+      "sectionLabel": "2",
+      "question": "Q28",
+      "severity": "HIGH",
+      "category": "Field type",
+      "expected": "Structured geography using the same controls as Q22–Q23, only when Q27 is “A smaller service area”",
+      "actual": "A single long-answer box labeled “What is your after-hours service area?”",
+      "file": "`Section2Form.tsx`",
+      "line": null,
+      "reproduction": [
+        "Choose “A smaller service area”"
+      ],
+      "recommendedFix": "Reuse the ZIP / city / radius controls and store the result as geography, not a paragraph"
+    },
+    {
+      "id": "QA-012",
+      "section": 2,
+      "sectionLabel": "2",
+      "question": "Q15 / Q17 / Q19",
+      "severity": "MEDIUM",
+      "category": "Wording",
+      "expected": "Row prompts “Tell us about any services that have special conditions.”, “Tell us about any of these services that have special conditions.”, and “Are there any special conditions for the customers or properties you selected?”",
+      "actual": "Every row uses the label “Condition”",
+      "file": "`ServicePolicy.tsx` default `conditionLabel`",
+      "line": null,
+      "reproduction": [
+        "Choose “Yes, with conditions” on a service"
+      ],
+      "recommendedFix": "Use the approved prompt for that matrix"
+    },
+    {
+      "id": "QA-013",
+      "section": 3,
+      "sectionLabel": "3",
+      "question": "Q29–Q40 titles",
+      "severity": "MEDIUM",
+      "category": "Wording",
+      "expected": "Approved question titles, including “What should Alexander do with calls that come in after hours?”, “When is after-hours emergency field service available?”, “Who should Alexander contact first?”, “Is there a backup person Alexander should contact?”, “What should Alexander do if nobody on your team answers?”, “How should Alexander retry an unanswered contact?”, “What should Alexander do if an emergency comes in and your schedule is already full?”",
+      "actual": "Paraphrases such as “What should Alexander do when someone calls outside your normal office hours?”, “When can your company actually send someone out for an after-hours emergency?”, “If the first person does not respond, should Alexander contact someone else?”",
+      "file": "`Section3Form.tsx`",
+      "line": null,
+      "reproduction": [
+        "Read Section 3 from Q29 downward"
+      ],
+      "recommendedFix": "Restore each approved title. See Section 7 for the pairs"
+    },
+    {
+      "id": "QA-014",
+      "section": 3,
+      "sectionLabel": "3",
+      "question": "Q29 labels",
+      "severity": "MEDIUM",
+      "category": "Options",
+      "expected": "Column labels “Urgent, not emergency”, “Human review”, “Recommended default”",
+      "actual": "“Urgent, but not an emergency”, “Human review required”, “Use Alexander's recommended default”",
+      "file": "`EmergencyClassification.tsx`",
+      "line": null,
+      "reproduction": [
+        "Open the first emergency matrix"
+      ],
+      "recommendedFix": "The implementation note asks for those longer phrases as explanations. The column labels themselves still have to match the table"
+    },
+    {
+      "id": "QA-015",
+      "section": 3,
+      "sectionLabel": "3",
+      "question": "Q38",
+      "severity": "HIGH",
+      "category": "Options",
+      "expected": "Fourth option: “Take the customer’s information and arrange a callback”. Removed option must not appear",
+      "actual": "Fourth option: “Do not override the schedule - take the customer's information and arrange follow-up”",
+      "file": "`validation/section3.ts` `CAPACITY_MODE_OPTIONS`",
+      "line": null,
+      "reproduction": [
+        "Open the full-schedule emergency question. Screenshot `qa/screenshots/s3-q38-option.png`"
+      ],
+      "recommendedFix": "Delete the hybrid option and add the approved callback option"
+    },
+    {
+      "id": "QA-016",
+      "section": 3,
+      "sectionLabel": "3",
+      "question": "Q34 call types",
+      "severity": "HIGH",
+      "category": "Options",
+      "expected": "“Warranty or callback issues”",
+      "actual": "“Callback / previous-work issues”",
+      "file": "`ContactCardEditor.tsx`",
+      "line": null,
+      "reproduction": [
+        "Open the primary escalation card"
+      ],
+      "recommendedFix": "Restore the approved call-type label. The warranty module was removed; this call type was not"
+    },
+    {
+      "id": "QA-017",
+      "section": 4,
+      "sectionLabel": "4",
+      "question": "Q44",
+      "severity": "HIGH",
+      "category": "Options",
+      "expected": "Row “Warranty or callback exception”. Column “Another person/role”",
+      "actual": "Row “Callback / previous-work exception”. Column “Another person / role”",
+      "file": "`section4Catalog.ts`, `validation/section4.ts`",
+      "line": null,
+      "reproduction": [
+        "Open the exception matrix"
+      ],
+      "recommendedFix": "Restore the warranty/callback row label"
+    },
+    {
+      "id": "QA-018",
+      "section": 4,
+      "sectionLabel": "4",
+      "question": "Q56 and Q57",
+      "severity": "HIGH",
+      "category": "Options",
+      "expected": "Reschedule: “Reschedule the appointment directly” and “Reschedule only under certain conditions”. Cancel: “Cancel the appointment directly” and “Cancel only under certain conditions”",
+      "actual": "Both questions share “Reschedule or cancel directly” and “Only under certain conditions”",
+      "file": "`CHANGE_AUTHORITY_OPTIONS`",
+      "line": null,
+      "reproduction": [
+        "Compare the reschedule and cancel questions"
+      ],
+      "recommendedFix": "Give each question its own option labels"
+    },
+    {
+      "id": "QA-019",
+      "section": 4,
+      "sectionLabel": "4",
+      "question": "Q51",
+      "severity": "HIGH",
+      "category": "Default / spec flag",
+      "expected": "Five rows. First label is “[Row 1 label – verify from video]”. Do not invent the label. Later rows: Late morning, Early afternoon, Afternoon, Late afternoon. No invented clock times",
+      "actual": "First row is “Morning”. Other four names match. Times start empty",
+      "file": "`section4Catalog.ts` `APPOINTMENT_WINDOW_TEMPLATES`",
+      "line": null,
+      "reproduction": [
+        "Open appointment windows"
+      ],
+      "recommendedFix": "SPECIFICATION FLAG — CONFIRM AGAINST VIDEO. Do not ship “Morning” until the recording is checked"
+    },
+    {
+      "id": "QA-020",
+      "section": 4,
+      "sectionLabel": "4",
+      "question": "Q52",
+      "severity": "MEDIUM",
+      "category": "Options",
+      "expected": "“Confirm the appointment date”, “Confirm the appointment time or arrival window”, “Confirm the requested service”, “Confirm the customer’s name and service address”, “Confirm the callback phone number”, “Confirm the email address provided”",
+      "actual": "Those phrases without “Confirm the” / “Confirm the customer’s”",
+      "file": "`CONFIRMATION_INFO_OPTIONS`",
+      "line": null,
+      "reproduction": [
+        "Open the confirmation checklist"
+      ],
+      "recommendedFix": "Restore the six approved labels. All six are correctly preselected"
+    },
+    {
+      "id": "QA-021",
+      "section": 4,
+      "sectionLabel": "4",
+      "question": "Q48",
+      "severity": "MEDIUM",
+      "category": "Options",
+      "expected": "“Human review is always required when the work is classified as an emergency”",
+      "actual": "“Human review is always required for emergency authorization”",
+      "file": "`EMERGENCY_AUTH_OPTIONS`",
+      "line": null,
+      "reproduction": [
+        "Open the emergency-authorization question"
+      ],
+      "recommendedFix": "Restore the approved option"
+    },
+    {
+      "id": "QA-022",
+      "section": 4,
+      "sectionLabel": "4–6",
+      "question": "Multiple contractions and titles",
+      "severity": "MEDIUM",
+      "category": "Wording",
+      "expected": "Apostrophes and question titles as printed, including “We don’t accept specific-technician requests”, “isn’t available”, “doesn’t know”, “didn’t solve”, “you don’t offer”, “don’t fit”",
+      "actual": "“do not”, “is not”, “does not”, “did not” substitutions, plus rewritten Q42, Q45, Q49, Q54, Q61, Q66, Q68, Q71, Q73, Q97, Q102, Q116",
+      "file": "Section 4–6 forms and catalogs",
+      "line": null,
+      "reproduction": [
+        "Compare each title in Section 7 of this report"
+      ],
+      "recommendedFix": "Restore the approved strings. Do not normalize contractions"
+    },
+    {
+      "id": "QA-023",
+      "section": 5,
+      "sectionLabel": "5",
+      "question": "Extra pricing question",
+      "severity": "HIGH",
+      "category": "Obsolete question",
+      "expected": "No such question. Pricing authority is Q73 plus per-service Q79",
+      "actual": "Required question: “When a customer asks “How much will this cost?”, what is Alexander normally allowed to do?” with four options that are not in the DOCX",
+      "file": "`Section5Form.tsx`, `GENERAL_PRICING_AUTHORITY_OPTIONS`",
+      "line": null,
+      "reproduction": [
+        "Open Section 5 below the diagnostic explanation"
+      ],
+      "recommendedFix": "Remove the question and stop requiring `generalPricingAuthority`"
+    },
+    {
+      "id": "QA-024",
+      "section": 5,
+      "sectionLabel": "5",
+      "question": "Q88",
+      "severity": "HIGH",
+      "category": "Obsolete fields",
+      "expected": "If Yes, capture “Financing provider and terms” only. “Do not expose a separate financing workflow/action matrix”",
+      "actual": "Provider/terms plus a required permission checklist (explain options, send application link, help begin application, transfer, other) and a required “Approved eligibility statement”. Extra help: “Alexander must not promise financing approval.”",
+      "file": "`Section5Form.tsx`, `FINANCING_PERMISSION_OPTIONS`",
+      "line": null,
+      "reproduction": [
+        "Answer Yes to financing"
+      ],
+      "recommendedFix": "Keep provider and terms. Remove the permission matrix, eligibility statement, and invented help"
+    },
+    {
+      "id": "QA-025",
+      "section": 5,
+      "sectionLabel": "5",
+      "question": "Q74",
+      "severity": "HIGH",
+      "category": "Validation",
+      "expected": "“Leave this section empty if your company does not charge separate fees.” The checkbox is an explicit alternate that hides the cards",
+      "actual": "Empty state plus the checkbox, but Continue is blocked until a fee exists or the checkbox is selected",
+      "file": "`validation/section5.ts`",
+      "line": null,
+      "reproduction": [
+        "Leave fees empty and do not check the no-fee box"
+      ],
+      "recommendedFix": "Allow a truly empty fee list to complete the section. Keep the checkbox as the explicit no-fee state"
+    },
+    {
+      "id": "QA-026",
+      "section": 5,
+      "sectionLabel": "5",
+      "question": "Q74 labels",
+      "severity": "MEDIUM",
+      "category": "Wording",
+      "expected": "“What is this fee called?”; “What is the amount?”; “May Alexander quote this fee to customers?” with “No, Alexander should not quote it”; templates such as “Diagnostic/service-call fee”",
+      "actual": "“Fee name or type”; “Amount”; quote option “No”; templates “Diagnostic / service-call” without “fee”",
+      "file": "`FeeCardEditor.tsx`, `section5Catalog.ts`",
+      "line": null,
+      "reproduction": [
+        "Add a fee"
+      ],
+      "recommendedFix": "Restore the approved field labels, quote option, and template names"
+    },
+    {
+      "id": "QA-027",
+      "section": 5,
+      "sectionLabel": "5",
+      "question": "Q75",
+      "severity": "MEDIUM",
+      "category": "Data association",
+      "expected": "Identify the area and the fee, normalized to service-area geography already captured",
+      "actual": "Free-text “Area” plus optional amount fields. Suggestions may appear, but the row is not a reference to a Q23/Q26 area id",
+      "file": "`Section5Form.tsx`",
+      "line": null,
+      "reproduction": [
+        "Answer Yes, then add an area"
+      ],
+      "recommendedFix": "Select an existing geography record, or store a stable area id"
+    },
+    {
+      "id": "QA-028",
+      "section": 5,
+      "sectionLabel": "5",
+      "question": "Q78",
+      "severity": "MEDIUM",
+      "category": "Field type",
+      "expected": "Reference the Q74 fee record instead of re-entering the amount",
+      "actual": "A required long answer. Help text says not to re-enter the amount, but there is no fee picker",
+      "file": "`Section5Form.tsx`",
+      "line": null,
+      "reproduction": [
+        "Mark a visit as a paid diagnostic"
+      ],
+      "recommendedFix": "Link the explanation to the diagnostic fee record"
+    },
+    {
+      "id": "QA-029",
+      "section": 6,
+      "sectionLabel": "6",
+      "question": "Q115",
+      "severity": "HIGH",
+      "category": "Options",
+      "expected": "“Mention only approved offers, memberships, or services”; “Don’t proactively recommend additional services”",
+      "actual": "“Mention only approved offers, promotions, or services”; “Do not proactively recommend additional services”. Help text is also rewritten",
+      "file": "`section6Catalog.ts`",
+      "line": null,
+      "reproduction": [
+        "Open the additional-services question"
+      ],
+      "recommendedFix": "Restore “memberships” and the approved contraction. Help must match the DOCX"
+    },
+    {
+      "id": "QA-030",
+      "section": 7,
+      "sectionLabel": "7",
+      "question": "Q129",
+      "severity": "HIGH",
+      "category": "Options / conditional",
+      "expected": "Order: English, Spanish, Other supported language, English only. Other reveals a language field. Help includes “Select only languages verified for the selected voice.”",
+      "actual": "Order starts with English only. Other is visible but disabled, and the language field never appears. Help omits the verification sentence. Screenshot `qa/screenshots/s7-voice-preview.png`",
+      "file": "`Section7Form.tsx`, `approvedVoiceCatalog.ts` `VOICE_LANGUAGE_CAPABILITY_CATALOG_AVAILABLE = false`",
+      "line": null,
+      "reproduction": [
+        "Open Section 7"
+      ],
+      "recommendedFix": "Restore order and help. Do not disable Other unless the DOCX is changed. If a voice cannot speak a language, say so after the customer enters it"
+    },
+    {
+      "id": "QA-031",
+      "section": 7,
+      "sectionLabel": "7",
+      "question": "Q130",
+      "severity": "HIGH",
+      "category": "Missing audio",
+      "expected": "Single choice with audio previews. Help says the preview is more reliable than a description",
+      "actual": "Voice A/B/C render, each with “Preview coming soon”. `previewSrc` is null. “Another approved voice” is disabled",
+      "file": "`approvedVoiceCatalog.ts`, `VoicePreviewCard.tsx`",
+      "line": null,
+      "reproduction": [
+        "Open the voice question"
+      ],
+      "recommendedFix": "Attach the approved preview files. Until then this question does not meet the spec"
+    },
+    {
+      "id": "QA-032",
+      "section": 7,
+      "sectionLabel": "7",
+      "question": "Q132–Q140 help",
+      "severity": "MEDIUM",
+      "category": "Help text",
+      "expected": "Approved help, including “Alexander remains the name of the product…”, the pronunciation example, and the Q135 language-behavior help",
+      "actual": "Shortened, rewritten, or missing help. Q135 has no help. Q133 adds a sentence about legal/platform disclosure that is not in the DOCX. Q134 option is “Yes — enter pronunciation details” instead of “Yes — enter the pronunciation details below”",
+      "file": "`section7Catalog.ts`, `Section7Form.tsx`",
+      "line": null,
+      "reproduction": [
+        "Read each optional and required voice question"
+      ],
+      "recommendedFix": "Restore each help string and the Q134 option"
+    },
+    {
+      "id": "QA-033",
+      "section": 8,
+      "sectionLabel": "8",
+      "question": "Q117–Q125",
+      "severity": "HIGH",
+      "category": "Required marker",
+      "expected": "Required questions show a red asterisk. Optional questions show “(Optional)”",
+      "actual": "None of Q117–Q125 show an asterisk. They are still validated on continue, except where noted below. Screenshot `qa/screenshots/s8-form-no-asterisk.png`",
+      "file": "`Section8Form.tsx`",
+      "line": null,
+      "reproduction": [
+        "Open Section 8"
+      ],
+      "recommendedFix": "Pass `required` into each `QuestionCard`"
+    },
+    {
+      "id": "QA-034",
+      "section": 8,
+      "sectionLabel": "8",
+      "question": "Q121",
+      "severity": "HIGH",
+      "category": "Requiredness / missing option",
+      "expected": "Required. Options include “Membership / service-plan software” and “None”",
+      "actual": "Marked “(Optional)”. An empty selection is valid. Membership / service-plan software is absent. “None” is present",
+      "file": "`Section8Form.tsx`, `section8Catalog.ts`, `validation/section8.ts`",
+      "line": null,
+      "reproduction": [
+        "Open “any other software” and continue with nothing selected"
+      ],
+      "recommendedFix": "Mark it required, require None or one or more categories, and add the membership option"
+    },
+    {
+      "id": "QA-035",
+      "section": 8,
+      "sectionLabel": "8",
+      "question": "Q121 follow-up",
+      "severity": "HIGH",
+      "category": "Extra required field",
+      "expected": "Each selected category gets its own software-name field",
+      "actual": "Each card also requires “What should Alexander be able to access?”",
+      "file": "`AdditionalSoftwareCardEditor.tsx`",
+      "line": null,
+      "reproduction": [
+        "Select “Payment system”"
+      ],
+      "recommendedFix": "Keep the software name. Remove the extra required access essay, or move that intent into Q122"
+    },
+    {
+      "id": "QA-036",
+      "section": 8,
+      "sectionLabel": "8",
+      "question": "Q124",
+      "severity": "HIGH",
+      "category": "Wording",
+      "expected": "Full notice: sign into the company’s own software, authorize Alexander, do not enter passwords or private API credentials, and the team will configure and test",
+      "actual": "Shortened notice that omits signing in and authorizing. “I understand” remains",
+      "file": "`section8Catalog.ts` `Q111_NOTICE`",
+      "line": null,
+      "reproduction": [
+        "Open “Software connection notice”"
+      ],
+      "recommendedFix": "Restore the full approved notice"
+    },
+    {
+      "id": "QA-037",
+      "section": 8,
+      "sectionLabel": "8",
+      "question": "Q125",
+      "severity": "HIGH",
+      "category": "Validation",
+      "expected": "“Follow another rule” captures and requires the fallback rule",
+      "actual": "The text area appears and is not required. `validateSection8` does not check `failureFallbackCustom`",
+      "file": "`Section8Form.tsx`, `validation/section8.ts`",
+      "line": null,
+      "reproduction": [
+        "Choose “Follow another rule” and continue with an empty box"
+      ],
+      "recommendedFix": "Require the rule while that option is selected"
+    },
+    {
+      "id": "QA-038",
+      "section": 8,
+      "sectionLabel": "8",
+      "question": "Q127 review",
+      "severity": "MEDIUM",
+      "category": "Wording",
+      "expected": "Fixed summaries, for example “Company information, hours and availability”, “Services, customers and service area”, “Pricing, fees, payments and financial authority”",
+      "actual": "Dynamic or different summaries, for example “Identity and hours not yet complete”, “Callbacks, complaints, privacy, and unusual calls”, “CRM: Not answered…”",
+      "file": "`globalReviewSummaries.ts`",
+      "line": null,
+      "reproduction": [
+        "Open `/onboarding/review`"
+      ],
+      "recommendedFix": "Use the eight approved summary lines. Edit links can stay"
+    },
+    {
+      "id": "QA-039",
+      "section": 8,
+      "sectionLabel": "8",
+      "question": "Submission confirmation",
+      "severity": "MEDIUM",
+      "category": "Wording",
+      "expected": "Heading “Thank you. We have received your setup information.”",
+      "actual": "Heading “Questionnaire received”. The thank-you sentence is in the body",
+      "file": "`src/app/onboarding/submitted/page.tsx`",
+      "line": null,
+      "reproduction": [
+        "Submit a valid questionnaire. Screenshot `qa/screenshots/submitted-success.png`"
+      ],
+      "recommendedFix": "Use the approved heading"
+    },
+    {
+      "id": "QA-040",
+      "section": 0,
+      "sectionLabel": "Global",
+      "question": "Save status",
+      "severity": "MEDIUM",
+      "category": "Persistence copy",
+      "expected": "Do not imply cross-device save unless server persistence is implemented",
+      "actual": "When `REDIS_URL` is missing, local save still sets status to “saved”, which renders “Saved just now”",
+      "file": "`OnboardingContext.tsx` `runServerSave`",
+      "line": null,
+      "reproduction": [
+        "Edit a field with Redis unset"
+      ],
+      "recommendedFix": "Say that progress is saved in this browser when the server draft was not written"
+    },
+    {
+      "id": "QA-041",
+      "section": 2,
+      "sectionLabel": "2",
+      "question": "Service conditions",
+      "severity": "MEDIUM",
+      "category": "Stale hidden value",
+      "expected": "Hidden condition text must not be stored as an active rule",
+      "actual": "Switching from “With conditions” to “Ask our team first” hides the box but keeps the string on the draft. `normalizeSection2` nulls it. The submit API stores the raw draft",
+      "file": "`ServicePolicy.tsx`, `normalize/section2.ts`, `src/app/api/onboarding/submit/route.ts`",
+      "line": null,
+      "reproduction": [
+        "Enter a condition, switch to “Ask our team first”, submit"
+      ],
+      "recommendedFix": "Clear the condition when the policy changes, or persist the normalized record"
+    },
+    {
+      "id": "QA-042",
+      "section": 4,
+      "sectionLabel": "4",
+      "question": "Q50",
+      "severity": "LOW",
+      "category": "Field behavior",
+      "expected": "“No maximum” disables and clears the numeric field",
+      "actual": "The numeric field is cleared and removed from the layout",
+      "file": "`Section4Form.tsx`",
+      "line": null,
+      "reproduction": [
+        "Check “No maximum”"
+      ],
+      "recommendedFix": "Keep the field visible and disabled"
+    },
+    {
+      "id": "QA-043",
+      "section": 3,
+      "sectionLabel": "3",
+      "question": "Section intro",
+      "severity": "LOW",
+      "category": "Wording",
+      "expected": "“what has—and has not—been confirmed”",
+      "actual": "“what has - and has not - been confirmed”",
+      "file": "`sections/3/intro/page.tsx`",
+      "line": null,
+      "reproduction": [
+        "Open the Emergencies intro"
+      ],
+      "recommendedFix": "Restore the em dashes"
+    },
+    {
+      "id": "QA-044",
+      "section": 1,
+      "sectionLabel": "1",
+      "question": "Q2 and Q7 help",
+      "severity": "LOW",
+      "category": "Help text",
+      "expected": "Q2 “Leave blank if it's the same as the name above.” Q7 “Example: California Contractor License #123456 — C-36 Plumbing.”",
+      "actual": "Q2 “it is”. Q7 “For example:” and a hyphen instead of an em dash",
+      "file": "`Section1Form.tsx`",
+      "line": null,
+      "reproduction": [
+        "Open Q2 and Q7"
+      ],
+      "recommendedFix": "Restore both help strings"
+    },
+    {
+      "id": "QA-046",
+      "section": 4,
+      "sectionLabel": "4",
+      "question": "Q46",
+      "severity": "MEDIUM",
+      "category": "Options",
+      "expected": "Column “Request / schedule”",
+      "actual": "“Request / schedule service”",
+      "file": "`CALLER_PERMISSION_OPTIONS`",
+      "line": null,
+      "reproduction": [
+        "Open the caller matrix"
+      ],
+      "recommendedFix": "Remove the extra word “service”"
+    },
+    {
+      "id": "QA-048",
+      "section": 3,
+      "sectionLabel": "3–6, 8",
+      "question": "Section intros",
+      "severity": "MEDIUM",
+      "category": "Wording",
+      "expected": "Section 4 names booking authority, appointment types, availability, and “You can choose how much responsibility…”. Section 5 includes “collect payment information”. Section 6 names previous-work problems, repeat callbacks, complaints, service recovery, privacy, non-service calls, and additional-service boundaries. Section 8 leads with calendar, then CRM",
+      "actual": "Those sentences are rewritten or reordered. Section 5 drops “collect payment information”. Section 6 leads with “callbacks”",
+      "file": "`sections/*/intro/page.tsx`",
+      "line": null,
+      "reproduction": [
+        "Open each intro"
+      ],
+      "recommendedFix": "Restore the approved intro paragraphs"
+    }
+  ]
+}
