@@ -48,5 +48,12 @@ next-env.d.ts
 # Vercel local project link metadata
 .vercel
 
+# AWS CDK
+infra/node_modules
+infra/cdk.out
+infra/dist
+infra/cdk.context.json
+infra/cdk-outputs.json
+
 # local research / media (not part of the deployable app)
 /zoom/

@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["lambda/**/*.ts", "../src/lib/server/persistence/**/*.ts"],
+  "exclude": ["../src/lib/server/persistence/**/*.test.ts"]
+}
