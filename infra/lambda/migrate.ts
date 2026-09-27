@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import { Pool } from "pg";
@@ -74,9 +74,15 @@ export async function handler(event: { RequestType?: string; PhysicalResourceId?
       await client.query(`ALTER ROLE ${APP_ROLE} WITH LOGIN PASSWORD ${passwordLiteral}`);
     }
 
-    const sql = readFileSync(join(__dirname, "001_onboarding_storage.sql"), "utf8");
-    assertSafeSql(sql);
-    await client.query(sql);
+    const sqlFiles = readdirSync(__dirname)
+      .filter((name) => /^\d+.+\.sql$/.test(name))
+      .sort();
+    if (sqlFiles.length === 0) throw new Error("migration_sql_missing");
+    for (const name of sqlFiles) {
+      const sql = readFileSync(join(__dirname, name), "utf8");
+      assertSafeSql(sql);
+      await client.query(sql);
+    }
 
     await client.query(`
       GRANT CONNECT ON DATABASE ${databaseName} TO ${APP_ROLE};

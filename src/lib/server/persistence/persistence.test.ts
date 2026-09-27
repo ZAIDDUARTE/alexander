@@ -177,6 +177,33 @@ describe("durable persistence", () => {
     assert.equal(rows[1].contentRevision, "rev-2");
     assert.equal(ports.objects.objects.has(submissionObjectKeys(SESSION, "rev-1").raw), true);
     assert.equal(ports.objects.objects.has(submissionObjectKeys(SESSION, "rev-2").raw), true);
+
+    const longRevision = "x".repeat(21095);
+    const long = await submitDraft(ports, {
+      sessionId: SESSION,
+      draft: envelope("2026-09-27T17:00:00.000Z", "Long"),
+      normalized: { schema_version: SCHEMA_VERSION, company: { name: "Long" } },
+      contentRevision: longRevision,
+      submittedAt: "2026-09-27T17:00:00.000Z",
+    });
+    assert.equal(long.ok, true);
+    if (!long.ok) return;
+    assert.match(long.keys.raw, /\/submissions\/[0-9a-f]{64}\/raw-draft\.json$/);
+    assert.equal(long.keys.raw.includes(longRevision), false);
+    const repeat = await submitDraft(ports, {
+      sessionId: SESSION,
+      draft: envelope("2026-09-27T17:00:00.000Z", "Long"),
+      normalized: { schema_version: SCHEMA_VERSION, company: { name: "Long" } },
+      contentRevision: longRevision,
+      submittedAt: "2026-09-27T18:00:00.000Z",
+    });
+    assert.equal(repeat.ok, true);
+    if (!repeat.ok) return;
+    assert.equal(repeat.duplicate, true);
+    assert.equal(
+      (await ports.db.listSubmissions(SESSION)).filter((row) => row.contentRevision === longRevision).length,
+      1,
+    );
   });
 
   it("K/L: hashes match the stored bytes and the manifest is written last", async () => {
@@ -328,7 +355,7 @@ describe("durable persistence", () => {
 
   it("V: questionnaire schema version stays 10 and database migration is separate", () => {
     assert.equal(SCHEMA_VERSION, 10);
-    assert.equal(DB_MIGRATION_VERSION, "001");
+    assert.equal(DB_MIGRATION_VERSION, "002");
     assert.equal(createDefaultDraft().schemaVersion, 10);
   });
 

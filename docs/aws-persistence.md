@@ -37,7 +37,7 @@ Everything in this stack is in the AWS account and region used at deploy time. T
 | S3 | Private submission archive. Block Public Access, bucket-owner enforced, versioning, HTTPS-only, SSE-KMS. |
 | KMS | One customer-managed key for RDS storage and the S3 archive. Database secrets use the AWS-managed Secrets Manager key so they stay encrypted without a CloudFormation dependency cycle. |
 | Persistence Lambda | `getDraft`, `upsertDraft`, `submitDraft`, `health`, plus admin `schemaStatus` and `inspectSession`. |
-| Migration Lambda | Applies `infra/sql/001_onboarding_storage.sql` and creates `alexander_app`. It does not drop tables. |
+| Migration Lambda | Applies `infra/sql/001_onboarding_storage.sql` and `002_submission_revision_hash.sql`, then creates `alexander_app`. It does not drop tables. |
 | Vercel IAM role | `lambda:InvokeFunction` on the persistence Lambda only, trusted only for production of project `alexander`. |
 
 ## Cost choice
@@ -97,11 +97,13 @@ The content revision is the questionnaire fingerprint, so it can contain answer 
 
 The same session and content revision writes the same keys and the same submission row. A changed questionnaire creates a new revision and leaves the previous row and objects in place. If S3 succeeds and the database commit fails, the client gets an error. A retry uses the same keys and the same revision, then commits the database row. No second logical submission is created.
 
+The full fingerprint is stored in `content_revision`. Uniqueness is `UNIQUE (session_id, content_revision_sha256)` because the fingerprint is larger than a PostgreSQL btree index entry. The hash is the same SHA-256 used in the S3 key.
+
 ## Schema versions
 
 `OnboardingDraft.schemaVersion` is the questionnaire model. It stays at 10 unless that model changes.
 
-`schema_migrations.version` is the database migration. The first migration is `001`.
+`schema_migrations.version` is the database migration. Applied versions are `001` and `002`. Questionnaire `schemaVersion` stays separate.
 
 ## Local development
 

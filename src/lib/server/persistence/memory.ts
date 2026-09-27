@@ -17,14 +17,14 @@ const EXPECTED_SCHEMA: SchemaStatus = {
     "onboarding_sessions_updated_at_idx",
     "onboarding_sessions_submission_status_idx",
     "onboarding_submissions_pkey",
-    "onboarding_submissions_session_revision_key",
+    "onboarding_submissions_session_revision_sha_key",
   ],
   constraints: [
     "onboarding_sessions_pkey",
     "onboarding_sessions_session_id_key",
     "onboarding_sessions_status_check",
     "onboarding_submissions_pkey",
-    "onboarding_submissions_session_revision_key",
+    "onboarding_submissions_session_revision_sha_key",
     "onboarding_submissions_session_id_fkey",
   ],
 };

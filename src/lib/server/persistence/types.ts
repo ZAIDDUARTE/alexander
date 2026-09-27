@@ -1,4 +1,4 @@
-export const DB_MIGRATION_VERSION = "001";
+export const DB_MIGRATION_VERSION = "002";
 
 export type SubmissionStatus = "draft" | "submitted";
 

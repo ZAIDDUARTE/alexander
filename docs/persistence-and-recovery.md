@@ -17,8 +17,8 @@ The database is not publicly accessible. Restore it inside the VPC. Do not open 
 1. In the AWS console or CLI, find the instance identifier `alexander-onboarding` in `us-east-1`.
 2. Restore a snapshot or a point-in-time copy to a new instance. Keep the new instance private, encrypted, and in the Alexander VPC.
 3. Do not delete the original instance while deletion protection is on. Turning protection off is a separate, deliberate change.
-4. Point the RDS Proxy at the restored instance only after the application database role and schema are present. Re-run the migration Lambda if the restored copy predates migration `001`. The migration does not drop tables.
-5. Confirm with the persistence Lambda `schemaStatus` operation that `onboarding_sessions`, `onboarding_submissions`, and `schema_migrations` version `001` exist.
+4. Point the RDS Proxy at the restored instance only after the application database role and schema are present. Re-run the migration Lambda if the restored copy predates migration `002`. The migration does not drop tables.
+5. Confirm with the persistence Lambda `schemaStatus` operation that `onboarding_sessions`, `onboarding_submissions`, and `schema_migrations` versions `001` and `002` exist. Submission uniqueness is the SHA-256 of the content revision, not the raw fingerprint.
 
 Point-in-time recovery creates a new instance. Application traffic moves only when the proxy target is updated. Keep the previous instance until a draft read and a submission checksum check succeed.
 

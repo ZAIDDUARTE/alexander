@@ -208,7 +208,7 @@ export class AlexanderPersistenceStack extends Stack {
         APP_SECRET_ARN: appSecret.secretArn,
       },
       bundlingExtra: [
-        `cp ${path.join(INFRA_ROOT, "sql/001_onboarding_storage.sql")} $OUTPUT/001_onboarding_storage.sql`,
+        `cp ${path.join(INFRA_ROOT, "sql")}/[0-9]*.sql $OUTPUT/`,
       ],
     });
     masterSecret.grantRead(migrationFn);
@@ -220,7 +220,7 @@ export class AlexanderPersistenceStack extends Stack {
     const schema = new CustomResource(this, "SchemaMigration", {
       serviceToken: migration.serviceToken,
       properties: {
-        migrationVersion: "001",
+        migrationVersion: "002",
         databaseAddress: database.dbInstanceEndpointAddress,
       },
       resourceType: "Custom::AlexanderSchema",

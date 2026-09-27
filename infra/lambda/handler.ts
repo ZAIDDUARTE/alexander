@@ -9,6 +9,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import { Pool, type QueryResultRow } from "pg";
+import { sha256Hex } from "../../src/lib/server/persistence/canonical";
 import { handlePersistenceOperation } from "../../src/lib/server/persistence/engine";
 import { isSafeSubmissionKey } from "../../src/lib/server/persistence/keys";
 import { createLineLogger } from "../../src/lib/server/persistence/logger";
@@ -251,17 +252,18 @@ function createDatabase(): DatabasePort {
         );
         const inserted = await client.query(
           `INSERT INTO onboarding_submissions (
-             session_id, content_revision, questionnaire_schema_version,
+             session_id, content_revision, content_revision_sha256, questionnaire_schema_version,
              raw_draft_json, normalized_config_json, s3_prefix, s3_raw_key,
              s3_normalized_key, s3_manifest_key, raw_sha256, normalized_sha256, submitted_at
            ) VALUES (
-             $1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, $8, $9, $10, $11, $12
+             $1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10, $11, $12, $13
            )
-           ON CONFLICT (session_id, content_revision) DO NOTHING
+           ON CONFLICT (session_id, content_revision_sha256) DO NOTHING
            RETURNING id`,
           [
             input.submission.sessionId,
             input.submission.contentRevision,
+            sha256Hex(input.submission.contentRevision),
             input.submission.questionnaireSchemaVersion,
             JSON.stringify(input.submission.rawDraft),
             JSON.stringify(input.submission.normalized),
@@ -280,6 +282,18 @@ function createDatabase(): DatabasePort {
           session: mapSession(sessionResult.rows[0]),
         };
       } catch (error) {
+        const code =
+          typeof error === "object" && error && "code" in error
+            ? String((error as { code?: unknown }).code ?? "error")
+            : "error";
+        console.log(
+          JSON.stringify({
+            source: "alexander-persistence",
+            operation: "commitSubmission",
+            status: "error",
+            errorCode: code,
+          }),
+        );
         await client.query("ROLLBACK");
         throw error;
       } finally {
