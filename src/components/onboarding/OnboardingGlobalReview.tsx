@@ -65,18 +65,28 @@ export function OnboardingGlobalReview() {
     try {
       const result = await postQuestionnaireSubmit(latest);
       if (!result.ok || !result.draft) {
+        const storageFailed =
+          result.reason === "persistence_unavailable" ||
+          result.reason === "snapshot_failed" ||
+          result.reason === "database_failed";
         setSubmitError(
           result.reason === "missing_confirmations"
             ? "All three confirmations are required."
             : result.reason === "missing_draft"
               ? "Could not submit — refresh the page and try again."
-              : "Some sections still need attention. Review the warnings above.",
+              : storageFailed
+                ? "Your questionnaire was not received because it could not be stored. Please try again."
+                : "Some sections still need attention. Review the warnings above.",
         );
         setSubmitting(false);
         return;
       }
       saveLocalDraft(result.draft);
-      await saveDraftNow(result.draft);
+      try {
+        await saveDraftNow(result.draft);
+      } catch {
+        // The submission itself is already durable. Keep the confirmation.
+      }
       router.push("/onboarding/submitted");
     } catch {
       setSubmitError("Submission failed. Please try again.");

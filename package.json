@@ -11,6 +11,8 @@
     "test": "tsx --test src/**/*.test.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-lambda": "^3.1141.0",
+    "@vercel/oidc-aws-credentials-provider": "^3.3.9",
     "next": "^15.5.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

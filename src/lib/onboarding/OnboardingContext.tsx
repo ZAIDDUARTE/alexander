@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { loadLocalDraft, saveLocalDraft, type SaveStatus } from "./persistence";
+import { interpretServerSave } from "./server-save-status";
 import { fetchServerDraft, putServerDraft } from "./server-api";
 import { reconcileDrafts, hasDraftContent, addCompletedSection } from "./draft-utils";
 import { applyPostSubmissionEditPolicy } from "./submissionIntegrity";
@@ -126,15 +127,26 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     return { ...prev, updatedAt: new Date().toISOString() };
   }, []);
 
+  const applyServerSaveStatus = useCallback(
+    (result: {
+      persistence: "durable" | "local" | "unavailable";
+      savedDurable: boolean;
+      durableAvailable: boolean;
+    }) => {
+      const status = interpretServerSave(result);
+      setSaveStatus(status);
+      if (status === "saved" || status === "saved-local") {
+        setLastSavedAt(new Date());
+      }
+      return status;
+    },
+    [],
+  );
+
   const runServerSave = useCallback(async (next: OnboardingDraft, route: string) => {
     const result = await putServerDraft(next, route);
-    if (!result.redisAvailable) {
-      setSaveStatus("saved-local");
-      setLastSavedAt(new Date());
-      return;
-    }
-    if (!result.savedToRedis) {
-      setSaveStatus("server-pending");
+    const status = applyServerSaveStatus(result);
+    if (status === "server-pending") {
       if (!serverRetryRef.current) {
         serverRetryRef.current = setTimeout(() => {
           serverRetryRef.current = null;
@@ -147,9 +159,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       clearTimeout(serverRetryRef.current);
       serverRetryRef.current = null;
     }
-    setSaveStatus("saved");
-    setLastSavedAt(new Date());
-  }, []);
+  }, [applyServerSaveStatus]);
 
   const persistDraft = useCallback(
     (next: OnboardingDraft, immediate: boolean) => {
@@ -184,12 +194,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     async function hydrate() {
       const local = loadLocalDraft();
       let server: OnboardingDraft | null = null;
-      let redisAvailable = false;
+      let serverCanSync = false;
 
       try {
         const result = await fetchServerDraft();
         server = result.draft;
-        redisAvailable = result.redisAvailable;
+        serverCanSync = result.durableAvailable || result.redisAvailable || result.persistence === "local";
       } catch {
         server = null;
       }
@@ -209,7 +219,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         saveLocalDraft(winner);
       }
 
-      if (needsServerSync && redisAvailable) {
+      if (needsServerSync && serverCanSync) {
         try {
           await putServerDraft(winner, winner.currentRoute || "/onboarding");
         } catch {
@@ -634,16 +644,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setSaveStatus("saving");
     saveLocalDraft(next);
     const result = await putServerDraft(next, currentRouteRef.current, { keepalive: true });
-    if (!result.redisAvailable) {
-      setSaveStatus("saved-local");
-      setLastSavedAt(new Date());
-    } else if (result.savedToRedis) {
-      setSaveStatus("saved");
-      setLastSavedAt(new Date());
-    } else {
-      setSaveStatus("server-pending");
-    }
-  }, [isDraftHydrated]);
+    applyServerSaveStatus(result);
+  }, [applyServerSaveStatus, isDraftHydrated]);
 
   const getDraftSnapshot = useCallback(() => draftRef.current, []);
 
@@ -662,17 +664,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       const result = await putServerDraft(next, currentRouteRef.current, {
         keepalive: true,
       });
-      if (!result.redisAvailable) {
-        setSaveStatus("saved-local");
-        setLastSavedAt(new Date());
-      } else if (result.savedToRedis) {
-        setSaveStatus("saved");
-        setLastSavedAt(new Date());
-      } else {
-        setSaveStatus("server-pending");
-      }
+      applyServerSaveStatus(result);
     },
-    [isDraftHydrated],
+    [applyServerSaveStatus, isDraftHydrated],
   );
 
   useEffect(() => {
