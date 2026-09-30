@@ -13,6 +13,7 @@ import {
 import { loadLocalDraft, saveLocalDraft, type SaveStatus } from "./persistence";
 import { interpretServerSave } from "./server-save-status";
 import { fetchServerDraft, putServerDraft } from "./server-api";
+import { createDraftAutosaveController, type DraftAutosaveController } from "./autosave";
 import { reconcileDrafts, hasDraftContent, addCompletedSection } from "./draft-utils";
 import { applyPostSubmissionEditPolicy } from "./submissionIntegrity";
 import { isSection4LinkedFeeProtected } from "./section4FeeLinks";
@@ -115,6 +116,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const hydratedSnapshotRef = useRef<string | null>(null);
   const pendingImmediateRef = useRef(false);
   const serverRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autosaveRef = useRef<DraftAutosaveController | null>(null);
 
   useEffect(() => {
     draftRef.current = draft;
@@ -143,23 +145,37 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const runServerSave = useCallback(async (next: OnboardingDraft, route: string) => {
-    const result = await putServerDraft(next, route);
-    const status = applyServerSaveStatus(result);
-    if (status === "server-pending") {
-      if (!serverRetryRef.current) {
-        serverRetryRef.current = setTimeout(() => {
+  if (!autosaveRef.current) {
+    autosaveRef.current = createDraftAutosaveController({
+      save: putServerDraft,
+      getLatest: () => draftRef.current,
+      getRoute: () => currentRouteRef.current,
+      onLocalDraftAdjusted: (next) => {
+        draftRef.current = next;
+        setDraft(next);
+      },
+      onResult: (result) => {
+        const status = interpretServerSave(result);
+        setSaveStatus(status);
+        if (status === "saved" || status === "saved-local") {
+          setLastSavedAt(new Date());
+        }
+        if (status === "server-pending") {
+          if (!serverRetryRef.current) {
+            serverRetryRef.current = setTimeout(() => {
+              serverRetryRef.current = null;
+              autosaveRef.current?.requestSave();
+            }, 5000);
+          }
+          return;
+        }
+        if (serverRetryRef.current) {
+          clearTimeout(serverRetryRef.current);
           serverRetryRef.current = null;
-          void runServerSave(draftRef.current, currentRouteRef.current);
-        }, 5000);
-      }
-      return;
-    }
-    if (serverRetryRef.current) {
-      clearTimeout(serverRetryRef.current);
-      serverRetryRef.current = null;
-    }
-  }, [applyServerSaveStatus]);
+        }
+      },
+    });
+  }
 
   const persistDraft = useCallback(
     (next: OnboardingDraft, immediate: boolean) => {
@@ -173,7 +189,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
           setSaveStatus("error");
           return;
         }
-        void runServerSave(next, currentRouteRef.current);
+        autosaveRef.current?.requestSave();
       };
 
       if (immediate) {
@@ -185,7 +201,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(run, TEXT_DEBOUNCE_MS);
     },
-    [isDraftHydrated, runServerSave],
+    [isDraftHydrated],
   );
 
   useEffect(() => {
@@ -643,7 +659,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     const next = draftRef.current;
     setSaveStatus("saving");
     saveLocalDraft(next);
-    const result = await putServerDraft(next, currentRouteRef.current, { keepalive: true });
+    const result = await autosaveRef.current!.flush({ keepalive: true });
     applyServerSaveStatus(result);
   }, [applyServerSaveStatus, isDraftHydrated]);
 
@@ -661,9 +677,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setDraft(next);
       setSaveStatus("saving");
       saveLocalDraft(next);
-      const result = await putServerDraft(next, currentRouteRef.current, {
-        keepalive: true,
-      });
+      const result = await autosaveRef.current!.flush({ keepalive: true });
       applyServerSaveStatus(result);
     },
     [applyServerSaveStatus, isDraftHydrated],

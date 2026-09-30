@@ -4,6 +4,7 @@ import {
   toRedisDraft,
   type RedisOnboardingDraft,
 } from "./draft-utils";
+import type { DraftSaveResult } from "./autosave";
 
 export type PersistenceModeName = "durable" | "local" | "unavailable";
 
@@ -20,28 +21,46 @@ export async function fetchServerDraft(): Promise<{
   durableAvailable: boolean;
   persistence: PersistenceModeName;
 }> {
-  const res = await fetch("/api/onboarding/draft", {
-    method: "GET",
-    credentials: "same-origin",
-    cache: "no-store",
-  });
+  try {
+    const res = await fetch("/api/onboarding/draft", {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+    });
 
-  if (!res.ok) {
+    if (!res.ok) {
+      return { draft: null, redisAvailable: false, durableAvailable: false, persistence: "unavailable" };
+    }
+
+    const body = (await res.json()) as FetchDraftResponse;
+    const persistence = body.persistence ?? "unavailable";
+    const durableAvailable = body.durableAvailable ?? false;
+    if (!body.draft) {
+      return { draft: null, redisAvailable: body.redisAvailable, durableAvailable, persistence };
+    }
+
+    return {
+      draft: fromRedisDraft(body.draft),
+      redisAvailable: body.redisAvailable,
+      durableAvailable,
+      persistence,
+    };
+  } catch {
     return { draft: null, redisAvailable: false, durableAvailable: false, persistence: "unavailable" };
   }
+}
 
-  const body = (await res.json()) as FetchDraftResponse;
-  const persistence = body.persistence ?? "unavailable";
-  const durableAvailable = body.durableAvailable ?? false;
-  if (!body.draft) {
-    return { draft: null, redisAvailable: body.redisAvailable, durableAvailable, persistence };
-  }
-
+function failureResult(
+  partial?: Partial<DraftSaveResult>,
+): DraftSaveResult {
   return {
-    draft: fromRedisDraft(body.draft),
-    redisAvailable: body.redisAvailable,
-    durableAvailable,
-    persistence,
+    ok: false,
+    redisAvailable: false,
+    savedToRedis: false,
+    savedDurable: false,
+    durableAvailable: false,
+    persistence: "unavailable",
+    ...partial,
   };
 }
 
@@ -49,61 +68,62 @@ export async function putServerDraft(
   draft: OnboardingDraft,
   currentRoute: string,
   options?: { keepalive?: boolean },
-): Promise<{
-  ok: boolean;
-  redisAvailable: boolean;
-  savedToRedis: boolean;
-  savedDurable: boolean;
-  durableAvailable: boolean;
-  persistence: PersistenceModeName;
-}> {
+): Promise<DraftSaveResult> {
   const payload = toRedisDraft(
     { ...draft, updatedAt: draft.updatedAt || new Date().toISOString() },
     currentRoute,
   );
-  const res = await fetch("/api/onboarding/draft", {
-    method: "PUT",
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ draft: payload }),
-    keepalive: options?.keepalive ?? false,
-  });
 
-  if (!res.ok) {
-    let persistence: PersistenceModeName = "unavailable";
-    let durableAvailable = false;
-    try {
-      const failed = (await res.json()) as { persistence?: PersistenceModeName; durableAvailable?: boolean };
-      persistence = failed.persistence ?? "unavailable";
-      durableAvailable = failed.durableAvailable ?? false;
-    } catch {
-      persistence = "unavailable";
-    }
-    return {
-      ok: false,
-      redisAvailable: false,
-      savedToRedis: false,
-      savedDurable: false,
-      durableAvailable,
-      persistence,
-    };
+  let res: Response;
+  try {
+    res = await fetch("/api/onboarding/draft", {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ draft: payload }),
+      keepalive: options?.keepalive ?? false,
+    });
+  } catch {
+    // Network/abort failures must not surface as uncaught TypeError: Failed to fetch.
+    return failureResult({ reason: "network_error" });
   }
 
-  const body = (await res.json()) as {
-    ok: boolean;
-    redisAvailable: boolean;
+  let body: {
+    ok?: boolean;
+    reason?: string;
+    draft?: RedisOnboardingDraft | null;
+    redisAvailable?: boolean;
     savedToRedis?: boolean;
     savedDurable?: boolean;
     durableAvailable?: boolean;
     persistence?: PersistenceModeName;
-  };
+  } = {};
+  try {
+    body = (await res.json()) as typeof body;
+  } catch {
+    body = {};
+  }
+
+  if (!res.ok || !body.ok) {
+    return failureResult({
+      reason: body.reason ?? (res.status === 409 ? "stale_draft" : "save_failed"),
+      draft: body.draft ? fromRedisDraft(body.draft) : null,
+      redisAvailable: body.redisAvailable ?? false,
+      savedToRedis: false,
+      savedDurable: false,
+      durableAvailable: body.durableAvailable ?? false,
+      persistence: body.persistence ?? "unavailable",
+    });
+  }
+
   return {
-    ok: body.ok,
-    redisAvailable: body.redisAvailable,
+    ok: true,
+    redisAvailable: body.redisAvailable ?? false,
     savedToRedis: body.savedToRedis ?? false,
     savedDurable: body.savedDurable ?? false,
     durableAvailable: body.durableAvailable ?? false,
     persistence: body.persistence ?? "unavailable",
+    draft: body.draft ? fromRedisDraft(body.draft) : null,
   };
 }
 
@@ -122,12 +142,23 @@ export async function postQuestionnaireSubmit(draft: OnboardingDraft): Promise<{
     { ...draft, updatedAt: draft.updatedAt || new Date().toISOString() },
     draft.currentRoute || "/onboarding/review",
   );
-  const res = await fetch("/api/onboarding/submit", {
-    method: "POST",
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ draft: payload }),
-  });
+  let res: Response;
+  try {
+    res = await fetch("/api/onboarding/submit", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ draft: payload }),
+    });
+  } catch {
+    return {
+      ok: false,
+      reason: "network_error",
+      redisAvailable: false,
+      savedToRedis: false,
+      savedDurable: false,
+    };
+  }
   const body = (await res.json()) as {
     ok: boolean;
     reason?: string;
