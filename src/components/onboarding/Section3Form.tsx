@@ -155,7 +155,6 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
       <QuestionCard
         title="How should Alexander treat each of these situations?"
         required
-        helpText="Choose how you want Alexander to handle each situation. If you’re comfortable using Alexander’s built-in safety rules, choose Use Alexander’s recommended default."
       >
         <EmergencyClassificationGroup
           scenarios={EMERGENCY_SCENARIOS}

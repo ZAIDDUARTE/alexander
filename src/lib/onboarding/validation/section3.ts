@@ -2,6 +2,10 @@ import { EMERGENCY_SCENARIOS } from "../section3Catalog";
 import { DAYS, DAY_LABELS, isOfficeDayValid, hasAnyOpenOfficeDay, type OfficeDaySchedule } from "../schedule";
 import { isValidE164, PHONE_INVALID_MESSAGE } from "../phone";
 import type { AfterHoursCallClass, Contact, Section3Data } from "../types";
+import {
+  isCurrentAfterHoursDisposition,
+  isCurrentEmergencyClassification,
+} from "../stage2Migration";
 
 export type FieldErrors = Partial<Record<string, string>>;
 
@@ -109,7 +113,7 @@ export function validateSection3(data: Section3Data, contacts: Contact[]): Field
   const errors: FieldErrors = {};
 
   const missingClassification = EMERGENCY_SCENARIOS.some(
-    (s) => (data.emergencyClassifications[s.id] ?? "") === "",
+    (s) => !isCurrentEmergencyClassification(data.emergencyClassifications[s.id] ?? ""),
   );
   if (missingClassification) {
     errors.emergencyClassifications = "Classify every situation listed above.";
@@ -127,7 +131,9 @@ export function validateSection3(data: Section3Data, contacts: Contact[]): Field
   }
 
   const dispositionRows: AfterHoursCallClass[] = ["emergency", "urgent_contained", "routine"];
-  const missingDisposition = dispositionRows.some((row) => data.afterHoursDisposition[row] === "");
+  const missingDisposition = dispositionRows.some(
+    (row) => !isCurrentAfterHoursDisposition(data.afterHoursDisposition[row]),
+  );
   if (missingDisposition) {
     errors.afterHoursDisposition = "Select an option for every row.";
   }

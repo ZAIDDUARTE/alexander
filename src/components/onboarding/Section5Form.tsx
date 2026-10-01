@@ -56,6 +56,9 @@ const MATERIAL_MARKUP_OPTIONS: { value: MaterialMarkupPolicy; label: string }[] 
   { value: "no", label: "No" },
 ];
 
+const MATERIAL_PRICING_PREFILL =
+  "Our quoted prices may include parts and materials. Do not discuss our internal costs or markup percentages.";
+
 function geographyChoices(section2: {
   serviceAreaZipCodes: string[];
   serviceAreaCities: string[];
@@ -437,15 +440,22 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
           name="materialMarkupPolicy"
           options={MATERIAL_MARKUP_OPTIONS}
           value={data.materialMarkupPolicy}
-          onChange={(v) =>
+          onChange={(v) => {
+            const explanation = data.materialMarkupCustomerExplanation;
+            const shouldPrefill =
+              (v === "yes" || v === "sometimes") && explanation.trim() === "";
             updateSection5(
               {
                 materialMarkupPolicy: v,
-                ...(v === "no" ? { materialMarkupCustomerExplanation: "" } : {}),
+                ...(v === "no"
+                  ? { materialMarkupCustomerExplanation: "" }
+                  : shouldPrefill
+                    ? { materialMarkupCustomerExplanation: MATERIAL_PRICING_PREFILL }
+                    : {}),
               },
               { immediate: true },
-            )
-          }
+            );
+          }}
           error={submitted ? errors.materialMarkupPolicy : undefined}
         />
         {(data.materialMarkupPolicy === "yes" || data.materialMarkupPolicy === "sometimes") && (

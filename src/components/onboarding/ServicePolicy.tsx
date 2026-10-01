@@ -146,6 +146,7 @@ export function ServicePolicyGroup({
   labels,
   conditionLabel = "Condition",
   conditionPlaceholder,
+  conditionPlaceholders,
   highlightIncomplete = false,
   groupError,
   conditionErrors,
@@ -156,6 +157,7 @@ export function ServicePolicyGroup({
   labels: ServicePolicyLabels;
   conditionLabel?: string;
   conditionPlaceholder?: string;
+  conditionPlaceholders?: Readonly<Record<string, string>>;
   highlightIncomplete?: boolean;
   groupError?: string;
   conditionErrors?: Record<string, string>;
@@ -173,7 +175,7 @@ export function ServicePolicyGroup({
               onChange={(next) => onChange(item.id, next)}
               labels={labels}
               conditionLabel={conditionLabel}
-              conditionPlaceholder={conditionPlaceholder}
+              conditionPlaceholder={conditionPlaceholders?.[item.id] ?? conditionPlaceholder}
               highlightIncomplete={highlightIncomplete}
               conditionError={conditionErrors?.[item.id]}
             />

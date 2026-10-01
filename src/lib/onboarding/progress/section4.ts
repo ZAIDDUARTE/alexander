@@ -13,6 +13,9 @@ import type {
   Section4Data,
 } from "../types";
 import { contactHasIdentity, createDefaultSection2 } from "../types";
+import { isPositiveMoney } from "../money";
+import { isCurrentBookingMode } from "../stage2Migration";
+import { isCurrentCallerAuthority } from "../stage3Migration";
 import { approverContactIsValid } from "../validation/section3";
 
 type ProgressUnit = {
@@ -21,13 +24,6 @@ type ProgressUnit = {
 };
 
 const FALLBACK_IDS = NO_AVAILABILITY_FALLBACK_OPTIONS.map((o) => o.id);
-const POSITIVE_MONEY_REGEX = /^\d+(\.\d{1,2})?$/;
-
-function isPositiveMoney(value: string): boolean {
-  const trimmed = value.trim();
-  if (!POSITIVE_MONEY_REGEX.test(trimmed)) return false;
-  return parseFloat(trimmed) > 0;
-}
 
 function isPositiveWholeNumber(value: string): boolean {
   const trimmed = value.trim();
@@ -71,12 +67,7 @@ function appointmentWindowsComplete(windows: AppointmentWindow[]): boolean {
 }
 
 function callerPermissionsComplete(data: Section4Data): boolean {
-  for (const row of CALLER_TYPES) {
-    const permissions = data.callerPermissions[row.id] ?? [];
-    if (permissions.length === 0) return false;
-    if (permissions.includes("not_allowed") && permissions.length > 1) return false;
-  }
-  return true;
+  return CALLER_TYPES.every((row) => isCurrentCallerAuthority(data.callerPermissions[row.id] ?? ""));
 }
 
 function exceptionAuthorityComplete(data: Section4Data, contacts: Contact[]): boolean {
@@ -244,7 +235,7 @@ export function getSection4ProgressUnits(
         (!showEmergencySpecial || Boolean(data.emergencyAuthSpecialRules.trim())),
     },
     // Q46
-    { applicable: true, complete: data.defaultBookingMode !== "" },
+    { applicable: true, complete: isCurrentBookingMode(data.defaultBookingMode) },
     // Q47
     { applicable: true, complete: bookingHorizonComplete },
     // Q48

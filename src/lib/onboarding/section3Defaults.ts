@@ -1,42 +1,53 @@
 import { EMERGENCY_SCENARIOS } from "./section3Catalog";
-import type { EmergencyClassificationState } from "./types";
+import type { EmergencyClassification, EmergencyClassificationState } from "./types";
 
-/**
- * MD-approved Q26 initial state: every scenario selects
- * `recommended_default` (not a hidden classification mapping).
- */
+/** October 1 preselected classification for each emergency scenario. */
+export const EMERGENCY_ROW_DEFAULTS: Record<string, EmergencyClassification> = {
+  "uncontrolled-water-leak-inside-property": "emergency",
+  "water-leak-near-electrical-equipment": "emergency",
+  "suspected-gas-leak-or-odor": "emergency",
+  "sewage-entering-property": "emergency",
+  "multiple-fixtures-backing-up": "urgent",
+  "toilet-overflowing-uncontrolled": "emergency",
+  "only-usable-toilet-not-working": "urgent",
+  "major-water-heater-leak-or-rupture": "emergency",
+  "dangerous-water-heater-symptoms": "emergency",
+  "sump-pump-failure-flooding": "emergency",
+  "frozen-pipe-confirmed-leak": "emergency",
+  "complete-loss-of-water": "urgent",
+  "major-water-service-line-leak": "emergency",
+  "serious-standing-water-unknown-source": "emergency",
+  "unclear-situation-may-be-dangerous": "human_review",
+};
+
 export function createDefaultEmergencyClassifications(): Record<
   string,
   EmergencyClassificationState
 > {
   const map: Record<string, EmergencyClassificationState> = {};
   for (const scenario of EMERGENCY_SCENARIOS) {
-    map[scenario.id] = "recommended_default";
+    map[scenario.id] = EMERGENCY_ROW_DEFAULTS[scenario.id];
   }
   return map;
 }
 
-/**
- * Upgrade legacy blank Q26 rows to recommended_default without
- * overwriting any explicit customer choice.
- */
-export function fillBlankQ26WithRecommendedDefault(
+/** Fill unanswered rows with that scenario's default. Explicit answers stay. */
+export function fillBlankEmergencyClassifications(
   map: Record<string, EmergencyClassificationState>,
 ): Record<string, EmergencyClassificationState> {
   const out = { ...map };
   for (const scenario of EMERGENCY_SCENARIOS) {
     if ((out[scenario.id] ?? "") === "") {
-      out[scenario.id] = "recommended_default";
+      out[scenario.id] = EMERGENCY_ROW_DEFAULTS[scenario.id];
     }
   }
   return out;
 }
 
-/** True when every row is still the source-approved Q26 default. */
-export function emergencyClassificationsAreAllRecommendedDefault(
+export function emergencyClassificationsMatchDefaults(
   map: Record<string, EmergencyClassificationState>,
 ): boolean {
   return EMERGENCY_SCENARIOS.every(
-    (s) => (map[s.id] ?? "") === "recommended_default",
+    (scenario) => (map[scenario.id] ?? "") === EMERGENCY_ROW_DEFAULTS[scenario.id],
   );
 }

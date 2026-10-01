@@ -10,31 +10,18 @@ const CLASSIFICATION_ORDER: EmergencyClassification[] = [
   "urgent",
   "routine",
   "human_review",
-  "recommended_default",
 ];
 
 export const EMERGENCY_CLASSIFICATION_LABELS: EmergencyClassificationLabels = {
   emergency: "Emergency",
   urgent: "Urgent, not emergency",
   routine: "Routine",
-  human_review: "Human review",
-  recommended_default: "Recommended default",
+  human_review: "Human review required",
 };
 
 /**
- * Q26 preselects the `recommended_default` state per row — not a hidden
- * per-scenario classification. The approved default library mapping (if
- * any) is applied downstream; this UI does not invent classifications.
- */
-const RECOMMENDED_DEFAULT_TOOLTIP =
-  "Alexander will use his recommended handling for this situation. This does not display or claim a specific hidden classification.";
-
-/**
- * Accessible 5-state control for Q26. Native radio inputs (never
- * checkboxes/divs) grouped by `name`. Stacks to one column on mobile
- * (labels here are long); wraps into a segmented row at `sm` and above
- * so the desktop matrix stays compact without cramming 5 states into
- * unreadable tiny columns.
+ * Accessible 4-state control for Q26. Native radio inputs grouped by
+ * `name`. Stacks to one column on mobile and wraps at `sm` and above.
  */
 export function EmergencyClassificationSegmented({
   name,
@@ -51,11 +38,9 @@ export function EmergencyClassificationSegmented({
     <div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
       {CLASSIFICATION_ORDER.map((classification) => {
         const checked = value === classification;
-        const isDefault = classification === "recommended_default";
         return (
           <label
             key={classification}
-            title={isDefault ? RECOMMENDED_DEFAULT_TOOLTIP : undefined}
             className={`flex min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--color-alexander-blue)] sm:flex-1 sm:min-w-[8rem] ${
               checked
                 ? "border-[var(--color-alexander-blue)] bg-[var(--color-alexander-blue)] text-white"
@@ -71,21 +56,6 @@ export function EmergencyClassificationSegmented({
               className="sr-only"
             />
             <span>{EMERGENCY_CLASSIFICATION_LABELS[classification]}</span>
-            {isDefault && (
-              <span
-                aria-hidden
-                className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${
-                  checked
-                    ? "bg-white/25 text-white"
-                    : "bg-[var(--color-alexander-info-bg)] text-[var(--color-alexander-blue)]"
-                }`}
-              >
-                i
-              </span>
-            )}
-            <span className="sr-only">
-              {isDefault ? ` — ${RECOMMENDED_DEFAULT_TOOLTIP}` : ""}
-            </span>
           </label>
         );
       })}

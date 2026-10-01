@@ -4,6 +4,10 @@ import { isValidE164 } from "../phone";
 import type { AfterHoursCallClass, Contact, Section3Data } from "../types";
 import { contactHasIdentity } from "../types";
 import { approverContactIsValid } from "../validation/section3";
+import {
+  isCurrentAfterHoursDisposition,
+  isCurrentEmergencyClassification,
+} from "../stage2Migration";
 
 type ProgressUnit = {
   applicable: boolean;
@@ -53,8 +57,8 @@ export function getSection3ProgressUnits(data: Section3Data, contacts: Contact[]
     // Q26 — emergency classification matrix (required)
     {
       applicable: true,
-      complete: EMERGENCY_SCENARIOS.every(
-        (s) => (data.emergencyClassifications[s.id] ?? "") !== "",
+      complete: EMERGENCY_SCENARIOS.every((s) =>
+        isCurrentEmergencyClassification(data.emergencyClassifications[s.id] ?? ""),
       ),
     },
     // Q27 — dispatch approval multi-select (required)
@@ -62,7 +66,9 @@ export function getSection3ProgressUnits(data: Section3Data, contacts: Contact[]
     // Q28 — after-hours disposition matrix (required)
     {
       applicable: true,
-      complete: dispositionRows.every((row) => data.afterHoursDisposition[row] !== ""),
+      complete: dispositionRows.every((row) =>
+        isCurrentAfterHoursDisposition(data.afterHoursDisposition[row]),
+      ),
     },
     // Q29 — after-hours emergency service mode (required)
     { applicable: true, complete: data.emergencyServiceMode !== "" },

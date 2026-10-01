@@ -1,12 +1,7 @@
+import { isPositiveMoney } from "../money";
 import type { FeeRecord } from "../types";
 
-const POSITIVE_MONEY_REGEX = /^\d+(\.\d{1,2})?$/;
-
-export function isPositiveMoney(value: string): boolean {
-  const trimmed = value.trim();
-  if (!POSITIVE_MONEY_REGEX.test(trimmed)) return false;
-  return parseFloat(trimmed) > 0;
-}
+export { isPositiveMoney };
 
 export function isPositivePercentage(value: string): boolean {
   const trimmed = value.trim();

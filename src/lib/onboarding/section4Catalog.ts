@@ -24,7 +24,7 @@ export const CALLER_TYPES: readonly CatalogItem[] = [
   { id: "landlord_property_manager", label: "Landlord / property manager" },
   { id: "spouse_family", label: "Spouse / family member" },
   { id: "remote_family", label: "Remote family member" },
-  { id: "realtor_buyer_seller", label: "Realtor / buyer / seller" },
+  { id: "realtor_buyer_seller", label: "Realtor" },
   { id: "other_third_party", label: "Other third party" },
 ] as const;
 

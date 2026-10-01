@@ -71,9 +71,9 @@ function fullyValidSection3(primaryId: string): Section3Data {
   }
   data.dispatchApproval = ["none"];
   data.afterHoursDisposition = {
-    emergency: "attempt_contact",
-    urgent_contained: "arrange_callback",
-    routine: "info_only",
+    emergency: "contact_on_call",
+    urgent_contained: "schedule_service",
+    routine: "take_message",
   };
   data.emergencyServiceMode = "24_7";
   data.hasBackupContact = "no";

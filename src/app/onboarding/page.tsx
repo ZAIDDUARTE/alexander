@@ -35,33 +35,30 @@ export default function WelcomePage() {
           Welcome to Alexander
         </h1>
         <div className="mx-auto mt-6 max-w-xl space-y-4 text-left text-base leading-relaxed text-[var(--color-alexander-muted)] sm:text-center">
+          <p>You&apos;re about to teach Alexander how your business works.</p>
           <p>
-            We&apos;re excited to begin building your company&apos;s AI receptionist.
+            Alexander isn&apos;t a simple bot built by pulling a few answers from your website.
+            He&apos;s designed to understand the details of how your company actually
+            operates—your services, customers, scheduling rules, emergencies, pricing, policies,
+            exceptions, and the judgment your team uses every day.
           </p>
           <p>
-            This questionnaire gives us the information we need to configure Alexander around the
-            way your business actually operates—including your services, service area, scheduling
-            rules, emergency procedures, pricing policies, customer-care standards, and team
-            handoffs.
+            That level of understanding is what allows Alexander to become more than an answering
+            service. The goal is to build an AI receptionist that can handle real customer
+            conversations with the knowledge and judgment of a well-trained member of your team.
+          </p>
+          <p>That&apos;s why this questionnaire is thorough.</p>
+          <p>
+            Take your time and answer each question carefully. Some questions are required, while
+            others appear only when relevant to your business. You can save your progress and
+            return at any time.
           </p>
           <p>
-            Some questions are required. Others are optional or appear only when they apply to your
-            business. Smaller companies may finish quickly, while larger or more complex
-            organizations may choose to provide more detail.
+            Once you&apos;re finished, our team will use your answers to build, test, and refine
+            your Alexander before he begins representing your company.
           </p>
-          <p>
-            You do not need to complete everything in one sitting. Save your progress at any time
-            and return when convenient.
-          </p>
-          <p>
-            This is the most important part of your setup. Once it is complete, our team will use
-            your answers to configure, test, and review Alexander before he represents your
-            company.
-          </p>
-          <p>
-            The more relevant detail you provide, the more accurately Alexander can serve your
-            customers.
-          </p>
+          <p>The better Alexander understands your business, the better he can represent it.</p>
+          <p>Let&apos;s build your newest team member.</p>
         </div>
         <p className="mt-8 text-sm text-[var(--color-alexander-muted)]">
           Progress: {draft.navigation.completedSections.length} of {TOTAL_SECTIONS} sections

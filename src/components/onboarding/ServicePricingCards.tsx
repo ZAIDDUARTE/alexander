@@ -10,7 +10,8 @@ import type {
   ServicePricingRule,
 } from "@/lib/onboarding/types";
 import { ConditionalPanel } from "./ui/Card";
-import { TextField, TextareaField } from "./ui/Fields";
+import { TextareaField } from "./ui/Fields";
+import { MoneyField } from "./ui/MoneyField";
 import { RadioGroup } from "./ui/RadioGroup";
 import { CheckboxGroup } from "./ui/CheckboxGroup";
 
@@ -119,9 +120,9 @@ export function ServicePricingCards({
                   error={showErrors ? errors[`${prefix}.approvedPriceMode`] : undefined}
                 />
                 {rule.approvedPriceMode === "exact" && (
-                  <TextField
+                  <MoneyField
                     id={`approved-exact-${service.id}`}
-                    label="Approved price ($)"
+                    label="Approved price"
                     required
                     value={rule.approvedPriceExact}
                     onChange={(v) => onRuleChange(service.id, { approvedPriceExact: v })}
@@ -130,17 +131,17 @@ export function ServicePricingCards({
                 )}
                 {rule.approvedPriceMode === "range" && (
                   <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
-                    <TextField
+                    <MoneyField
                       id={`approved-min-${service.id}`}
-                      label="Minimum ($)"
+                      label="Minimum"
                       required
                       value={rule.approvedPriceMin}
                       onChange={(v) => onRuleChange(service.id, { approvedPriceMin: v })}
                       error={showErrors ? errors[`${prefix}.approvedPriceMin`] : undefined}
                     />
-                    <TextField
+                    <MoneyField
                       id={`approved-max-${service.id}`}
-                      label="Maximum ($)"
+                      label="Maximum"
                       required
                       value={rule.approvedPriceMax}
                       onChange={(v) => onRuleChange(service.id, { approvedPriceMax: v })}

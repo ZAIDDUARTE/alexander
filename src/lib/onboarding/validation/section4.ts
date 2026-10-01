@@ -11,17 +11,18 @@ import {
 } from "./section3";
 import type {
   AppointmentWindow,
-  CallerPermission,
+  CallerAuthority,
   Contact,
   FeeRecord,
   Section2Data,
   Section4Data,
 } from "../types";
 import { contactHasIdentity, createDefaultSection2 } from "../types";
+import { isPositiveMoney } from "../money";
+import { isCurrentBookingMode } from "../stage2Migration";
+import { isCurrentCallerAuthority } from "../stage3Migration";
 
 export type FieldErrors = Partial<Record<string, string>>;
-
-const POSITIVE_MONEY_REGEX = /^\d+(\.\d{1,2})?$/;
 
 const CALLER_TYPE_IDS = new Set(CALLER_TYPES.map((c) => c.id));
 const FALLBACK_IDS = NO_AVAILABILITY_FALLBACK_OPTIONS.map((o) => o.id);
@@ -33,12 +34,6 @@ const VALID_EXCEPTION_AUTHORITIES = new Set([
   "another_person",
   "never_allowed",
 ]);
-
-function isPositiveMoney(value: string): boolean {
-  const trimmed = value.trim();
-  if (!POSITIVE_MONEY_REGEX.test(trimmed)) return false;
-  return parseFloat(trimmed) > 0;
-}
 
 function isPositiveWholeNumber(value: string): boolean {
   const trimmed = value.trim();
@@ -62,19 +57,13 @@ function intervalsOverlap(
   return a.start < b.end && b.start < a.end;
 }
 
-function validateCallerPermissionRow(
+function validateCallerAuthorityRow(
   callerTypeId: string,
-  permissions: CallerPermission[],
+  authority: CallerAuthority | "",
   errors: FieldErrors,
 ): void {
-  if (permissions.length === 0) {
-    errors[`callerPermissions.${callerTypeId}`] = "Select at least one permission for this caller type.";
-    return;
-  }
-  const hasNotAllowed = permissions.includes("not_allowed");
-  if (hasNotAllowed && permissions.length > 1) {
-    errors[`callerPermissions.${callerTypeId}`] =
-      "Not allowed cannot be combined with other permissions.";
+  if (!isCurrentCallerAuthority(authority)) {
+    errors[`callerPermissions.${callerTypeId}`] = "Select one authority level for this caller.";
   }
 }
 
@@ -185,14 +174,14 @@ export function validateSection4(
     errors.approverUnavailableCustomRule = "Describe what Alexander should do.";
   }
 
-  let missingCallerPermissions = false;
+  let missingCallerAuthority = false;
   for (const row of CALLER_TYPES) {
-    const permissions = data.callerPermissions[row.id] ?? [];
-    if (permissions.length === 0) missingCallerPermissions = true;
-    validateCallerPermissionRow(row.id, permissions, errors);
+    const authority = data.callerPermissions[row.id] ?? "";
+    if (!isCurrentCallerAuthority(authority)) missingCallerAuthority = true;
+    validateCallerAuthorityRow(row.id, authority, errors);
   }
-  if (missingCallerPermissions && !errors.callerPermissions) {
-    errors.callerPermissions = "Select permissions for every caller type.";
+  if (missingCallerAuthority && !errors.callerPermissions) {
+    errors.callerPermissions = "Select one authority level for every caller.";
   }
 
   if (!data.hasSpendingLimits) {
@@ -221,7 +210,7 @@ export function validateSection4(
     errors.emergencyAuthSpecialRules = "Describe how emergency authorization differs.";
   }
 
-  if (!data.defaultBookingMode) {
+  if (!isCurrentBookingMode(data.defaultBookingMode)) {
     errors.defaultBookingMode = "Select an option.";
   }
 
@@ -496,14 +485,6 @@ export const APPROVER_UNAVAILABLE_OPTIONS = [
   { value: "other" as const, label: "Other" },
 ];
 
-export const CALLER_PERMISSION_OPTIONS = [
-  { value: "schedule_service" as const, label: "Request / schedule" },
-  { value: "approve_diagnostic_fee" as const, label: "Approve diagnostic fee" },
-  { value: "authorize_repair" as const, label: "Authorize repair" },
-  { value: "agree_to_pay" as const, label: "Agree to pay" },
-  { value: "human_approval_required" as const, label: "Human approval required" },
-  { value: "not_allowed" as const, label: "Not allowed" },
-];
 
 export const EMERGENCY_AUTH_OPTIONS = [
   { value: "same_rules" as const, label: "Yes — use the same rules" },
@@ -514,15 +495,22 @@ export const EMERGENCY_AUTH_OPTIONS = [
   },
 ];
 
-export const DEFAULT_BOOKING_OPTIONS = [
-  { value: "confirm_immediately" as const, label: "Confirm an available appointment immediately" },
+export const DEFAULT_BOOKING_OPTIONS: {
+  value: "book_appointment" | "send_to_team";
+  label: string;
+  description: string;
+}[] = [
   {
-    value: "submit_for_approval" as const,
-    label: "Submit the requested appointment for team approval",
+    value: "book_appointment",
+    label: "Book an available appointment",
+    description:
+      "Alexander can confirm an available appointment that follows your scheduling rules.",
   },
   {
-    value: "arrange_callback" as const,
-    label: "Arrange a callback so our team can schedule it",
+    value: "send_to_team",
+    label: "Send the request to our team",
+    description:
+      "Alexander collects the customer's details and sends the request to your team for scheduling.",
   },
 ];
 

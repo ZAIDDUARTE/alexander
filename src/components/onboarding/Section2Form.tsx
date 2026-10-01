@@ -17,6 +17,13 @@ import {
   PLUMBING_SERVICES,
 } from "@/lib/onboarding/section2Catalog";
 import {
+  CORRECTIVE_WORK_CONDITION_PLACEHOLDER,
+  CUSTOMER_PROPERTY_CONDITION_PLACEHOLDERS,
+  CUSTOMER_SUPPLIED_CONDITION_PLACEHOLDER,
+  DIAGNOSTIC_CONDITION_PLACEHOLDERS,
+  PLUMBING_CONDITION_PLACEHOLDERS,
+} from "@/lib/onboarding/section2Placeholders";
+import {
   AFTER_HOURS_AREA_OPTIONS,
   CUSTOMER_SERVE_LABELS,
   SERVICE_AREA_DEFINITION_OPTIONS,
@@ -98,6 +105,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
           }
           labels={SERVICE_OFFER_LABELS}
           conditionLabel="Tell us about any services that have special conditions."
+          conditionPlaceholders={PLUMBING_CONDITION_PLACEHOLDERS}
           highlightIncomplete={submitted}
           groupError={submitted ? errors.plumbingServices : undefined}
           conditionErrors={plumbingConditionErrors}
@@ -119,6 +127,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
           }
           labels={SERVICE_OFFER_LABELS}
           conditionLabel="Tell us about any of these services that have special conditions."
+          conditionPlaceholders={DIAGNOSTIC_CONDITION_PLACEHOLDERS}
           highlightIncomplete={submitted}
           groupError={submitted ? errors.diagnosticServices : undefined}
           conditionErrors={diagnosticConditionErrors}
@@ -137,6 +146,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
           }
           labels={CUSTOMER_SERVE_LABELS}
           conditionLabel="Are there any special conditions for the customers or properties you selected?"
+          conditionPlaceholders={CUSTOMER_PROPERTY_CONDITION_PLACEHOLDERS}
           highlightIncomplete={submitted}
           groupError={submitted ? errors.customerPropertyTypes : undefined}
           conditionErrors={customerConditionErrors}
@@ -164,7 +174,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
           conditionLabel="What are the conditions?"
           conditionValue={data.customerSuppliedMaterialsCondition}
           onConditionChange={(v) => updateSection2({ customerSuppliedMaterialsCondition: v })}
-          conditionPlaceholder="We can install customer-supplied faucets and fixtures, but not customer-supplied water heaters."
+          conditionPlaceholder={CUSTOMER_SUPPLIED_CONDITION_PLACEHOLDER}
           error={submitted ? errors.customerSuppliedMaterialsPolicy : undefined}
           conditionError={submitted ? errors.customerSuppliedMaterialsCondition : undefined}
         />
@@ -190,6 +200,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
           }
           labels={YES_NO_POLICY_LABELS}
           conditionLabel="What are the conditions?"
+          conditionPlaceholder={CORRECTIVE_WORK_CONDITION_PLACEHOLDER}
           conditionValue={data.correctiveWorkCondition}
           onConditionChange={(v) => updateSection2({ correctiveWorkCondition: v })}
           error={submitted ? errors.correctiveWorkPolicy : undefined}

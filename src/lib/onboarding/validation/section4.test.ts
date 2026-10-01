@@ -133,21 +133,21 @@ describe("validateSection4 — E: Q42 Other", () => {
   });
 });
 
-describe("validateSection4 — F: Q43 Not allowed exclusivity", () => {
-  it("rejects Not allowed combined with positive permissions", () => {
+describe("validateSection4 — F: Q43 one authority level", () => {
+  it("rejects a blank caller authority", () => {
     const owner = validApproverContact();
     const data = fullyValidSection4([owner], []);
-    data.callerPermissions["homeowner"] = ["schedule_service", "not_allowed"];
-    const errors = validateSection4(data, [owner], []);
-    assert.ok(errors["callerPermissions.homeowner"]);
-  });
-
-  it("requires at least one permission per caller type", () => {
-    const owner = validApproverContact();
-    const data = fullyValidSection4([owner], []);
-    data.callerPermissions["tenant"] = [];
+    data.callerPermissions.tenant = "";
     const errors = validateSection4(data, [owner], []);
     assert.ok(errors.callerPermissions || errors["callerPermissions.tenant"]);
+  });
+
+  it("accepts one current authority that differs from the default", () => {
+    const owner = validApproverContact();
+    const data = fullyValidSection4([owner], []);
+    data.callerPermissions.tenant = "human_approval_required";
+    assert.equal(validateSection4(data, [owner], [])["callerPermissions.tenant"], undefined);
+    assert.equal(section4IsValid(data, [owner], []), true);
   });
 });
 

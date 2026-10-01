@@ -24,9 +24,9 @@ function fullyValidSection3(primaryId: string): Section3Data {
   }
   data.dispatchApproval = ["none"];
   data.afterHoursDisposition = {
-    emergency: "attempt_contact",
-    urgent_contained: "arrange_callback",
-    routine: "info_only",
+    emergency: "contact_on_call",
+    urgent_contained: "schedule_service",
+    routine: "take_message",
   };
   data.emergencyServiceMode = "24_7";
   data.hasBackupContact = "no";
@@ -53,14 +53,15 @@ describe("validateSection3 — A: Q26 every scenario classified", () => {
   });
 });
 
-describe("validateSection3 — B: recommended-default state accepted", () => {
-  it("accepts 'recommended_default' as a fully valid classification, not an error", () => {
+describe("validateSection3 — B: legacy recommended_default is not a current answer", () => {
+  it("rejects 'recommended_default' until load-time migration rewrites it", () => {
     const primary = validContact();
     const data = fullyValidSection3(primary.id);
-    data.emergencyClassifications[EMERGENCY_SCENARIOS[0].id] = "recommended_default";
+    (data.emergencyClassifications as Record<string, string>)[EMERGENCY_SCENARIOS[0].id] =
+      "recommended_default";
     const errors = validateSection3(data, [primary]);
-    assert.equal(errors.emergencyClassifications, undefined);
-    assert.equal(section3IsValid(data, [primary]), true);
+    assert.ok(errors.emergencyClassifications);
+    assert.equal(section3IsValid(data, [primary]), false);
   });
 });
 

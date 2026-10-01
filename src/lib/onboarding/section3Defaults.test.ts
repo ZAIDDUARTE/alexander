@@ -2,40 +2,45 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { EMERGENCY_SCENARIOS } from "./section3Catalog";
 import {
+  EMERGENCY_ROW_DEFAULTS,
   createDefaultEmergencyClassifications,
-  emergencyClassificationsAreAllRecommendedDefault,
-  fillBlankQ26WithRecommendedDefault,
+  emergencyClassificationsMatchDefaults,
+  fillBlankEmergencyClassifications,
 } from "./section3Defaults";
 import { createDefaultDraft, createDefaultSection3, createEmptyContact } from "./types";
 import { hasDraftContent, mergeWithDefaults } from "./draft-utils";
 
-describe("Q26 recommended_default defaults", () => {
-  it("fresh Q26 has all 15 rows = recommended_default", () => {
+describe("Q26 scenario defaults", () => {
+  it("fresh Q26 preselects the approved classification for every scenario", () => {
     const map = createDefaultEmergencyClassifications();
     assert.equal(Object.keys(map).length, EMERGENCY_SCENARIOS.length);
+    assert.equal(EMERGENCY_SCENARIOS.length, 15);
     for (const scenario of EMERGENCY_SCENARIOS) {
-      assert.equal(map[scenario.id], "recommended_default");
+      assert.equal(map[scenario.id], EMERGENCY_ROW_DEFAULTS[scenario.id]);
     }
   });
 
-  it("user can override a single row while others stay recommended_default", () => {
+  it("a customer change on one row leaves the other defaults in place", () => {
     const map = createDefaultEmergencyClassifications();
-    map[EMERGENCY_SCENARIOS[0].id] = "emergency";
-    assert.equal(map[EMERGENCY_SCENARIOS[0].id], "emergency");
-    assert.equal(map[EMERGENCY_SCENARIOS[1].id], "recommended_default");
-    assert.equal(emergencyClassificationsAreAllRecommendedDefault(map), false);
+    map[EMERGENCY_SCENARIOS[0].id] = "routine";
+    assert.equal(map[EMERGENCY_SCENARIOS[0].id], "routine");
+    assert.equal(map[EMERGENCY_SCENARIOS[1].id], EMERGENCY_ROW_DEFAULTS[EMERGENCY_SCENARIOS[1].id]);
+    assert.equal(emergencyClassificationsMatchDefaults(map), false);
   });
 
-  it("migration preserves explicit classifications and only fills blanks", () => {
+  it("blank rows receive the scenario default and explicit answers stay", () => {
     const legacy = createDefaultEmergencyClassifications();
     legacy[EMERGENCY_SCENARIOS[0].id] = "urgent";
     legacy[EMERGENCY_SCENARIOS[1].id] = "";
-    const migrated = fillBlankQ26WithRecommendedDefault(legacy);
+    const migrated = fillBlankEmergencyClassifications(legacy);
     assert.equal(migrated[EMERGENCY_SCENARIOS[0].id], "urgent");
-    assert.equal(migrated[EMERGENCY_SCENARIOS[1].id], "recommended_default");
+    assert.equal(
+      migrated[EMERGENCY_SCENARIOS[1].id],
+      EMERGENCY_ROW_DEFAULTS[EMERGENCY_SCENARIOS[1].id],
+    );
   });
 
-  it("mergeWithDefaults upgrades blank legacy rows without overwriting choices", () => {
+  it("mergeWithDefaults fills a blank row without overwriting a saved choice", () => {
     const primary = createEmptyContact();
     const merged = mergeWithDefaults({
       section3: {
@@ -49,7 +54,7 @@ describe("Q26 recommended_default defaults", () => {
     assert.equal(merged.section3.emergencyClassifications[EMERGENCY_SCENARIOS[0].id], "routine");
     assert.equal(
       merged.section3.emergencyClassifications[EMERGENCY_SCENARIOS[1].id],
-      "recommended_default",
+      EMERGENCY_ROW_DEFAULTS[EMERGENCY_SCENARIOS[1].id],
     );
   });
 

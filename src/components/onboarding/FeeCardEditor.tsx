@@ -13,6 +13,7 @@ import { hasActiveSection4LinkedFeePolicies, isSection4LinkedFeeProtected } from
 import type { FeeAmountKind, FeeRecord, Section4Data } from "@/lib/onboarding/types";
 import { ConditionalPanel } from "./ui/Card";
 import { TextField, TextareaField } from "./ui/Fields";
+import { MoneyField } from "./ui/MoneyField";
 import { RadioGroup } from "./ui/RadioGroup";
 import { PrimaryButton, SecondaryButton } from "./ui/Buttons";
 
@@ -187,9 +188,9 @@ function FeeCard({
           />
 
           {fee.amountKind === "fixed" && (
-            <TextField
+            <MoneyField
               id={`fee-fixed-${fee.id}`}
-              label="Fixed amount ($)"
+              label="Fixed amount"
               required
               value={fee.amountFixed}
               onChange={(v) => onUpdate({ amountFixed: v })}
@@ -198,17 +199,17 @@ function FeeCard({
           )}
           {fee.amountKind === "range" && (
             <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField
+              <MoneyField
                 id={`fee-min-${fee.id}`}
-                label="Minimum ($)"
+                label="Minimum"
                 required
                 value={fee.amountMin}
                 onChange={(v) => onUpdate({ amountMin: v })}
                 error={showErrors ? feeError(errors, fee.id, "amountMin") : undefined}
               />
-              <TextField
+              <MoneyField
                 id={`fee-max-${fee.id}`}
-                label="Maximum ($)"
+                label="Maximum"
                 required
                 value={fee.amountMax}
                 onChange={(v) => onUpdate({ amountMax: v })}

@@ -12,6 +12,7 @@ import {
   type ServiceCatalogItem,
 } from "./section2Catalog";
 import { createDefaultEmergencyClassifications } from "./section3Defaults";
+import type { Stage2MigrationNote } from "./stage2Migration";
 import {
   APPOINTMENT_WINDOW_TEMPLATES,
   CALLER_TYPES,
@@ -247,19 +248,12 @@ export function createDefaultSection2(): Section2Data {
 // ---------------------------------------------------------------------------
 
 /**
- * Q26 classification states. Deliberately has no "not sure" option —
- * every scenario resolves to exactly one of these five distinct
- * Company Truth facts. "recommended_default" is itself an explicit,
- * selectable state (not a hidden fallback) per the MD.
+ * Q26 classification. Four customer choices. Legacy `recommended_default`
+ * is translated to the scenario default when a draft is loaded.
  */
-export type EmergencyClassification =
-  | "emergency"
-  | "urgent"
-  | "routine"
-  | "human_review"
-  | "recommended_default";
+export type EmergencyClassification = "emergency" | "urgent" | "routine" | "human_review";
 
-/** "" = legacy/uninitialized row (migrated to recommended_default on load). */
+/** "" = unanswered row. Load-time migration fills the scenario default. */
 export type EmergencyClassificationState = EmergencyClassification | "";
 
 export { createDefaultEmergencyClassifications } from "./section3Defaults";
@@ -267,19 +261,16 @@ export { createDefaultEmergencyClassifications } from "./section3Defaults";
 /** Q28 — the three after-hours call classes, each with its own dropdown. */
 export type AfterHoursCallClass = "emergency" | "urgent_contained" | "routine";
 
-export type AfterHoursDispositionOption =
-  | "attempt_contact"
-  | "confirm_or_book"
-  | "submit_for_review"
-  | "schedule_next_available"
-  | "arrange_callback"
-  | "info_only"
-  | "no_service";
+export type AfterHoursDispositionOption = "contact_on_call" | "schedule_service" | "take_message";
 
 export type AfterHoursDisposition = Record<AfterHoursCallClass, AfterHoursDispositionOption | "">;
 
 export function createDefaultAfterHoursDisposition(): AfterHoursDisposition {
-  return { emergency: "", urgent_contained: "", routine: "" };
+  return {
+    emergency: "contact_on_call",
+    urgent_contained: "schedule_service",
+    routine: "schedule_service",
+  };
 }
 
 /** Q29 — when the company can actually send someone out after hours. */
@@ -543,13 +534,22 @@ export type ExceptionAuthorityState = ExceptionAuthority | "";
 
 export type ApproverUnavailablePolicy = "callback" | "follow_normal_rule" | "other";
 
-export type CallerPermission =
-  | "schedule_service"
-  | "approve_diagnostic_fee"
-  | "authorize_repair"
-  | "agree_to_pay"
-  | "human_approval_required"
-  | "not_allowed";
+/** One authority level per caller. Legacy checkbox arrays are translated on load. */
+export type CallerAuthority =
+  | "schedule_only"
+  | "schedule_diagnostic"
+  | "full_authorization"
+  | "human_approval_required";
+
+export const CALLER_AUTHORITY_DEFAULTS: Record<string, CallerAuthority> = {
+  homeowner: "full_authorization",
+  tenant: "schedule_only",
+  landlord_property_manager: "full_authorization",
+  spouse_family: "full_authorization",
+  remote_family: "full_authorization",
+  realtor_buyer_seller: "schedule_only",
+  other_third_party: "human_approval_required",
+};
 
 export type SpendingLimitRow = {
   id: string;
@@ -559,7 +559,7 @@ export type SpendingLimitRow = {
 
 export type EmergencyAuthMode = "same_rules" | "special_rules" | "human_review_always";
 
-export type DefaultBookingMode = "confirm_immediately" | "submit_for_approval" | "arrange_callback";
+export type DefaultBookingMode = "book_appointment" | "send_to_team";
 
 export type AppointmentWindow = {
   id: string;
@@ -648,9 +648,9 @@ export function createDefaultExceptionAuthority(): Record<string, ExceptionAutho
   return map;
 }
 
-export function createDefaultCallerPermissions(): Record<string, CallerPermission[]> {
-  const map: Record<string, CallerPermission[]> = {};
-  for (const row of CALLER_TYPES) map[row.id] = [];
+export function createDefaultCallerPermissions(): Record<string, CallerAuthority> {
+  const map: Record<string, CallerAuthority> = {};
+  for (const row of CALLER_TYPES) map[row.id] = CALLER_AUTHORITY_DEFAULTS[row.id];
   return map;
 }
 
@@ -696,7 +696,7 @@ export type Section4Data = {
   approverUnavailablePolicy: ApproverUnavailablePolicy | "";
   approverUnavailableCustomRule: string;
   // Q43
-  callerPermissions: Record<string, CallerPermission[]>;
+  callerPermissions: Record<string, CallerAuthority | "">;
   // Q44
   hasSpendingLimits: YesNo | "";
   spendingLimits: SpendingLimitRow[];
@@ -1375,7 +1375,7 @@ export function createDefaultSection4(): Section4Data {
     spendingLimits: [],
     emergencyAuthMode: "",
     emergencyAuthSpecialRules: "",
-    defaultBookingMode: "",
+    defaultBookingMode: "book_appointment",
     bookingHorizonDays: "",
     bookingHorizonNoMaximum: false,
     appointmentWindows: createDefaultAppointmentWindows(),
@@ -1453,6 +1453,11 @@ export type OnboardingDraft = {
   /** Shared software registry (MD §1.2) — Section 8 references by stable id. */
   systems: SoftwareRecord[];
   submission: OnboardingSubmission;
+  /**
+   * Stage 2 load-time notes for answers that were mapped or defaulted.
+   * Not shown in the questionnaire.
+   */
+  stage2Migration?: Stage2MigrationNote[];
 };
 
 export function createDefaultSection1(): Section1Data {

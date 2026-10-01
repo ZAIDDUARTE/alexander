@@ -1,4 +1,6 @@
 import {
+  CALLER_AUTHORITY_DEFAULTS,
+  createDefaultAfterHoursDisposition,
   createDefaultAuthorizedCapabilities,
   createDefaultDraft,
   createDefaultConfirmationInfo,
@@ -10,9 +12,11 @@ import {
 } from "./types";
 import { hasAnyOpenOfficeDay } from "./schedule";
 import {
-  emergencyClassificationsAreAllRecommendedDefault,
-  fillBlankQ26WithRecommendedDefault,
+  emergencyClassificationsMatchDefaults,
+  fillBlankEmergencyClassifications,
 } from "./section3Defaults";
+import { migrateStage2Answers } from "./stage2Migration";
+import { migrateStage3CallerAuthorization } from "./stage3Migration";
 import { EXCEPTION_TYPES, CALLER_TYPES, CAPACITY_POLICY_ROWS } from "./section4Catalog";
 import { DEFAULT_FORBIDDEN_STATEMENT_IDS } from "./section5Catalog";
 import { FINANCIAL_REMEDY_ROWS } from "./section5Catalog";
@@ -43,6 +47,7 @@ export type RedisOnboardingDraft = {
     fees: OnboardingDraft["fees"];
     systems: OnboardingDraft["systems"];
     submission: OnboardingDraft["submission"];
+    stage2Migration?: OnboardingDraft["stage2Migration"];
   };
 };
 
@@ -98,10 +103,17 @@ function contactHasContent(contact: Contact): boolean {
 }
 
 function section3HasContent(s3: OnboardingDraft["section3"], contacts: Contact[]): boolean {
-  if (!emergencyClassificationsAreAllRecommendedDefault(s3.emergencyClassifications)) return true;
+  if (!emergencyClassificationsMatchDefaults(s3.emergencyClassifications)) return true;
   if (s3.dispatchApproval.length > 0) return true;
   if (s3.dispatchApprovalOtherDetail.trim()) return true;
-  if (Object.values(s3.afterHoursDisposition).some((v) => v !== "")) return true;
+  const afterHoursDefaults = createDefaultAfterHoursDisposition();
+  if (
+    s3.afterHoursDisposition.emergency !== afterHoursDefaults.emergency ||
+    s3.afterHoursDisposition.urgent_contained !== afterHoursDefaults.urgent_contained ||
+    s3.afterHoursDisposition.routine !== afterHoursDefaults.routine
+  ) {
+    return true;
+  }
   if (s3.emergencyServiceMode) return true;
   if (hasAnyOpenOfficeDay(s3.emergencyServiceSchedule)) return true;
   if (s3.hasBackupContact) return true;
@@ -149,12 +161,18 @@ function section4HasContent(s4: OnboardingDraft["section4"], fees: FeeRecord[]):
   if (Object.values(s4.exceptionApproverContactIds).some((id) => id.trim())) return true;
   if (s4.approverUnavailablePolicy) return true;
   if (s4.approverUnavailableCustomRule.trim()) return true;
-  if (CALLER_TYPES.some((r) => (s4.callerPermissions[r.id] ?? []).length > 0)) return true;
+  if (
+    CALLER_TYPES.some(
+      (row) => (s4.callerPermissions[row.id] ?? "") !== CALLER_AUTHORITY_DEFAULTS[row.id],
+    )
+  ) {
+    return true;
+  }
   if (s4.hasSpendingLimits) return true;
   if (s4.spendingLimits.length > 0) return true;
   if (s4.emergencyAuthMode) return true;
   if (s4.emergencyAuthSpecialRules.trim()) return true;
-  if (s4.defaultBookingMode) return true;
+  if (s4.defaultBookingMode && s4.defaultBookingMode !== "book_appointment") return true;
   if (s4.bookingHorizonDays.trim()) return true;
   if (s4.bookingHorizonNoMaximum) return true;
   // Window shells: only count if times/labels diverge from defaults meaningfully
@@ -372,7 +390,7 @@ export function hasDraftContent(draft: OnboardingDraft): boolean {
 
 export function mergeWithDefaults(partial: Partial<OnboardingDraft>): OnboardingDraft {
   const base = createDefaultDraft();
-  return {
+  const merged: OnboardingDraft = {
     ...base,
     ...partial,
     schemaVersion: SCHEMA_VERSION,
@@ -382,7 +400,7 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
     section3: {
       ...base.section3,
       ...partial.section3,
-      emergencyClassifications: fillBlankQ26WithRecommendedDefault({
+      emergencyClassifications: fillBlankEmergencyClassifications({
         ...base.section3.emergencyClassifications,
         ...partial.section3?.emergencyClassifications,
       }),
@@ -425,7 +443,9 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
         ...partial.submission?.confirmations,
       },
     },
+    stage2Migration: partial.stage2Migration,
   };
+  return migrateStage3CallerAuthorization(migrateStage2Answers(merged).draft).draft;
 }
 
 export function toRedisDraft(draft: OnboardingDraft, currentRoute: string): RedisOnboardingDraft {
@@ -449,6 +469,7 @@ export function toRedisDraft(draft: OnboardingDraft, currentRoute: string): Redi
       fees: draft.fees,
       systems: draft.systems,
       submission: draft.submission,
+      stage2Migration: draft.stage2Migration,
     },
   };
 }
@@ -471,6 +492,7 @@ export function fromRedisDraft(redis: RedisOnboardingDraft): OnboardingDraft {
     fees: redis.data.fees,
     systems: redis.data.systems,
     submission: redis.data.submission,
+    stage2Migration: redis.data.stage2Migration,
   });
 }
 
