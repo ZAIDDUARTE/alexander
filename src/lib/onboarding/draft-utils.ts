@@ -19,12 +19,14 @@ import { migrateStage2Answers } from "./stage2Migration";
 import { migrateStage3CallerAuthorization } from "./stage3Migration";
 import { migrateStage4aPricing } from "./stage4aMigration";
 import { migrateStage4bPayments } from "./stage4bMigration";
+import { migrateStage5CustomerCare } from "./stage5Migration";
 import { EXCEPTION_TYPES, CALLER_TYPES, CAPACITY_POLICY_ROWS } from "./section4Catalog";
 import { DEFAULT_FORBIDDEN_STATEMENT_IDS } from "./section5Catalog";
 import { FINANCIAL_REMEDY_ROWS } from "./section5Catalog";
 import {
   DEFAULT_ESCALATION_TRIGGER_IDS,
   DEFAULT_FORBIDDEN_UNHAPPY_PROMISE_IDS,
+  DEFAULT_NON_SERVICE_DISPOSITIONS,
   DEFAULT_RESTRICTED_INFORMATION_IDS,
   NON_SERVICE_CALL_TYPE_ROWS,
 } from "./section6Catalog";
@@ -306,7 +308,9 @@ function section6HasContent(s6: OnboardingDraft["section6"]): boolean {
   if (s6.forbiddenUnhappyPromiseOther.trim()) return true;
   for (const row of NON_SERVICE_CALL_TYPE_ROWS) {
     const policy = s6.nonServiceCallPolicies[row.id];
-    if (policy?.disposition) return true;
+    if (policy?.disposition && policy.disposition !== DEFAULT_NON_SERVICE_DISPOSITIONS[row.id]) {
+      return true;
+    }
     if (policy?.contactId.trim()) return true;
   }
   if (s6.customerHistoryPolicy) return true;
@@ -463,12 +467,15 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
     },
     stage2Migration: partial.stage2Migration,
   };
-  return migrateStage4bPayments(
-    migrateStage4aPricing(
-      migrateStage3CallerAuthorization(migrateStage2Answers(merged).draft).draft,
+  return migrateStage5CustomerCare(
+    migrateStage4bPayments(
+      migrateStage4aPricing(
+        migrateStage3CallerAuthorization(migrateStage2Answers(merged).draft).draft,
+        partial.section5,
+      ).draft,
       partial.section5,
     ).draft,
-    partial.section5,
+    partial.section6,
   ).draft;
 }
 

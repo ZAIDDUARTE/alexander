@@ -139,7 +139,7 @@ export function NonServiceCallMatrix({
             {policy.disposition === "send_specific" && (
               <ConditionalPanel>
                 <p className="mb-2 text-sm font-medium text-[var(--color-alexander-navy)]">
-                  Who should receive this call type?
+                  Who should Alexander transfer these calls to?
                 </p>
                 <ContactPicker
                   name={`nonService-contact-${row.id}`}

@@ -26,6 +26,7 @@ import {
   DEFAULT_ESCALATION_TRIGGER_IDS,
   DEFAULT_FORBIDDEN_UNHAPPY_PROMISE_IDS,
   DEFAULT_RESTRICTED_INFORMATION_IDS,
+  DEFAULT_NON_SERVICE_DISPOSITIONS,
   NON_SERVICE_CALL_TYPE_ROWS,
   type NonServiceCallTypeId,
 } from "./section6Catalog";
@@ -1197,7 +1198,10 @@ export function createDefaultNonServiceCallPolicies(): Record<
 > {
   const policies = {} as Record<NonServiceCallTypeId, NonServiceCallPolicyRow>;
   for (const row of NON_SERVICE_CALL_TYPE_ROWS) {
-    policies[row.id] = { disposition: "", contactId: "" };
+    policies[row.id] = {
+      disposition: DEFAULT_NON_SERVICE_DISPOSITIONS[row.id],
+      contactId: "",
+    };
   }
   return policies;
 }

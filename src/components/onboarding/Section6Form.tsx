@@ -17,6 +17,7 @@ import {
   CUSTOMER_HISTORY_POLICY_OPTIONS,
   ESCALATION_TRIGGER_OPTIONS,
   FORBIDDEN_UNHAPPY_PROMISE_OPTIONS,
+  NON_SERVICE_CALL_HELP,
   PREVIOUS_WORK_INITIAL_ACTION_OPTIONS,
   REPEAT_CALLBACK_ACTION_OPTIONS,
   RESTRICTED_INFORMATION_OPTIONS,
@@ -231,7 +232,11 @@ export function Section6Form({ mode = "form" }: { mode?: "form" | "review" }) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="How should Alexander handle these types of calls?" required>
+      <QuestionCard
+        title="How should Alexander handle other types of calls?"
+        required
+        helpText={NON_SERVICE_CALL_HELP}
+      >
         <NonServiceCallMatrix
           policies={data.nonServiceCallPolicies}
           contacts={contacts}

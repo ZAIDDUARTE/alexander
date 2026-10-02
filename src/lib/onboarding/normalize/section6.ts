@@ -65,6 +65,8 @@ export function normalizeSection6(data: Section6Data, contacts: Contact[]): Norm
       ? data.forbiddenUnhappyPromiseOther.trim() || null
       : null;
 
+  // Structural pass-through of the current eight rows. `send_specific` means
+  // “Transfer the call” in the questionnaire. Inactive contact ids are omitted.
   const nonServiceCallPolicies = NON_SERVICE_CALL_TYPE_ROWS.map((row) => {
     const policy = data.nonServiceCallPolicies[row.id];
     const disposition = policy?.disposition ?? "";

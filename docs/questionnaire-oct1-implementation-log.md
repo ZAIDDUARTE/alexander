@@ -721,3 +721,138 @@ Stage 4A fields that remain unmapped are unchanged: `mayQuoteServicePrices`, `se
 ## Deferred
 
 Customer Care, Software & Integrations, Voice & Conversation, and Prompt Zero / Company Truth semantic mappings. Not published.
+
+# Stage 5 — Customer Care Routing
+
+Local branch `questionnaire-oct1`. Not pushed. Stage 6 was not started.
+
+## Checkpoint Commit
+
+`b25b1b13b17beeaae46e7d2f57913d0810eca0a9` — `checkpoint: questionnaire Oct 1 stage 4B`
+
+Only the validated Stage 4B questionnaire files were staged. Unrelated untracked files stayed untracked. The commit was not pushed. After the commit, the working tree was clean except those unrelated files.
+
+Baseline on that commit, before Stage 5 edits: typecheck pass, lint pass, 500 tests pass, production build pass.
+
+## Files Modified
+
+- `src/components/onboarding/NonServiceCallMatrix.tsx`
+- `src/components/onboarding/Section6Form.tsx`
+- `src/components/onboarding/Section6ReviewSummary.tsx`
+- `src/lib/onboarding/draft-utils.ts`
+- `src/lib/onboarding/normalize/section6.ts`
+- `src/lib/onboarding/section6Catalog.ts`
+- `src/lib/onboarding/stage2Migration.ts`
+- `src/lib/onboarding/types.ts`
+- `src/lib/onboarding/validation/section6.ts`
+- `docs/questionnaire-oct1-implementation-log.md`
+
+## Files Added
+
+- `src/lib/onboarding/stage5Migration.ts`
+- `src/lib/onboarding/stage5Migration.test.ts`
+
+## OCT1 IDs Completed
+
+- OCT1-052 action labels
+- OCT1-053 unsupported-service and outside-area rows removed from this matrix
+- OCT1-054 recommended handling preselected
+- OCT1-055 transfer recipient prompt
+- OCT1-056 preselected-handling guidance
+
+## Old Routing Model
+
+Ten caller rows. Four stored actions: `send_specific` (“Send to someone specific”), `take_message` (“Take a message / callback”), `politely_decline`, and `human_review`. No default action. A `send_specific` row stored one `contactId` from the shared contact list. Legacy drafts may also contain `message_callback`, `approved_referral`, `service_not_offered`, and `outside_service_area`.
+
+## New Routing Model
+
+Question: “How should Alexander handle other types of calls?”
+
+Guidance: “We've preselected the recommended handling for common non-service calls. Review the choices below and change anything that doesn't match how your business operates.”
+
+Eight rows. Each row is one radio. Customer-facing actions:
+
+- Transfer the call
+- Take a message
+- Politely decline
+- Human review
+
+The stored id for Transfer the call stays `send_specific`, matching the existing contact-recipient field. `take_message`, `politely_decline`, and `human_review` stay as stored ids. `take_message` is now labeled “Take a message”. Approved referral is not a current action. Enum keys are not shown.
+
+## Row Defaults
+
+These are stored answers on a fresh questionnaire. A saved current choice is not replaced on reload.
+
+- Vendor or supplier → Take a message
+- Sales solicitation → Politely decline
+- Job applicant → Take a message
+- Current employee → Transfer the call
+- Media inquiry → Human review
+- Attorney / legal inquiry → Human review
+- Government / regulator → Human review
+- Wrong number / spam → Politely decline
+
+Current employee shows the transfer-recipient selector and stays incomplete until a person is chosen. No contact is selected automatically.
+
+## Legacy Action Migration
+
+- `send_specific` stays Transfer the call
+- `message_callback` becomes `take_message`
+- `politely_decline` and `human_review` stay
+- `approved_referral` becomes that row’s new default, flagged `DEFAULTED_FROM_LEGACY` and `NEEDS_QA`. It is not mapped to Transfer
+- An unknown action becomes that row’s default and is flagged `DEFAULTED_FROM_UNKNOWN`
+- A blank row receives its default and is not flagged
+
+A resolvable `send_specific` contact id is kept. An id that does not match a real contact is cleared and flagged `RECIPIENT_NEEDS_QA`. No person is guessed.
+
+Switching a row away from Transfer leaves the contact id on the draft. Validation, review, and normalization ignore it until Transfer is selected again, when that same person reappears.
+
+## Removed Rows
+
+`service_not_offered` and `outside_service_area` are removed from the current matrix and flagged `DROPPED_OBSOLETE`. Their actions are not copied onto another row.
+
+Unsupported service remains a Section 2 service policy (`not_offered`). Outside the service area remains the Section 2 geography questions. Those were not edited.
+
+## Transfer Contact Reuse
+
+The app already keeps one contact list on the draft. Each routing row stores that contact’s id. The existing contact picker lists contacts that have a name or phone. The same person can be the recipient for more than one row. Selecting an existing contact does not create a second copy.
+
+## Add Another Contact
+
+“+ Add another contact” is the existing picker action. It appends a contact to the same draft contact list and assigns that id to the row. The new contact uses the existing name/role, phone, and availability fields. It can later be selected on another row. No separate contact schema was added.
+
+## Referral Policy Preservation
+
+The current questionnaire has no standalone “recommend approved businesses” question and no approved-provider list. Stage 5 did not add or delete one. Removing Approved referral from this matrix does not change Section 2 service or area answers.
+
+## Existing Answer Preservation
+
+A valid current eight-row answer, including choices that differ from the defaults, is kept on reload. Warranty is not a Section 6 field. Callback rules, escalation, prohibited promises, customer-history policy, restricted information, additional-service policy, unusual-call notes, and Voice & Conversation answers are not rewritten by this migration.
+
+## Normalization Follow-Up
+
+NORMALIZATION FOLLOW-UP REQUIRED
+
+`normalizeSection6` now emits only the eight current rows. A contact id is included only when the action is Transfer the call. This is structural. It does not define how Transfer or Take a message should run in Prompt Zero.
+
+Exact fields:
+
+- `nonServiceCallPolicies[].callTypeId`
+- `nonServiceCallPolicies[].disposition` (`send_specific` is the stored id for “Transfer the call”)
+- `nonServiceCallPolicies[].contactId` (active only for `send_specific`)
+
+## Tests
+
+`src/lib/onboarding/stage5Migration.test.ts` covers the eight rows, four actions, all defaults, the unanswered employee recipient, saved-answer reload, legacy action mapping, approved-referral fallback, removed rows, unresolved recipients, dormant recipient restore, shared-contact reuse, adding a contact, and preservation of Section 2, other Customer Care answers, and Voice & Conversation.
+
+## Stage 5 QA
+
+- typecheck: pass
+- lint: pass
+- tests: 506 pass, 0 fail (baseline was 500)
+- build: pass
+- interactive browser check: not available
+
+## Deferred
+
+Software & Integrations, and Prompt Zero / Company Truth semantic mappings. Not published.

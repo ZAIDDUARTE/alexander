@@ -79,7 +79,7 @@ export function validateSection6(data: Section6Data, contacts: Contact[]): Field
       const contactId = policy?.contactId?.trim() ?? "";
       if (!contactId) {
         errors[`nonServiceCallPolicies.${row.id}.contact`] =
-          "Select or add someone to receive this call type.";
+          "Select who Alexander should transfer these calls to.";
         continue;
       }
       const contact = contacts.find((c) => c.id === contactId);
