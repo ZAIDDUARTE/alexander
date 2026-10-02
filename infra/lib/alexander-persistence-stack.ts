@@ -220,7 +220,7 @@ export class AlexanderPersistenceStack extends Stack {
     const schema = new CustomResource(this, "SchemaMigration", {
       serviceToken: migration.serviceToken,
       properties: {
-        migrationVersion: "002",
+        migrationVersion: "005",
         databaseAddress: database.dbInstanceEndpointAddress,
       },
       resourceType: "Custom::AlexanderSchema",
@@ -262,6 +262,8 @@ export class AlexanderPersistenceStack extends Stack {
     key.grantEncryptDecrypt(persistenceFn);
     bucket.grantPut(persistenceFn, "onboarding/*");
     bucket.grantRead(persistenceFn, "onboarding/*");
+    bucket.grantPut(persistenceFn, "customers/*");
+    bucket.grantRead(persistenceFn, "customers/*");
     persistenceFn.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["s3:ListBucket"],

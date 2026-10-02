@@ -1,0 +1,1762 @@
+{
+  "freezeCommit": "f6feb475ddb8d3f8d2ff03d3b8af280eee6713f1",
+  "rootCount": 93,
+  "childCount": 44,
+  "entries": [
+    {
+      "questionId": "Q1",
+      "sectionId": "S1",
+      "kind": "root",
+      "rawPath": "section1.customerFacingName",
+      "answerKind": "scalar_text",
+      "required": "Required",
+      "debugLabel": "What name do your customers know your company by?"
+    },
+    {
+      "questionId": "Q2",
+      "sectionId": "S1",
+      "kind": "root",
+      "rawPath": "section1.legalName",
+      "answerKind": "scalar_text",
+      "required": "Optional",
+      "debugLabel": "What is your legal business name?"
+    },
+    {
+      "questionId": "Q3",
+      "sectionId": "S1",
+      "kind": "root",
+      "rawPath": "section1.mainPhone",
+      "answerKind": "scalar_number",
+      "required": "Required",
+      "debugLabel": "What is your main business phone number?"
+    },
+    {
+      "questionId": "Q4",
+      "sectionId": "S1",
+      "kind": "root",
+      "rawPath": "section1.website",
+      "answerKind": "scalar_text",
+      "required": "Optional",
+      "debugLabel": "What is your website?"
+    },
+    {
+      "questionId": "Q5",
+      "sectionId": "S1",
+      "kind": "root",
+      "rawPath": "section1.approvedClaims",
+      "answerKind": "multi_select",
+      "required": "Required",
+      "optionIds": [
+        "licensed",
+        "insured",
+        "bonded",
+        "locally_owned",
+        "family_owned",
+        "other",
+        "none"
+      ],
+      "debugLabel": "Which of these may Alexander tell customers?"
+    },
+    {
+      "questionId": "Q5A",
+      "sectionId": "S1",
+      "kind": "conditional",
+      "rawPath": "section1.otherApprovedClaim",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q5",
+      "conditionSummary": "Q5 includes other",
+      "debugLabel": "What other credential or trust claim may Alexander tell customers?"
+    },
+    {
+      "questionId": "Q6",
+      "sectionId": "S1",
+      "kind": "root",
+      "rawPath": "section1.licensingDetails",
+      "answerKind": "scalar_text",
+      "required": "Optional",
+      "debugLabel": "Are there any license numbers or credential details Alexander may give customers?"
+    },
+    {
+      "questionId": "Q7",
+      "sectionId": "S1",
+      "kind": "root",
+      "rawPath": "section1.forbiddenClaims",
+      "answerKind": "scalar_text",
+      "required": "Optional",
+      "debugLabel": "Is there anything Alexander should never claim about your company?"
+    },
+    {
+      "questionId": "Q8",
+      "sectionId": "S1",
+      "kind": "root",
+      "rawPath": "section1.officeHours",
+      "answerKind": "weekly_schedule",
+      "required": "Required",
+      "debugLabel": "What are your normal office hours?"
+    },
+    {
+      "questionId": "Q9",
+      "sectionId": "S1",
+      "kind": "root",
+      "rawPath": "section1.serviceHours",
+      "answerKind": "weekly_schedule",
+      "required": "Required",
+      "debugLabel": "When are service appointments normally available?"
+    },
+    {
+      "questionId": "Q10",
+      "sectionId": "S1",
+      "kind": "root",
+      "rawPath": "section1.answeringMode",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "24_7",
+        "office_closed_only",
+        "specific_hours"
+      ],
+      "debugLabel": "When should Alexander answer your calls?"
+    },
+    {
+      "questionId": "Q10A",
+      "sectionId": "S1",
+      "kind": "conditional",
+      "rawPath": "section1.answeringSchedule",
+      "answerKind": "weekly_schedule",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q10",
+      "conditionSummary": "Q10 = specific_hours",
+      "debugLabel": "What hours should Alexander answer?"
+    },
+    {
+      "questionId": "Q11",
+      "sectionId": "S1",
+      "kind": "root",
+      "rawPath": "section1.recurringAvailabilityNotes",
+      "answerKind": "scalar_text",
+      "required": "Optional",
+      "debugLabel": "Is there any recurring availability rule Alexander should know?"
+    },
+    {
+      "questionId": "Q12",
+      "sectionId": "S2",
+      "kind": "root",
+      "rawPath": "section2.plumbingServices[serviceId].{policy,condition}",
+      "answerKind": "matrix_single_select",
+      "required": "Required",
+      "optionIds": [
+        "offered",
+        "with_conditions",
+        "ask_team",
+        "not_offered"
+      ],
+      "matrixItemIds": [
+        "general-plumbing-repair",
+        "toilet-repair-replacement",
+        "faucet-sink-repair",
+        "garbage-disposal",
+        "shower-tub-repair",
+        "water-heater-repair",
+        "water-heater-replacement",
+        "tankless-water-heaters",
+        "shutoff-main-valves",
+        "pressure-regulators",
+        "water-service-lines",
+        "frozen-pipes",
+        "slab-leaks",
+        "repiping",
+        "fixture-installation",
+        "appliance-plumbing-connections",
+        "gas-line-plumbing-non-emergency",
+        "excavation",
+        "trenchless-sewer-service-line-work",
+        "water-filtration-softening-ro",
+        "remodel-project-work",
+        "other-specialty-plumbing"
+      ],
+      "debugLabel": "Which plumbing services does your company provide?"
+    },
+    {
+      "questionId": "Q13",
+      "sectionId": "S2",
+      "kind": "root",
+      "rawPath": "section2.diagnosticServices[serviceId].{policy,condition}",
+      "answerKind": "matrix_single_select",
+      "required": "Required",
+      "optionIds": [
+        "offered",
+        "with_conditions",
+        "ask_team",
+        "not_offered"
+      ],
+      "matrixItemIds": [
+        "general-diagnostic-service-visits",
+        "plumbing-inspections",
+        "leak-detection",
+        "drain-cleaning",
+        "sewer-drain-camera-inspections",
+        "hydro-jetting-advanced-drain-cleaning"
+      ],
+      "debugLabel": "Which of these services does your company provide?"
+    },
+    {
+      "questionId": "Q14",
+      "sectionId": "S2",
+      "kind": "root",
+      "rawPath": "section2.customerPropertyTypes[typeId].{policy,condition}",
+      "answerKind": "matrix_single_select",
+      "required": "Required",
+      "optionIds": [
+        "offered",
+        "with_conditions",
+        "ask_team",
+        "not_offered"
+      ],
+      "matrixItemIds": [
+        "homeowners",
+        "tenants",
+        "landlords-property-managers",
+        "single-family-homes",
+        "condos-hoas",
+        "multifamily-properties",
+        "commercial-properties",
+        "real-estate-inspection-transaction-work",
+        "insurance-related-work"
+      ],
+      "debugLabel": "Who does your company serve?"
+    },
+    {
+      "questionId": "Q15",
+      "sectionId": "S2",
+      "kind": "root",
+      "rawPath": "section2.customerSuppliedMaterialsPolicy",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "offered",
+        "with_conditions",
+        "ask_team",
+        "not_offered"
+      ],
+      "debugLabel": "Will you install or work with items supplied by the customer?"
+    },
+    {
+      "questionId": "Q15A",
+      "sectionId": "S2",
+      "kind": "conditional",
+      "rawPath": "section2.customerSuppliedMaterialsCondition",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q15",
+      "conditionSummary": "Q15 = with_conditions",
+      "debugLabel": "What are the conditions?"
+    },
+    {
+      "questionId": "Q16",
+      "sectionId": "S2",
+      "kind": "root",
+      "rawPath": "section2.correctiveWorkPolicy",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "offered",
+        "with_conditions",
+        "ask_team",
+        "not_offered"
+      ],
+      "debugLabel": "Will you repair or finish work another plumber started?"
+    },
+    {
+      "questionId": "Q16A",
+      "sectionId": "S2",
+      "kind": "conditional",
+      "rawPath": "section2.correctiveWorkCondition",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q16",
+      "conditionSummary": "Q16 = with_conditions",
+      "debugLabel": "What are the conditions?"
+    },
+    {
+      "questionId": "Q17",
+      "sectionId": "S2",
+      "kind": "root",
+      "rawPath": "section2.serviceAreaDefinitionMode + active geo branch fields",
+      "answerKind": "composite",
+      "required": "Required",
+      "debugLabel": "How would you like to define your normal service area?"
+    },
+    {
+      "questionId": "Q18",
+      "sectionId": "S2",
+      "kind": "root",
+      "rawPath": "section2 excluded-area fields",
+      "answerKind": "composite",
+      "required": "Optional",
+      "debugLabel": "Are there any areas inside or near your service area that you do not serve?"
+    },
+    {
+      "questionId": "Q19",
+      "sectionId": "S2",
+      "kind": "root",
+      "rawPath": "section2.hasConditionalTerritory",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "yes",
+        "no"
+      ],
+      "debugLabel": "Are there areas you serve only under certain conditions?"
+    },
+    {
+      "questionId": "Q19A",
+      "sectionId": "S2",
+      "kind": "conditional",
+      "rawPath": "section2.conditionalTerritories[]",
+      "answerKind": "repeatable",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q19",
+      "conditionSummary": "Q19 = yes",
+      "debugLabel": "Conditional territory details"
+    },
+    {
+      "questionId": "Q20",
+      "sectionId": "S2",
+      "kind": "root",
+      "rawPath": "section2.afterHoursAreaMode + after-hours geo",
+      "answerKind": "composite",
+      "required": "Required",
+      "debugLabel": "Is your after-hours service area different?"
+    },
+    {
+      "questionId": "Q21",
+      "sectionId": "S3",
+      "kind": "root",
+      "rawPath": "section3.emergencyClassifications[scenarioId]",
+      "answerKind": "matrix_single_select",
+      "required": "Required",
+      "optionIds": [
+        "emergency",
+        "urgent",
+        "routine",
+        "human_review"
+      ],
+      "matrixItemIds": [
+        "uncontrolled-water-leak-inside-property",
+        "water-leak-near-electrical-equipment",
+        "suspected-gas-leak-or-odor",
+        "sewage-entering-property",
+        "multiple-fixtures-backing-up",
+        "toilet-overflowing-uncontrolled",
+        "only-usable-toilet-not-working",
+        "major-water-heater-leak-or-rupture",
+        "dangerous-water-heater-symptoms",
+        "sump-pump-failure-flooding",
+        "frozen-pipe-confirmed-leak",
+        "complete-loss-of-water",
+        "major-water-service-line-leak",
+        "serious-standing-water-unknown-source",
+        "unclear-situation-may-be-dangerous"
+      ],
+      "defaultValue": "Per-row EMERGENCY_ROW_DEFAULTS",
+      "debugLabel": "How should Alexander treat each of these situations?"
+    },
+    {
+      "questionId": "Q22",
+      "sectionId": "S3",
+      "kind": "root",
+      "rawPath": "section3.dispatchApproval (+ dispatchApprovalOtherDetail)",
+      "answerKind": "multi_select",
+      "required": "Required",
+      "debugLabel": "Are there any emergencies where Alexander must get human approval before arranging emergency dispatch?"
+    },
+    {
+      "questionId": "Q23",
+      "sectionId": "S3",
+      "kind": "root",
+      "rawPath": "section3.afterHoursDisposition.{emergency,urgent_contained,routine}",
+      "answerKind": "matrix_single_select",
+      "required": "Required",
+      "optionIds": [
+        "contact_on_call",
+        "schedule_service",
+        "take_message"
+      ],
+      "matrixItemIds": [
+        "emergency",
+        "urgent_contained",
+        "routine"
+      ],
+      "defaultValue": "emergency→contact_on_call; urgent_contained→schedule_service; routine→schedule_service",
+      "debugLabel": "What should Alexander do with calls that come in after hours?"
+    },
+    {
+      "questionId": "Q24",
+      "sectionId": "S3",
+      "kind": "root",
+      "rawPath": "section3.emergencyServiceMode",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "When is after-hours emergency field service available?"
+    },
+    {
+      "questionId": "Q25",
+      "sectionId": "S3",
+      "kind": "root",
+      "rawPath": "section3.primaryContactId → contacts[]",
+      "answerKind": "contact_reference",
+      "required": "Required",
+      "debugLabel": "Who should Alexander contact first?"
+    },
+    {
+      "questionId": "Q26",
+      "sectionId": "S3",
+      "kind": "root",
+      "rawPath": "section3.hasBackupContact",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "yes",
+        "no"
+      ],
+      "debugLabel": "Is there a backup person Alexander should contact?"
+    },
+    {
+      "questionId": "Q26A",
+      "sectionId": "S3",
+      "kind": "conditional",
+      "rawPath": "section3.backupContactId → contacts[]",
+      "answerKind": "contact_reference",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q26",
+      "conditionSummary": "Q26 = yes",
+      "debugLabel": "Backup contact"
+    },
+    {
+      "questionId": "Q27",
+      "sectionId": "S3",
+      "kind": "root",
+      "rawPath": "section3.nobodyRespondsFallback",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "What should Alexander do if nobody on your team answers?"
+    },
+    {
+      "questionId": "Q27A",
+      "sectionId": "S3",
+      "kind": "conditional",
+      "rawPath": "section3.nobodyRespondsCustom",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q27",
+      "conditionSummary": "Q27 = custom",
+      "debugLabel": "Custom nobody-responds rule"
+    },
+    {
+      "questionId": "Q28",
+      "sectionId": "S3",
+      "kind": "root",
+      "rawPath": "section3.retryPolicy",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "How should Alexander retry an unanswered contact?"
+    },
+    {
+      "questionId": "Q28A",
+      "sectionId": "S3",
+      "kind": "conditional",
+      "rawPath": "section3.retryCustom",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q28",
+      "conditionSummary": "Q28 = custom",
+      "debugLabel": "Custom retry rule"
+    },
+    {
+      "questionId": "Q29",
+      "sectionId": "S3",
+      "kind": "root",
+      "rawPath": "section3.capacityMode",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "What should Alexander do if an emergency comes in and your schedule is already full?"
+    },
+    {
+      "questionId": "Q29A",
+      "sectionId": "S3",
+      "kind": "conditional",
+      "rawPath": "section3.reservedCapacityNotes | emergencyOverrideNotes | capacityApproverContactId",
+      "answerKind": "composite",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q29",
+      "conditionSummary": "Q29 selects a branch that reveals notes/approver fields",
+      "debugLabel": "Capacity-mode branch details"
+    },
+    {
+      "questionId": "Q30",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.humanRequestPolicy (+ humanRequestCustomRule)",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "What should Alexander do if a caller asks to speak with a person?"
+    },
+    {
+      "questionId": "Q30A",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "section4.humanRequestCustomRule",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q30",
+      "conditionSummary": "Q30 = custom",
+      "debugLabel": "Custom human-request rule"
+    },
+    {
+      "questionId": "Q31",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.aiRefusalPolicy (+ aiRefusalCustomRule)",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "What should Alexander do if a caller doesn’t want to speak with AI?"
+    },
+    {
+      "questionId": "Q31A",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "section4.aiRefusalCustomRule",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q31",
+      "conditionSummary": "Q31 = custom",
+      "debugLabel": "Custom AI-refusal rule"
+    },
+    {
+      "questionId": "Q32",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.exceptionAuthority[exceptionTypeId]",
+      "answerKind": "matrix_single_select",
+      "required": "Required",
+      "matrixItemIds": [
+        "scheduling",
+        "service_area",
+        "fee_or_price",
+        "discount_or_promotion",
+        "refund_credit_goodwill",
+        "callback_previous_work",
+        "other"
+      ],
+      "debugLabel": "Who can approve these types of exceptions?"
+    },
+    {
+      "questionId": "Q33",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.approverUnavailablePolicy",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "What should Alexander do if the person who must approve an exception isn’t available?"
+    },
+    {
+      "questionId": "Q33A",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "section4.approverUnavailableOther",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q33",
+      "conditionSummary": "Q33 = other",
+      "debugLabel": "Other approver-unavailable rule"
+    },
+    {
+      "questionId": "Q34",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.callerPermissions[callerTypeId]",
+      "answerKind": "matrix_single_select",
+      "required": "Required",
+      "optionIds": [
+        "schedule_only",
+        "schedule_diagnostic",
+        "full_authorization",
+        "human_approval_required"
+      ],
+      "matrixItemIds": [
+        "homeowner",
+        "tenant",
+        "landlord_property_manager",
+        "spouse_family",
+        "remote_family",
+        "realtor_buyer_seller",
+        "other_third_party"
+      ],
+      "defaultValue": "CALLER_AUTHORITY_DEFAULTS per caller type",
+      "debugLabel": "What can different types of callers authorize?"
+    },
+    {
+      "questionId": "Q35",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.hasSpendingLimits",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "yes",
+        "no"
+      ],
+      "debugLabel": "Are there spending limits for any of these callers?"
+    },
+    {
+      "questionId": "Q35A",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "section4.spendingLimits[]",
+      "answerKind": "repeatable",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q35",
+      "conditionSummary": "Q35 = yes",
+      "debugLabel": "Spending limit rows"
+    },
+    {
+      "questionId": "Q36",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.emergencyAuthorizationMode",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "Do emergency situations change any of these authorization rules?"
+    },
+    {
+      "questionId": "Q36A",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "section4.emergencyAuthorizationRules",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q36",
+      "conditionSummary": "Q36 = special_rules",
+      "debugLabel": "Emergency special authorization rules"
+    },
+    {
+      "questionId": "Q37",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.defaultBookingMode",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "book_appointment",
+        "send_to_team"
+      ],
+      "defaultValue": "book_appointment",
+      "debugLabel": "When an eligible customer wants service, what may Alexander normally do?"
+    },
+    {
+      "questionId": "Q38",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4 booking-horizon fields",
+      "answerKind": "composite",
+      "required": "Required",
+      "debugLabel": "How far in advance may Alexander schedule appointments?"
+    },
+    {
+      "questionId": "Q39",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.appointmentWindows[]",
+      "answerKind": "repeatable",
+      "required": "Required",
+      "matrixItemIds": [
+        "morning",
+        "late_morning",
+        "early_afternoon",
+        "afternoon",
+        "late_afternoon"
+      ],
+      "debugLabel": "What appointment windows do you offer?"
+    },
+    {
+      "questionId": "Q40",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.confirmationInfo[]",
+      "answerKind": "multi_select",
+      "required": "Required",
+      "debugLabel": "When an appointment is successfully confirmed, what information may Alexander repeat to the customer?"
+    },
+    {
+      "questionId": "Q41",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.hasServiceBookingRules",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "Do any types of jobs follow different booking rules?"
+    },
+    {
+      "questionId": "Q41A",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "section4.serviceBookingRules[]",
+      "answerKind": "repeatable",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q41",
+      "conditionSummary": "Q41 = yes",
+      "debugLabel": "Service booking rule rows"
+    },
+    {
+      "questionId": "Q42",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.capacityPolicies.{same_day,holiday}.{policy,condition}",
+      "answerKind": "matrix_single_select",
+      "required": "Required",
+      "debugLabel": "When may Alexander offer these appointments?"
+    },
+    {
+      "questionId": "Q43",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.rescheduleAuthority",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "What may Alexander do when a customer wants to reschedule?"
+    },
+    {
+      "questionId": "Q43A",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "section4.rescheduleConditions",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q43",
+      "conditionSummary": "Q43 = conditional",
+      "debugLabel": "Reschedule conditions"
+    },
+    {
+      "questionId": "Q44",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.cancellationAuthority",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "What may Alexander do when a customer wants to cancel?"
+    },
+    {
+      "questionId": "Q44A",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "section4.cancellationConditions",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q44",
+      "conditionSummary": "Q44 = conditional",
+      "debugLabel": "Cancellation conditions"
+    },
+    {
+      "questionId": "Q45",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.lateCancellationFeeMode (+ linked fee notice/when; NO amount in Scheduling)",
+      "answerKind": "composite",
+      "required": "Required",
+      "debugLabel": "Do you charge a late-cancellation fee?"
+    },
+    {
+      "questionId": "Q45A",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "linked FeeRecord fields + late-cancellation when/notice",
+      "answerKind": "composite",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q45",
+      "conditionSummary": "Q45 = yes or conditional",
+      "debugLabel": "Late-cancellation fee details (notice / when)"
+    },
+    {
+      "questionId": "Q46",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.noShowFeeMode (+ linked fee when; NO amount in Scheduling)",
+      "answerKind": "composite",
+      "required": "Required",
+      "debugLabel": "Do you charge a no-show fee?"
+    },
+    {
+      "questionId": "Q46A",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "linked FeeRecord + no-show when",
+      "answerKind": "composite",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q46",
+      "conditionSummary": "Q46 = yes or conditional",
+      "debugLabel": "No-show fee details (when)"
+    },
+    {
+      "questionId": "Q47",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.cancellationNoShowExceptions",
+      "answerKind": "scalar_text",
+      "required": "Optional",
+      "debugLabel": "Are there exceptions to your cancellation or no-show rules?"
+    },
+    {
+      "questionId": "Q48",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.noAvailabilityFallbackOrder[]",
+      "answerKind": "ordered_select",
+      "required": "Required",
+      "debugLabel": "What should Alexander do if the customer needs service but there are no appropriate appointments available?"
+    },
+    {
+      "questionId": "Q49",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.mayArrangeCallback",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "yes",
+        "no"
+      ],
+      "debugLabel": "May Alexander arrange a callback when no appointment is available?"
+    },
+    {
+      "questionId": "Q49A",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "section4.callbackNumberPolicy",
+      "answerKind": "single_select",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q49",
+      "conditionSummary": "Q49 = yes",
+      "debugLabel": "What phone number should Alexander use for the callback?"
+    },
+    {
+      "questionId": "Q49B",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "section4.callbackOwnerContactId → contacts[]",
+      "answerKind": "contact_reference",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q49",
+      "conditionSummary": "Q49 = yes",
+      "debugLabel": "Who should receive or handle scheduling callbacks?"
+    },
+    {
+      "questionId": "Q50",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4 technician-requirement fields",
+      "answerKind": "composite",
+      "required": "Required",
+      "debugLabel": "Are there any jobs that require a particular technician?"
+    },
+    {
+      "questionId": "Q50A",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "section4 technician requirement detail fields",
+      "answerKind": "composite",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q50",
+      "conditionSummary": "Q50 = yes (reveals detail panel)",
+      "debugLabel": "Technician requirement details"
+    },
+    {
+      "questionId": "Q51",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.specificTechnicianPolicy",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "What should Alexander do if a customer asks for a specific technician?"
+    },
+    {
+      "questionId": "Q52",
+      "sectionId": "S4",
+      "kind": "root",
+      "rawPath": "section4.multiIssuePolicy",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "What should Alexander do when a customer has several plumbing issues?"
+    },
+    {
+      "questionId": "Q52A",
+      "sectionId": "S4",
+      "kind": "conditional",
+      "rawPath": "section4 multi-issue conditional fields",
+      "answerKind": "composite",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q52",
+      "conditionSummary": "Q52 selects a branch that reveals extra fields",
+      "debugLabel": "Multi-issue custom / branch details"
+    },
+    {
+      "questionId": "Q53",
+      "sectionId": "S5",
+      "kind": "root",
+      "rawPath": "section5.pricingModels (+ pricingModelOther)",
+      "answerKind": "multi_select",
+      "required": "Required",
+      "optionIds": [
+        "flat_rate",
+        "hourly_labor_materials",
+        "fixed_prices_certain_services",
+        "after_diagnosis",
+        "estimate_required",
+        "other"
+      ],
+      "debugLabel": "How does your company normally determine what a customer pays?"
+    },
+    {
+      "questionId": "Q53A",
+      "sectionId": "S5",
+      "kind": "conditional",
+      "rawPath": "section5.pricingModelOther",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q53",
+      "conditionSummary": "Q53 includes other",
+      "debugLabel": "Describe your other pricing method"
+    },
+    {
+      "questionId": "Q54",
+      "sectionId": "S5",
+      "kind": "root",
+      "rawPath": "section5.mayQuoteServicePrices",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "allowed",
+        "not_allowed"
+      ],
+      "defaultValue": "not_allowed",
+      "debugLabel": "May Alexander quote prices for your services?"
+    },
+    {
+      "questionId": "Q54A",
+      "sectionId": "S5",
+      "kind": "conditional",
+      "rawPath": "section5.servicePrices[]",
+      "answerKind": "repeatable",
+      "required": "Optional when displayed",
+      "parentQuestionId": "Q54",
+      "conditionSummary": "Q54 = allowed",
+      "debugLabel": "What service prices may Alexander quote?"
+    },
+    {
+      "questionId": "Q55",
+      "sectionId": "S5",
+      "kind": "root",
+      "rawPath": "section5.unknownPriceBehavior",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "technician_after_evaluation",
+        "team_provides_pricing"
+      ],
+      "defaultValue": "technician_after_evaluation",
+      "debugLabel": "What should Alexander do when he doesn't have an approved price?"
+    },
+    {
+      "questionId": "Q56",
+      "sectionId": "S5",
+      "kind": "root",
+      "rawPath": "section5.additionalFeeSelection + additionalFeeDetails[category]",
+      "answerKind": "composite",
+      "required": "Required",
+      "optionIds": [
+        "service_diagnostic",
+        "after_hours",
+        "travel",
+        "cancellation",
+        "no_show",
+        "minimum_service",
+        "estimate_consultation",
+        "other",
+        "none"
+      ],
+      "debugLabel": "Which additional fees does your company charge?"
+    },
+    {
+      "questionId": "Q57",
+      "sectionId": "S5",
+      "kind": "root",
+      "rawPath": "section5.hasAreaTravelOrMinimum",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "no",
+        "yes"
+      ],
+      "defaultValue": "no",
+      "debugLabel": "Do any areas have different travel fees or minimum charges?"
+    },
+    {
+      "questionId": "Q57A",
+      "sectionId": "S5",
+      "kind": "conditional",
+      "rawPath": "section5.areaPricingRows[]",
+      "answerKind": "repeatable",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q57",
+      "conditionSummary": "Q57 = yes",
+      "debugLabel": "Area / Fee or minimum rows"
+    },
+    {
+      "questionId": "Q58",
+      "sectionId": "S5",
+      "kind": "root",
+      "rawPath": "section5.materialMarkupPolicy",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "yes",
+        "sometimes",
+        "no"
+      ],
+      "debugLabel": "Does your company mark up parts or materials?"
+    },
+    {
+      "questionId": "Q58A",
+      "sectionId": "S5",
+      "kind": "conditional",
+      "rawPath": "section5.materialMarkupCustomerExplanation",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q58",
+      "conditionSummary": "Q58 = yes or sometimes",
+      "debugLabel": "What may Alexander tell customers about material pricing?"
+    },
+    {
+      "questionId": "Q59",
+      "sectionId": "S5",
+      "kind": "root",
+      "rawPath": "section5.paymentMethods (+ paymentMethodOther)",
+      "answerKind": "multi_select",
+      "required": "Required",
+      "optionIds": [
+        "credit_card",
+        "debit_card",
+        "cash",
+        "check",
+        "ach",
+        "financing",
+        "invoice",
+        "other"
+      ],
+      "debugLabel": "What payment methods do you accept?"
+    },
+    {
+      "questionId": "Q59A",
+      "sectionId": "S5",
+      "kind": "conditional",
+      "rawPath": "section5.paymentMethodOther",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q59",
+      "conditionSummary": "Q59 includes other",
+      "debugLabel": "Other payment method"
+    },
+    {
+      "questionId": "Q60",
+      "sectionId": "S5",
+      "kind": "root",
+      "rawPath": "section5.paymentDuePolicies",
+      "answerKind": "multi_select",
+      "required": "Required",
+      "optionIds": [
+        "at_time_of_service",
+        "when_work_completed",
+        "deposit_required",
+        "progress_payments",
+        "invoice_after_service",
+        "other"
+      ],
+      "debugLabel": "When is payment normally due?"
+    },
+    {
+      "questionId": "Q61",
+      "sectionId": "S5",
+      "kind": "root",
+      "rawPath": "section5.paymentAssistance",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "secure_link",
+        "secure_link_and_authorized_method",
+        "send_to_team"
+      ],
+      "defaultValue": "secure_link",
+      "debugLabel": "Can Alexander help customers make a payment?"
+    },
+    {
+      "questionId": "Q62",
+      "sectionId": "S5",
+      "kind": "root",
+      "rawPath": "section5.paymentCollectionScope (+ paymentCollectionOther)",
+      "answerKind": "multi_select",
+      "required": "Required",
+      "optionIds": [
+        "booking_or_service_fees",
+        "deposits",
+        "completed_invoices",
+        "outstanding_balances",
+        "progress_payments",
+        "other"
+      ],
+      "defaultValue": "booking_or_service_fees, deposits, completed_invoices, outstanding_balances",
+      "debugLabel": "What may Alexander help collect payment for?"
+    },
+    {
+      "questionId": "Q62A",
+      "sectionId": "S5",
+      "kind": "conditional",
+      "rawPath": "section5.paymentCollectionOther",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q62",
+      "conditionSummary": "Q62 includes other",
+      "debugLabel": "Other payment"
+    },
+    {
+      "questionId": "Q63",
+      "sectionId": "S5",
+      "kind": "root",
+      "rawPath": "section5.financialRemedies + remedyRules[remedyId]",
+      "answerKind": "multi_select",
+      "required": "Required",
+      "optionIds": [
+        "refund",
+        "account_credit",
+        "fee_waiver",
+        "discount_goodwill",
+        "return_visit",
+        "none"
+      ],
+      "defaultValue": "none",
+      "debugLabel": "What financial remedies may Alexander approve without human approval?"
+    },
+    {
+      "questionId": "Q64",
+      "sectionId": "S6",
+      "kind": "root",
+      "rawPath": "section6.previousWorkInitialAction (+ related fields)",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "schedule_return_visit",
+        "submit_team_review",
+        "connect_team",
+        "arrange_callback",
+        "custom"
+      ],
+      "debugLabel": "What should Alexander do when a customer says there’s a problem with work your company already performed?"
+    },
+    {
+      "questionId": "Q65",
+      "sectionId": "S6",
+      "kind": "root",
+      "rawPath": "section6.repeatCallbackAction (+ related fields)",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "schedule_another_return",
+        "human_review_after_first",
+        "connect_manager"
+      ],
+      "debugLabel": "What should Alexander do if the customer has already called back about the same problem?"
+    },
+    {
+      "questionId": "Q66",
+      "sectionId": "S6",
+      "kind": "root",
+      "rawPath": "section6.escalationTriggers (+ other detail)",
+      "answerKind": "multi_select",
+      "required": "Required",
+      "optionIds": [
+        "asks_manager",
+        "repair_not_solved",
+        "disputes_charge",
+        "refund_credit_request",
+        "property_damage",
+        "legal_threat",
+        "chargeback_threat",
+        "repeated_dissatisfaction",
+        "other"
+      ],
+      "debugLabel": "When should Alexander involve someone on your team because a customer is unhappy?"
+    },
+    {
+      "questionId": "Q66A",
+      "sectionId": "S6",
+      "kind": "conditional",
+      "rawPath": "section6.escalationTriggerOther",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q66",
+      "conditionSummary": "Q66 includes other",
+      "debugLabel": "Other escalation trigger detail"
+    },
+    {
+      "questionId": "Q67",
+      "sectionId": "S6",
+      "kind": "root",
+      "rawPath": "section6.forbiddenUnhappyPromises (+ other)",
+      "answerKind": "multi_select",
+      "required": "Required",
+      "optionIds": [
+        "no_admit_fault",
+        "no_refund_unauthorized",
+        "no_free_work_unauthorized",
+        "no_compensation_unauthorized",
+        "no_specific_outcome",
+        "other"
+      ],
+      "debugLabel": "What should Alexander never promise an unhappy customer?"
+    },
+    {
+      "questionId": "Q67A",
+      "sectionId": "S6",
+      "kind": "conditional",
+      "rawPath": "section6.forbiddenUnhappyPromiseOther",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q67",
+      "conditionSummary": "Q67 includes other",
+      "debugLabel": "Other forbidden promise"
+    },
+    {
+      "questionId": "Q68",
+      "sectionId": "S6",
+      "kind": "root",
+      "rawPath": "section6.nonServiceCallPolicies[]",
+      "answerKind": "matrix_single_select",
+      "required": "Required",
+      "optionIds": [
+        "send_specific",
+        "take_message",
+        "politely_decline",
+        "human_review"
+      ],
+      "matrixItemIds": [
+        "vendor_supplier",
+        "sales_solicitation",
+        "job_applicant",
+        "current_employee",
+        "media_inquiry",
+        "attorney_legal",
+        "government_regulator",
+        "wrong_number_spam"
+      ],
+      "defaultValue": "DEFAULT_NON_SERVICE_DISPOSITIONS per row; Transfer requires contactId",
+      "debugLabel": "How should Alexander handle other types of calls?"
+    },
+    {
+      "questionId": "Q69",
+      "sectionId": "S6",
+      "kind": "root",
+      "rawPath": "section6.customerHistoryPolicy",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "use_available_history",
+        "human_review_before_details",
+        "custom"
+      ],
+      "debugLabel": "What customer information may Alexander use when helping an existing customer?"
+    },
+    {
+      "questionId": "Q70",
+      "sectionId": "S6",
+      "kind": "root",
+      "rawPath": "section6.restrictedInformation (+ other)",
+      "answerKind": "multi_select",
+      "required": "Required",
+      "optionIds": [
+        "payment_information",
+        "internal_company_notes",
+        "technician_notes",
+        "another_customer",
+        "sensitive_account",
+        "other"
+      ],
+      "debugLabel": "Are there customer records or documents Alexander should never disclose?"
+    },
+    {
+      "questionId": "Q70A",
+      "sectionId": "S6",
+      "kind": "conditional",
+      "rawPath": "section6.restrictedInformationOther",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q70",
+      "conditionSummary": "Q70 includes other",
+      "debugLabel": "Other restricted information"
+    },
+    {
+      "questionId": "Q71",
+      "sectionId": "S6",
+      "kind": "root",
+      "rawPath": "section6.additionalServicePolicy",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "mention_relevant",
+        "mention_approved_only",
+        "only_when_asked",
+        "do_not_proactive",
+        "custom"
+      ],
+      "debugLabel": "How proactive should Alexander be about recommending additional services?"
+    },
+    {
+      "questionId": "Q72",
+      "sectionId": "S6",
+      "kind": "root",
+      "rawPath": "section6.unusualCallNotes",
+      "answerKind": "scalar_text",
+      "required": "Optional",
+      "debugLabel": "Are there any other rules Alexander should follow for unusual calls?"
+    },
+    {
+      "questionId": "Q73",
+      "sectionId": "S7",
+      "kind": "root",
+      "rawPath": "section7.englishOnly + section7.callerLanguages",
+      "answerKind": "multi_select",
+      "required": "Required",
+      "optionIds": [
+        "english",
+        "spanish",
+        "other",
+        "english_only"
+      ],
+      "debugLabel": "Which language or languages should Alexander support with callers?"
+    },
+    {
+      "questionId": "Q73A",
+      "sectionId": "S7",
+      "kind": "conditional",
+      "rawPath": "section7.otherSupportedLanguage",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q73",
+      "conditionSummary": "Q73 includes other and not english_only",
+      "debugLabel": "Other supported language"
+    },
+    {
+      "questionId": "Q74",
+      "sectionId": "S7",
+      "kind": "root",
+      "rawPath": "section7.voiceSelection (+ anotherApprovedVoiceId)",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "voice_a",
+        "voice_b",
+        "voice_c",
+        "another_approved"
+      ],
+      "debugLabel": "Which voice should Alexander use?"
+    },
+    {
+      "questionId": "Q74A",
+      "sectionId": "S7",
+      "kind": "conditional",
+      "rawPath": "section7.anotherApprovedVoiceId",
+      "answerKind": "single_select",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q74",
+      "conditionSummary": "Q74 = another_approved AND additional voices catalog non-empty",
+      "debugLabel": "Another approved voice selection"
+    },
+    {
+      "questionId": "Q75",
+      "sectionId": "S7",
+      "kind": "root",
+      "rawPath": "section7.communicationStyle",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "warm_professional",
+        "friendly_relaxed",
+        "direct_efficient",
+        "calm_reassuring"
+      ],
+      "debugLabel": "How should Alexander’s communication style feel?"
+    },
+    {
+      "questionId": "Q76",
+      "sectionId": "S7",
+      "kind": "root",
+      "rawPath": "section7.spokenNameMode",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "alexander",
+        "company_specific",
+        "another_approved"
+      ],
+      "debugLabel": "What name should Alexander use when introducing himself?"
+    },
+    {
+      "questionId": "Q76A",
+      "sectionId": "S7",
+      "kind": "conditional",
+      "rawPath": "section7.spokenDisplayName",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q76",
+      "conditionSummary": "Q76 = company_specific or another_approved",
+      "debugLabel": "Spoken receptionist name"
+    },
+    {
+      "questionId": "Q77",
+      "sectionId": "S7",
+      "kind": "root",
+      "rawPath": "section7.aiDisclosureStyle",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "opening_ai_receptionist",
+        "only_if_asked",
+        "custom"
+      ],
+      "debugLabel": "How should Alexander identify himself as an AI?"
+    },
+    {
+      "questionId": "Q77A",
+      "sectionId": "S7",
+      "kind": "conditional",
+      "rawPath": "section7.aiDisclosureCustom",
+      "answerKind": "scalar_text",
+      "required": "Optional when displayed (frozen validateSection7 does not require custom text)",
+      "parentQuestionId": "Q77",
+      "conditionSummary": "Q77 = custom",
+      "debugLabel": "Approved disclosure wording"
+    },
+    {
+      "questionId": "Q78",
+      "sectionId": "S7",
+      "kind": "root",
+      "rawPath": "section7.pronunciationMode",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "none",
+        "yes"
+      ],
+      "debugLabel": "Are there any company, people, city, neighborhood, or brand names that Alexander must pronounce correctly?"
+    },
+    {
+      "questionId": "Q78A",
+      "sectionId": "S7",
+      "kind": "conditional",
+      "rawPath": "section7.pronunciationEntries[]",
+      "answerKind": "repeatable",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q78",
+      "conditionSummary": "Q78 = yes",
+      "debugLabel": "Pronunciation entries"
+    },
+    {
+      "questionId": "Q79",
+      "sectionId": "S7",
+      "kind": "root",
+      "rawPath": "section7.languageSwitchingPolicy",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "continue_caller_language",
+        "ask_preference",
+        "english_offer_human",
+        "custom"
+      ],
+      "debugLabel": "If a caller speaks a supported second language, what should Alexander normally do?"
+    },
+    {
+      "questionId": "Q79A",
+      "sectionId": "S7",
+      "kind": "conditional",
+      "rawPath": "section7.languageSwitchingCustomRule",
+      "answerKind": "scalar_text",
+      "required": "Optional when displayed (frozen validateSection7 does not require custom rule text)",
+      "parentQuestionId": "Q79",
+      "conditionSummary": "Q79 = custom",
+      "debugLabel": "Language-switching rule"
+    },
+    {
+      "questionId": "Q80",
+      "sectionId": "S7",
+      "kind": "root",
+      "rawPath": "section7.perceivedVoicePreference",
+      "answerKind": "single_select",
+      "required": "Optional",
+      "optionIds": [
+        "no_preference",
+        "masculine_presenting",
+        "feminine_presenting",
+        "neutral_androgynous"
+      ],
+      "debugLabel": "Do you have a preference for the perceived voice presentation?"
+    },
+    {
+      "questionId": "Q81",
+      "sectionId": "S7",
+      "kind": "root",
+      "rawPath": "section7.accentPreference",
+      "answerKind": "single_select",
+      "required": "Optional",
+      "optionIds": [
+        "neutral_american",
+        "regional_american",
+        "spanish_influenced_english",
+        "other_approved",
+        "no_preference"
+      ],
+      "debugLabel": "Do you have a preferred accent or regional character?"
+    },
+    {
+      "questionId": "Q81A",
+      "sectionId": "S7",
+      "kind": "conditional",
+      "rawPath": "section7.accentOtherApproved",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q81",
+      "conditionSummary": "Q81 = other_approved",
+      "debugLabel": "Other approved accent"
+    },
+    {
+      "questionId": "Q82",
+      "sectionId": "S7",
+      "kind": "root",
+      "rawPath": "section7.formalityPreference",
+      "answerKind": "single_select",
+      "required": "Optional",
+      "optionIds": [
+        "conversational",
+        "balanced_professional",
+        "formal_traditional"
+      ],
+      "debugLabel": "How formal should Alexander sound?"
+    },
+    {
+      "questionId": "Q83",
+      "sectionId": "S7",
+      "kind": "root",
+      "rawPath": "section7.brandPhrasesAndAvoidances",
+      "answerKind": "scalar_text",
+      "required": "Optional",
+      "debugLabel": "Are there any phrases Alexander should use or avoid because of your company’s brand?"
+    },
+    {
+      "questionId": "Q84",
+      "sectionId": "S7",
+      "kind": "root",
+      "rawPath": "section7.additionalReviewNotes",
+      "answerKind": "scalar_text",
+      "required": "Optional",
+      "debugLabel": "Is there anything else about Alexander’s voice or identity that we should review with you?"
+    },
+    {
+      "questionId": "Q85",
+      "sectionId": "S8",
+      "kind": "root",
+      "rawPath": "section8.crmFsmProvider",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "servicetitan",
+        "housecall_pro",
+        "jobber",
+        "gohighlevel",
+        "hubspot",
+        "salesforce",
+        "custom",
+        "none"
+      ],
+      "debugLabel": "What system does your team primarily use for customer records and service jobs?"
+    },
+    {
+      "questionId": "Q85A",
+      "sectionId": "S8",
+      "kind": "conditional",
+      "rawPath": "section8.crmFsmCustomName",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q85",
+      "conditionSummary": "Q85 = custom (Another system)",
+      "debugLabel": "What system do you use?"
+    },
+    {
+      "questionId": "Q86",
+      "sectionId": "S8",
+      "kind": "root",
+      "rawPath": "section8.schedulingProvider",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "same_as_crm",
+        "google_calendar",
+        "microsoft_outlook",
+        "cal_com",
+        "custom",
+        "none"
+      ],
+      "debugLabel": "Where does your team look to see when customers can be scheduled?"
+    },
+    {
+      "questionId": "Q86A",
+      "sectionId": "S8",
+      "kind": "conditional",
+      "rawPath": "section8.schedulingCustomName",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q86",
+      "conditionSummary": "Q86 = custom",
+      "debugLabel": "What scheduling system do you use?"
+    },
+    {
+      "questionId": "Q87",
+      "sectionId": "S8",
+      "kind": "root",
+      "rawPath": "section8.phoneProvider",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "ringcentral",
+        "dialpad",
+        "zoom_phone",
+        "gohighlevel",
+        "traditional_landline",
+        "mobile_phones",
+        "custom",
+        "not_sure"
+      ],
+      "debugLabel": "What phone system do you currently use?"
+    },
+    {
+      "questionId": "Q87A",
+      "sectionId": "S8",
+      "kind": "conditional",
+      "rawPath": "section8.phoneCustomName",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q87",
+      "conditionSummary": "Q87 = custom",
+      "debugLabel": "What phone system do you use?"
+    },
+    {
+      "questionId": "Q88",
+      "sectionId": "S8",
+      "kind": "root",
+      "rawPath": "section8.additionalSoftwareCategories + additionalSoftwareCards[]",
+      "answerKind": "multi_select",
+      "required": "Required",
+      "optionIds": [
+        "separate_customer_database",
+        "price_book_estimating",
+        "membership",
+        "financing",
+        "payment",
+        "sms_texting",
+        "email_inbox",
+        "other",
+        "none"
+      ],
+      "debugLabel": "Do you use any other software Alexander may need to work with?"
+    },
+    {
+      "questionId": "Q89",
+      "sectionId": "S8",
+      "kind": "root",
+      "rawPath": "section8.connectionOwnerMode",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "self_authorized",
+        "someone_else"
+      ],
+      "debugLabel": "Who can authorize Alexander to connect to these systems?"
+    },
+    {
+      "questionId": "Q89A",
+      "sectionId": "S8",
+      "kind": "conditional",
+      "rawPath": "section8.connectionOwnerName / connectionOwnerEmail / connectionOwnerPhone",
+      "answerKind": "composite",
+      "required": "Required when displayed (Name + Email required; Phone optional)",
+      "parentQuestionId": "Q89",
+      "conditionSummary": "Q89 = someone_else",
+      "debugLabel": "Who should we work with?"
+    },
+    {
+      "questionId": "Q90",
+      "sectionId": "S8",
+      "kind": "root",
+      "rawPath": "section8.connectionNoticeAcknowledged",
+      "answerKind": "single_select",
+      "required": "Required",
+      "debugLabel": "Software connection notice"
+    },
+    {
+      "questionId": "Q91",
+      "sectionId": "S8",
+      "kind": "root",
+      "rawPath": "section8.failureFallback",
+      "answerKind": "single_select",
+      "required": "Required",
+      "optionIds": [
+        "collect_and_send",
+        "connect_team",
+        "custom"
+      ],
+      "defaultValue": "collect_and_send",
+      "debugLabel": "If Alexander can’t access a system or complete an action, what should he normally do?"
+    },
+    {
+      "questionId": "Q91A",
+      "sectionId": "S8",
+      "kind": "conditional",
+      "rawPath": "section8.failureFallbackCustom",
+      "answerKind": "scalar_text",
+      "required": "Required when displayed",
+      "parentQuestionId": "Q91",
+      "conditionSummary": "Q91 = custom (Follow another rule)",
+      "debugLabel": "What should Alexander do?"
+    },
+    {
+      "questionId": "Q92",
+      "sectionId": "S8",
+      "kind": "root",
+      "rawPath": "section8.finalOperatingNotes",
+      "answerKind": "scalar_text",
+      "required": "Optional",
+      "debugLabel": "Is there anything important about your company that we haven’t asked?"
+    },
+    {
+      "questionId": "Q93",
+      "sectionId": "SUBMISSION",
+      "kind": "root",
+      "rawPath": "draft.submission.confirmations.{answersAccurate,capabilitiesDependOnIntegrations,actionsRequireSupportAuthorizationConfirmation}",
+      "answerKind": "acknowledgement_group",
+      "required": "Required — all three statements must be checked",
+      "optionIds": [
+        "answersAccurate",
+        "capabilitiesDependOnIntegrations",
+        "actionsRequireSupportAuthorizationConfirmation"
+      ],
+      "debugLabel": "Final confirmations"
+    }
+  ]
+}

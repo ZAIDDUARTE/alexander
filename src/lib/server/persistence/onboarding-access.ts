@@ -161,6 +161,25 @@ export async function provisionCustomerOnboarding(
   };
 }
 
+export async function lookupInvitation(
+  pool: SqlPool,
+  invitationTokenHash: string,
+): Promise<{ ok: true; onboardingId: string } | AccessRejected> {
+  const invite = await pool.query(
+    `SELECT onboarding_id, expires_at, revoked_at
+     FROM onboarding_invitations
+     WHERE token_hash = $1`,
+    [invitationTokenHash],
+  );
+  const row = invite.rows[0];
+  if (!row || row.revoked_at != null) return { ok: false, reason: "rejected" };
+  const expires = timeOf(row.expires_at);
+  if (row.expires_at != null && (expires == null || expires <= Date.now())) {
+    return { ok: false, reason: "rejected" };
+  }
+  return { ok: true, onboardingId: String(row.onboarding_id) };
+}
+
 export async function redeemInvitation(
   pool: SqlPool,
   input: { invitationTokenHash: string; accessTokenHash: string },
@@ -303,6 +322,11 @@ export async function handleOnboardingAccessOperation(
   event: Record<string, unknown>,
   pool: SqlPool,
 ): Promise<unknown> {
+  if (event.operation === "lookupInvitation") {
+    const invitationTokenHash = stringField(event.invitationTokenHash);
+    if (!invitationTokenHash) return { ok: false, reason: "rejected" };
+    return lookupInvitation(pool, invitationTokenHash);
+  }
   if (event.operation === "redeemInvitation") {
     const invitationTokenHash = stringField(event.invitationTokenHash);
     const accessTokenHash = stringField(event.accessTokenHash);

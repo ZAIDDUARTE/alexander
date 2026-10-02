@@ -340,6 +340,7 @@ export async function handler(event: unknown): Promise<unknown> {
       ? String((event as { operation?: unknown }).operation ?? "")
       : "";
   if (
+    operation === "lookupInvitation" ||
     operation === "redeemInvitation" ||
     operation === "resolveAccess" ||
     operation === "saveInvitedDraft"

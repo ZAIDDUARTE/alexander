@@ -2,15 +2,12 @@ import { NextResponse } from "next/server";
 import { setOnboardingAccessCookie } from "@/lib/server/access-cookie";
 import { callOnboardingAccess } from "@/lib/server/access-gateway";
 import { invitationsEnabled } from "@/lib/server/onboarding-invitations";
-import { generateToken, hashToken, redeemInvitation } from "@/lib/server/persistence/onboarding-access";
+import { generateToken, hashToken, lookupInvitation, redeemInvitation } from "@/lib/server/persistence/onboarding-access";
+import { pilotOnboardingAllowed } from "@/lib/server/persistence/v2-flag";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  if (!invitationsEnabled()) {
-    return NextResponse.json({ ok: false, reason: "rejected" }, { status: 404 });
-  }
-
   let body: unknown;
   try {
     body = await request.json();
@@ -20,6 +17,22 @@ export async function POST(request: Request) {
   const token = (body as { token?: unknown } | null)?.token;
   if (typeof token !== "string" || token.length < 32) {
     return NextResponse.json({ ok: false, reason: "rejected" }, { status: 400 });
+  }
+
+  if (!invitationsEnabled()) {
+    let peek: { ok?: boolean; onboardingId?: string };
+    try {
+      const invitationTokenHash = hashToken(token);
+      peek = await callOnboardingAccess(
+        (pool) => lookupInvitation(pool, invitationTokenHash),
+        { operation: "lookupInvitation", invitationTokenHash },
+      );
+    } catch {
+      return NextResponse.json({ ok: false, reason: "persistence_unavailable" }, { status: 503 });
+    }
+    if (!peek?.ok || !peek.onboardingId || !pilotOnboardingAllowed(peek.onboardingId)) {
+      return NextResponse.json({ ok: false, reason: "rejected" }, { status: 404 });
+    }
   }
 
   const accessToken = generateToken();

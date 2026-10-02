@@ -23,7 +23,7 @@ import {
   type SqlPool,
 } from "@/lib/server/persistence/onboarding-access";
 import { hashToken } from "@/lib/server/persistence/tokens";
-import { persistenceV2Enabled } from "@/lib/server/persistence/v2-flag";
+import { persistenceV2Enabled, pilotOnboardingAllowed, pilotOnboardingIds } from "@/lib/server/persistence/v2-flag";
 import {
   reservePersistenceV2,
   submitPersistenceV2FromAccess,
@@ -108,6 +108,21 @@ describe("persistence v2 flag", () => {
     assert.equal(persistenceV2Enabled(), false);
     assert.equal(persistenceV2Enabled({ PERSISTENCE_V2_ENABLED: "false" }), false);
     assert.equal(persistenceV2Enabled({ PERSISTENCE_V2_ENABLED: "true" }), true);
+    const pilotId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+    assert.deepEqual(pilotOnboardingIds({}), []);
+    assert.equal(pilotOnboardingAllowed(pilotId, {}), false);
+    assert.equal(
+      pilotOnboardingAllowed(pilotId, {
+        PERSISTENCE_V2_PILOT_ONBOARDING_IDS: ` ${pilotId.toUpperCase()}, not-an-id `,
+      }),
+      true,
+    );
+    assert.equal(
+      pilotOnboardingAllowed("bbbbbbbb-bbbb-4ccc-8ddd-eeeeeeeeeeee", {
+        PERSISTENCE_V2_PILOT_ONBOARDING_IDS: pilotId,
+      }),
+      false,
+    );
     const ports = createMemoryPorts();
     const draft = {
       schemaVersion: 10,

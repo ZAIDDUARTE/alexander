@@ -1,11 +1,31 @@
 import { NextResponse } from "next/server";
 import { getOnboardingAccessToken } from "@/lib/server/access-cookie";
+import { callOnboardingAccess } from "@/lib/server/access-gateway";
 import { invokePersistenceLambda } from "@/lib/server/aws-persistence";
 import { fromRedisDraft, toRedisDraft } from "@/lib/onboarding/draft-utils";
 import { migrateDraft } from "@/lib/onboarding/migrate";
 import type { OnboardingDraft } from "@/lib/onboarding/types";
 import { isValidRedisDraft } from "@/lib/server/draft-store";
-import { hashToken } from "@/lib/server/persistence/tokens";
+import { hashToken, resolveOnboardingAccess } from "@/lib/server/persistence/onboarding-access";
+import { persistenceV2Enabled, pilotOnboardingAllowed, pilotOnboardingIds } from "@/lib/server/persistence/v2-flag";
+
+export async function submitPersistenceV2IfEnabled(request: Request): Promise<NextResponse | null> {
+  if (persistenceV2Enabled()) return submitPersistenceV2Request(request);
+  if (pilotOnboardingIds().length === 0) return null;
+  const token = await getOnboardingAccessToken();
+  if (!token) return null;
+  try {
+    const accessTokenHash = hashToken(token);
+    const resolved = await callOnboardingAccess(
+      (pool) => resolveOnboardingAccess(pool, accessTokenHash),
+      { operation: "resolveAccess", accessTokenHash },
+    );
+    if (!resolved.ok || !pilotOnboardingAllowed(resolved.onboardingId)) return null;
+  } catch {
+    return NextResponse.json({ ok: false, reason: "database_failed", savedDurable: false }, { status: 503 });
+  }
+  return submitPersistenceV2Request(request);
+}
 
 export async function submitPersistenceV2Request(request: Request): Promise<NextResponse> {
   const token = await getOnboardingAccessToken();

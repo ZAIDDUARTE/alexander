@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { normalizeOnboardingDraft } from "@/lib/onboarding/normalizeOnboarding";
+import { normalizeOnboardingDraft } from "../../onboarding/normalizeOnboarding";
 import {
   hashQuestionnaireAnswersContentV1,
   serializeQuestionnaireAnswersV1,
-} from "@/lib/onboarding/questionnaire-v1";
-import { QUESTIONNAIRE_ANSWERS_SCHEMA_VERSION, QUESTIONNAIRE_SPEC_VERSION } from "@/lib/onboarding/questionnaire-v1/types";
-import { prepareSubmission } from "@/lib/onboarding/submission";
-import type { OnboardingDraft } from "@/lib/onboarding/types";
+} from "../../onboarding/questionnaire-v1";
+import { QUESTIONNAIRE_ANSWERS_SCHEMA_VERSION, QUESTIONNAIRE_SPEC_VERSION } from "../../onboarding/questionnaire-v1/types";
+import { prepareSubmission } from "../../onboarding/submission";
+import type { OnboardingDraft } from "../../onboarding/types";
 import { canonicalJsonBytes, sha256Hex } from "./canonical";
 import { persistenceV2ObjectKeys } from "./keys";
 import { resolveOnboardingAccess, type SqlPool } from "./onboarding-access";

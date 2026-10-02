@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import { Pool } from "pg";
+import { provisionCustomerOnboarding } from "../../src/lib/server/persistence/onboarding-access";
 
 type SecretShape = { username?: string; password?: string };
 
@@ -29,12 +30,101 @@ function assertSafeSql(sql: string): void {
   }
 }
 
-export async function handler(event: { RequestType?: string; PhysicalResourceId?: string }): Promise<{
+async function describeOnboarding(onboardingId: string | undefined): Promise<{
   PhysicalResourceId: string;
+  rows: Record<string, unknown>[];
+}> {
+  if (!onboardingId || !/^[0-9a-f-]{36}$/i.test(onboardingId)) throw new Error("onboarding_required");
+  const secrets = new SecretsManagerClient({});
+  const master = await readSecret(secrets, requireEnv("MASTER_SECRET_ARN"));
+  if (!master.username || !master.password) throw new Error("secret_incomplete");
+  const pool = new Pool({
+    host: requireEnv("DB_HOST"),
+    port: Number(requireEnv("DB_PORT") || "5432"),
+    database: requireEnv("DB_NAME"),
+    user: master.username,
+    password: master.password,
+    max: 1,
+    ssl: { ca: loadCa(), rejectUnauthorized: true },
+  });
+  try {
+    const result = await pool.query(
+      `SELECT s.id, s.revision_number, s.persistence_state, s.content_hash_algorithm,
+              s.content_revision_sha256, s.submitted_at,
+              s.s3_prefix, s.s3_raw_key, s.s3_answers_key, s.s3_normalized_key, s.s3_manifest_key,
+              s.raw_sha256, s.answers_sha256, s.normalized_sha256,
+              s.raw_size_bytes, s.answers_size_bytes, s.normalized_size_bytes,
+              (s.questionnaire_answers_json IS NOT NULL) AS answers_present,
+              o.latest_submission_id, o.customer_id, o.status AS onboarding_status,
+              c.customer_number, c.data_classification
+       FROM customer_onboardings o
+       JOIN customers c ON c.id = o.customer_id
+       LEFT JOIN onboarding_submissions s ON s.onboarding_id = o.id
+       WHERE o.id = $1
+       ORDER BY s.revision_number`,
+      [onboardingId],
+    );
+    return { PhysicalResourceId: "alexander-schema-001", rows: result.rows };
+  } finally {
+    await pool.end();
+  }
+}
+
+async function provisionSynthetic(customerFacingName: string | undefined): Promise<{
+  PhysicalResourceId: string;
+  customerId: string;
+  customerNumber: string;
+  onboardingId: string;
+  invitationUrl: string;
+}> {
+  const name = customerFacingName?.trim();
+  if (!name) throw new Error("name_required");
+  const secrets = new SecretsManagerClient({});
+  const master = await readSecret(secrets, requireEnv("MASTER_SECRET_ARN"));
+  if (!master.username || !master.password) throw new Error("secret_incomplete");
+  const pool = new Pool({
+    host: requireEnv("DB_HOST"),
+    port: Number(requireEnv("DB_PORT") || "5432"),
+    database: requireEnv("DB_NAME"),
+    user: master.username,
+    password: master.password,
+    max: 1,
+    ssl: { ca: loadCa(), rejectUnauthorized: true },
+  });
+  try {
+    const created = await provisionCustomerOnboarding(pool as unknown as Parameters<typeof provisionCustomerOnboarding>[0], {
+      customerFacingName: name,
+      dataClassification: "synthetic_test",
+      host: "onboard.meetalexander.ai",
+    });
+    return { PhysicalResourceId: "alexander-schema-001", ...created };
+  } finally {
+    await pool.end();
+  }
+}
+
+export async function handler(event: {
+  RequestType?: string;
+  PhysicalResourceId?: string;
+  action?: string;
+  customerFacingName?: string;
+  onboardingId?: string;
+}): Promise<{
+  PhysicalResourceId: string;
+  customerId?: string;
+  customerNumber?: string;
+  onboardingId?: string;
+  invitationUrl?: string;
 }> {
   const physicalId = event.PhysicalResourceId ?? "alexander-schema-001";
   if (event.RequestType === "Delete") {
     return { PhysicalResourceId: physicalId };
+  }
+  if (event.action === "provisionSynthetic") {
+    return provisionSynthetic(event.customerFacingName);
+  }
+  if (event.action === "describeOnboarding") {
+    return describeOnboarding(event.onboardingId);
   }
 
   const secrets = new SecretsManagerClient({});

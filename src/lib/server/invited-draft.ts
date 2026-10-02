@@ -2,14 +2,26 @@ import { NextResponse } from "next/server";
 import { getOnboardingAccessToken } from "@/lib/server/access-cookie";
 import { callOnboardingAccess } from "@/lib/server/access-gateway";
 import { compileDraftWrite, redisAvailable } from "@/lib/server/draft-service";
-import { draftRouteMode, invitationsEnabled } from "@/lib/server/onboarding-invitations";
+import { invitationsEnabled } from "@/lib/server/onboarding-invitations";
 import { hashToken, resolveOnboardingAccess, saveInvitedDraft } from "@/lib/server/persistence/onboarding-access";
+import { pilotOnboardingAllowed, pilotOnboardingIds } from "@/lib/server/persistence/v2-flag";
 import { resolvePersistenceMode } from "@/lib/server/persistence/mode";
 
-async function invitedToken(): Promise<string | null> {
+async function invitedToken(): Promise<string | null | "unavailable"> {
   const token = await getOnboardingAccessToken();
-  if (draftRouteMode(invitationsEnabled(), token) !== "invited") return null;
-  return token;
+  if (invitationsEnabled()) return token;
+  if (!token || pilotOnboardingIds().length === 0) return null;
+  try {
+    const accessTokenHash = hashToken(token);
+    const resolved = await callOnboardingAccess(
+      (pool) => resolveOnboardingAccess(pool, accessTokenHash),
+      { operation: "resolveAccess", accessTokenHash },
+    );
+    if (!resolved.ok || !pilotOnboardingAllowed(resolved.onboardingId)) return null;
+    return token;
+  } catch {
+    return "unavailable";
+  }
 }
 
 function meta() {
@@ -22,6 +34,9 @@ function meta() {
 
 export async function respondInvitedGet(): Promise<NextResponse | null> {
   const token = await invitedToken();
+  if (token === "unavailable") {
+    return NextResponse.json({ ok: false, reason: "persistence_unavailable" }, { status: 503 });
+  }
   if (!token) return null;
   const accessTokenHash = hashToken(token);
   let resolved: Awaited<ReturnType<typeof resolveOnboardingAccess>>;
@@ -49,6 +64,9 @@ export async function respondInvitedGet(): Promise<NextResponse | null> {
 
 export async function respondInvitedPut(body: unknown): Promise<NextResponse | null> {
   const token = await invitedToken();
+  if (token === "unavailable") {
+    return NextResponse.json({ ok: false, reason: "persistence_unavailable", invited: true }, { status: 503 });
+  }
   if (!token) return null;
   const expectedVersion = (body as { expectedVersion?: unknown } | null)?.expectedVersion;
   if (typeof expectedVersion !== "number" || !Number.isInteger(expectedVersion)) {
