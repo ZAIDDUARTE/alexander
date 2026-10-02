@@ -170,7 +170,7 @@ export async function submitDraft(
   const draft = existingSubmission
     ? withPreservedSubmission(input.draft, existingSubmission, existingSession)
     : input.draft;
-const submittedAt = existingSubmission?.submittedAt ?? input.submittedAt;
+  const submittedAt = existingSubmission?.submittedAt ?? input.submittedAt;
 
   let keys;
   try {

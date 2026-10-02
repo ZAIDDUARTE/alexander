@@ -11,10 +11,9 @@ import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-sec
 import { Pool, type QueryResultRow } from "pg";
 import { sha256Hex } from "../../src/lib/server/persistence/canonical";
 import { handlePersistenceOperation } from "../../src/lib/server/persistence/engine";
-import {
-  handleOnboardingAccessOperation,
-  type SqlPool,
-} from "../../src/lib/server/persistence/onboarding-access";
+import { handleOnboardingAccessOperation, type SqlPool } from "../../src/lib/server/persistence/onboarding-access";
+import { submitPersistenceV2FromAccess } from "../../src/lib/server/persistence/v2-submit";
+import type { OnboardingDraft } from "../../src/lib/onboarding/types";
 import {
   isVisibleLegacySubmission,
   mapSubmissionRow,
@@ -347,6 +346,19 @@ export async function handler(event: unknown): Promise<unknown> {
   ) {
     const pool = await getPool();
     return handleOnboardingAccessOperation(event as Record<string, unknown>, pool as unknown as SqlPool);
+  }
+  if (operation === "submitPersistenceV2") {
+    const body = event as { accessTokenHash?: unknown; draft?: unknown; failFinalize?: unknown };
+    const accessTokenHash = typeof body.accessTokenHash === "string" ? body.accessTokenHash : "";
+    if (!accessTokenHash || !body.draft || typeof body.draft !== "object") {
+      return { ok: false, reason: "rejected" };
+    }
+    const pool = await getPool();
+    return submitPersistenceV2FromAccess(pool as unknown as SqlPool, createObjectStore(), {
+      accessTokenHash,
+      draft: body.draft as OnboardingDraft,
+      failFinalize: body.failFinalize === true,
+    });
   }
   return handlePersistenceOperation(event, { db: createDatabase(), objects: createObjectStore() }, log);
 }
