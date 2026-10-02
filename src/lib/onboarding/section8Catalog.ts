@@ -84,9 +84,8 @@ export const ALL_INTEGRATION_CAPABILITY_IDS: IntegrationCapabilityId[] =
   INTEGRATION_CAPABILITY_OPTIONS.map((o) => o.id);
 
 export const CONNECTION_OWNER_OPTIONS = [
-  { id: "self_authorized", label: "Yes" },
-  { id: "not_authorized", label: "No" },
-  { id: "someone_else", label: "Someone else on our team handles this" },
+  { id: "self_authorized", label: "I can" },
+  { id: "someone_else", label: "Someone else on our team" },
 ] as const;
 
 export type ConnectionOwnerMode = (typeof CONNECTION_OWNER_OPTIONS)[number]["id"] | "";
@@ -96,7 +95,6 @@ export const FAILURE_FALLBACK_OPTIONS = [
     id: "collect_and_send",
     label: "Collect the customer’s information and send the request to our team",
   },
-  { id: "callback", label: "Arrange a callback" },
   { id: "connect_team", label: "Try to connect the customer with someone on our team" },
   { id: "custom", label: "Follow another rule" },
 ] as const;
@@ -106,11 +104,19 @@ export type FailureFallbackMode = (typeof FAILURE_FALLBACK_OPTIONS)[number]["id"
 export const Q109_HELP =
   "Selecting a capability authorizes/desires configuration; it does not guarantee that the connected software technically supports it.";
 
-export const Q111_NOTICE =
-  "You’ll connect supported software securely after submitting this questionnaire. For supported integrations, you’ll sign into your own software account and authorize Alexander to access the information and actions required for your setup. Do not enter passwords or private API credentials in this questionnaire. Our team will handle the configuration and testing for you.";
+export const Q111_NOTICE_PARAGRAPHS = [
+  "You’ll connect supported software securely after submitting this questionnaire. For supported integrations, you’ll sign into your own software account and authorize Alexander to access the information and actions required for your setup.",
+  "Do not enter passwords or private API credentials in this questionnaire. Our team will handle the configuration and testing for you.",
+] as const;
+
+export const Q111_NOTICE = Q111_NOTICE_PARAGRAPHS.join(" ");
 
 export const Q112_HELP =
-  "Alexander will never tell a customer that an appointment was booked, changed, canceled, dispatched, or otherwise completed unless the action was actually confirmed.";
+  "Alexander will never tell a customer that an appointment was booked, changed, canceled, or otherwise completed unless the action was actually confirmed.";
+
+export const FAILURE_CUSTOM_PLACEHOLDER = "Tell us how you’d like Alexander to handle it.";
+
+export const FINAL_NOTES_PLACEHOLDER = "Enter anything else you’d like us to know.";
 
 export const Q114_CONFIRMATIONS = [
   {

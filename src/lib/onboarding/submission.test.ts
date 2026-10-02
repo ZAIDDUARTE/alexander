@@ -14,7 +14,6 @@ import { fullyValidSection8 } from "./section8-test-helpers";
 import { normalizeSection8 } from "./normalize/section8";
 import { toRedisDraft, fromRedisDraft } from "./draft-utils";
 import { isValidRedisDraft } from "@/lib/server/draft-store";
-import { ALL_INTEGRATION_CAPABILITY_IDS } from "./section8Catalog";
 
 describe("submission integrity", () => {
   it("1: submission succeeds when Redis unavailable (client payload only)", () => {
@@ -198,15 +197,15 @@ describe("submission integrity", () => {
     }
   });
 
-  it("14: Q109 concrete defaults do not dirty fresh draft", () => {
+  it("14: capability checklist defaults do not dirty a fresh draft", () => {
     assert.equal(hasDraftContent(createDefaultDraft()), false);
-    assert.equal(createDefaultAuthorizedCapabilities().length, ALL_INTEGRATION_CAPABILITY_IDS.length - 1);
+    assert.deepEqual(createDefaultAuthorizedCapabilities(), []);
   });
 
-  it("15: Q106 same-system resolves to Q105 software record", () => {
+  it("15: dispatch is not submitted as a current software record", () => {
     const { section8, systems } = fullyValidSection8();
     const norm = normalizeSection8(section8, systems);
-    assert.equal(norm.dispatch_system?.software_id, norm.scheduling_system?.software_id);
+    assert.equal(norm.dispatch_system, null);
     assert.ok(norm.scheduling_system?.display_name);
     assert.ok(!norm.scheduling_system?.display_name.includes("same_as"));
   });

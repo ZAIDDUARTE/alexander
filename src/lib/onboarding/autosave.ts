@@ -25,6 +25,11 @@ export type DraftAutosaveController = {
  * After a successful PUT the server rewrites updatedAt. Keep the newest local
  * answers, and only advance the local clock so the next PUT is not stale.
  */
+/** Answer fingerprint. A server timestamp rewrite must not look like a new edit. */
+export function draftAutosaveFingerprint(draft: OnboardingDraft): string {
+  return JSON.stringify({ ...draft, updatedAt: undefined });
+}
+
 export function applyAcceptedServerTimestamp(
   local: OnboardingDraft,
   sentUpdatedAt: string,

@@ -15,7 +15,6 @@ import {
   FINANCIAL_REMEDY_ROWS,
   PAYMENT_ASSISTANCE_OPTIONS,
   PAYMENT_COLLECTION_OPTIONS,
-  PAYMENT_DUE_HELP,
   PAYMENT_DUE_OPTIONS,
   PAYMENT_METHOD_OPTIONS,
   REMEDY_RULE_LABELS,
@@ -165,7 +164,7 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="When is payment normally due?" required helpText={PAYMENT_DUE_HELP}>
+      <QuestionCard title="When is payment normally due?" required>
         <CheckboxGroup
           name="paymentDuePolicies"
           options={paymentDueOptions}

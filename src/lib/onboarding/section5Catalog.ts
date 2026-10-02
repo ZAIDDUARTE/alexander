@@ -249,9 +249,6 @@ export const DEFAULT_PAYMENT_COLLECTION_SCOPE = [
   "outstanding_balances",
 ] as const;
 
-export const PAYMENT_DUE_HELP =
-  "Different payment terms may apply to different types of work or customers.";
-
 export const REMEDY_RULE_PLACEHOLDERS: Record<string, string> = {
   refund:
     "Example: Alexander may approve refunds up to $50 for duplicate charges. Anything else requires human approval.",

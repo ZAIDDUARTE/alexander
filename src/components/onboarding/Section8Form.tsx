@@ -13,30 +13,25 @@ import {
   ADDITIONAL_SOFTWARE_CATEGORIES,
   CONNECTION_OWNER_OPTIONS,
   CRM_FSM_OPTIONS,
-  DISPATCH_OPTIONS,
+  FAILURE_CUSTOM_PLACEHOLDER,
   FAILURE_FALLBACK_OPTIONS,
-  INTEGRATION_CAPABILITY_OPTIONS,
+  FINAL_NOTES_PLACEHOLDER,
   PHONE_OPTIONS,
-  Q109_HELP,
-  Q111_NOTICE,
+  Q111_NOTICE_PARAGRAPHS,
   Q112_HELP,
   SCHEDULING_OPTIONS,
 } from "@/lib/onboarding/section8Catalog";
 import {
   applyCrmCustomNameChange,
   applyCrmProviderChange,
-  applyDispatchCustomNameChange,
-  applyDispatchProviderChange,
   applyPhoneCustomNameChange,
   applyPhoneProviderChange,
   applySchedulingCustomNameChange,
   applySchedulingProviderChange,
   schedulingSameAsCrmDisabled,
   toggleAdditionalCategory,
-  toggleCapability,
   updateAdditionalCard,
 } from "@/lib/onboarding/section8FormLogic";
-import { crmAllowsSchedulingSameAs } from "@/lib/onboarding/softwareRegistry";
 import { validateSection8, type FieldErrors } from "@/lib/onboarding/validation/section8";
 
 type Props = { mode?: "form" | "review" };
@@ -71,9 +66,8 @@ export function Section8Form({ mode = "form" }: Props) {
   return (
     <div className="space-y-8">
       <QuestionCard
-        title="What software does your company use to manage customers and jobs?"
+        title="What system does your team primarily use for customer records and service jobs?"
         required
-        helpText="What system do you use to manage customers, jobs, or your field-service operations?"
       >
         <RadioGroup
           name="crmFsmProvider"
@@ -86,7 +80,8 @@ export function Section8Form({ mode = "form" }: Props) {
           <ConditionalPanel>
             <TextField
               id="crmFsmCustomName"
-              label="System name"
+              label="What system do you use?"
+              placeholder="Enter software name"
               value={data.crmFsmCustomName}
               onChange={(v) => applyDraft(applyCrmCustomNameChange(draft, v))}
               error={submitted ? errors.crmFsmCustomName : undefined}
@@ -96,9 +91,8 @@ export function Section8Form({ mode = "form" }: Props) {
       </QuestionCard>
 
       <QuestionCard
-        title="What software contains your appointment schedule?"
+        title="Where does your team look to see when customers can be scheduled?"
         required
-        helpText="Where does your company manage appointments and availability?"
       >
         <RadioGroup
           name="schedulingProvider"
@@ -109,50 +103,15 @@ export function Section8Form({ mode = "form" }: Props) {
           }
           error={submitted ? errors.schedulingProvider : undefined}
         />
-        {!crmAllowsSchedulingSameAs(data) && (
-          <p className="mt-2 text-xs text-[var(--color-alexander-muted)]">
-            “Same system selected above” is unavailable when you do not use a CRM/field-service system.
-          </p>
-        )}
         {data.schedulingProvider === "custom" && (
           <ConditionalPanel>
             <TextField
               id="schedulingCustomName"
-              label="Scheduling system name"
+              label="What scheduling system do you use?"
+              placeholder="Enter software name"
               value={data.schedulingCustomName}
               onChange={(v) => applyDraft(applySchedulingCustomNameChange(draft, v))}
               error={submitted ? errors.schedulingCustomName : undefined}
-            />
-          </ConditionalPanel>
-        )}
-      </QuestionCard>
-
-      <QuestionCard
-        title="What system do you use for dispatching technicians?"
-        required
-        helpText="Where does your team manage technician schedules or dispatch?"
-      >
-        <RadioGroup
-          name="dispatchProvider"
-          options={DISPATCH_OPTIONS.map((o) => ({ value: o.id, label: o.label }))}
-          value={data.dispatchProvider}
-          onChange={(v) =>
-            applyDraft(applyDispatchProviderChange(draft, v as typeof data.dispatchProvider))
-          }
-          error={submitted ? errors.dispatchProvider : undefined}
-        />
-        <p className="mt-2 text-xs text-[var(--color-alexander-muted)]">
-          “Same system selected above” refers to the software resolved from your appointment/scheduling
-          answer (which may itself reference your CRM).
-        </p>
-        {data.dispatchProvider === "custom" && (
-          <ConditionalPanel>
-            <TextField
-              id="dispatchCustomName"
-              label="Dispatch system name"
-              value={data.dispatchCustomName}
-              onChange={(v) => applyDraft(applyDispatchCustomNameChange(draft, v))}
-              error={submitted ? errors.dispatchCustomName : undefined}
             />
           </ConditionalPanel>
         )}
@@ -170,7 +129,8 @@ export function Section8Form({ mode = "form" }: Props) {
           <ConditionalPanel>
             <TextField
               id="phoneCustomName"
-              label="Phone system name"
+              label="What phone system do you use?"
+              placeholder="Enter software name"
               value={data.phoneCustomName}
               onChange={(v) => applyDraft(applyPhoneCustomNameChange(draft, v))}
               error={submitted ? errors.phoneCustomName : undefined}
@@ -240,57 +200,7 @@ export function Section8Form({ mode = "form" }: Props) {
         </div>
       </QuestionCard>
 
-      <QuestionCard
-        title="Which of these should Alexander be able to do when your software supports it?"
-        required
-        helpText={Q109_HELP}
-      >
-        <fieldset>
-          <legend className="sr-only">Authorized software capabilities</legend>
-          <div className="space-y-2">
-            {INTEGRATION_CAPABILITY_OPTIONS.map((cap) => (
-              <div
-                key={cap.id}
-                className="flex items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] px-4 py-3"
-              >
-                <input
-                  id={`capability-${cap.id}`}
-                  name={`capability-${cap.id}`}
-                  type="checkbox"
-                  value={cap.id}
-                  className="mt-0.5 h-4 w-4 accent-[var(--color-alexander-blue)]"
-                  checked={data.authorizedCapabilities.includes(cap.id)}
-                  disabled={readOnly}
-                  onChange={() => {
-                    updateSection8({
-                      authorizedCapabilities: toggleCapability(data, cap.id).authorizedCapabilities,
-                    });
-                  }}
-                />
-                <label
-                  htmlFor={`capability-${cap.id}`}
-                  className="cursor-pointer text-sm text-[var(--color-alexander-navy)]"
-                >
-                  {cap.label}
-                </label>
-              </div>
-            ))}
-          </div>
-        </fieldset>
-        {data.authorizedCapabilities.includes("other") && (
-          <ConditionalPanel>
-            <TextField
-              id="authorizedCapabilityOther"
-              label="Other capability"
-              value={data.authorizedCapabilityOther}
-              onChange={(v) => updateSection8({ authorizedCapabilityOther: v })}
-              error={submitted ? errors.authorizedCapabilityOther : undefined}
-            />
-          </ConditionalPanel>
-        )}
-      </QuestionCard>
-
-      <QuestionCard title="Are you an administrator or authorized person for these systems?" required>
+      <QuestionCard title="Who can authorize Alexander to connect to these systems?" required>
         <RadioGroup
           name="connectionOwnerMode"
           options={CONNECTION_OWNER_OPTIONS.map((o) => ({ value: o.id, label: o.label }))}
@@ -302,10 +212,12 @@ export function Section8Form({ mode = "form" }: Props) {
         />
         {data.connectionOwnerMode === "someone_else" && (
           <ConditionalPanel>
+            <p className="text-sm font-medium text-[var(--color-alexander-navy)]">Who should we work with?</p>
             <div className="space-y-4">
             <TextField
               id="connectionOwnerName"
               label="Name"
+              placeholder="Enter name"
               value={data.connectionOwnerName}
               onChange={(v) => updateSection8({ connectionOwnerName: v })}
               error={submitted ? errors.connectionOwnerName : undefined}
@@ -313,6 +225,7 @@ export function Section8Form({ mode = "form" }: Props) {
             <TextField
               id="connectionOwnerEmail"
               label="Email"
+              placeholder="Enter email"
               type="email"
               value={data.connectionOwnerEmail}
               onChange={(v) => updateSection8({ connectionOwnerEmail: v })}
@@ -320,10 +233,11 @@ export function Section8Form({ mode = "form" }: Props) {
             />
             <div>
               <label htmlFor="connectionOwnerPhone" className="text-sm font-medium text-[var(--color-alexander-navy)]">
-                Phone
+                Phone (optional)
               </label>
               <PhoneField
                 id="connectionOwnerPhone"
+                placeholder="Enter phone number"
                 value={data.connectionOwnerPhone}
                 onChange={(v) => updateSection8({ connectionOwnerPhone: v })}
                 error={submitted ? errors.connectionOwnerPhone : undefined}
@@ -335,7 +249,11 @@ export function Section8Form({ mode = "form" }: Props) {
       </QuestionCard>
 
       <QuestionCard title="Software connection notice" required>
-        <p className="mb-4 text-sm text-[var(--color-alexander-muted)]">{Q111_NOTICE}</p>
+        <div className="mb-4 space-y-3 text-sm text-[var(--color-alexander-navy)]">
+          {Q111_NOTICE_PARAGRAPHS.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
+        </div>
         <div className="flex items-start gap-3 rounded-lg border border-[var(--color-alexander-border)] px-4 py-3">
           <input
             id="connection-notice-acknowledged"
@@ -363,7 +281,7 @@ export function Section8Form({ mode = "form" }: Props) {
       <QuestionCard
         title="If Alexander can’t access a system or complete an action, what should he normally do?"
         required
-        helpText={`If Alexander temporarily can’t access information or complete an action through your software, what should he normally do? ${Q112_HELP}`}
+        helpText={Q112_HELP}
       >
         <RadioGroup
           name="failureFallback"
@@ -378,7 +296,8 @@ export function Section8Form({ mode = "form" }: Props) {
           <ConditionalPanel>
             <TextareaField
               id="failureFallbackCustom"
-              label="Custom fallback rule"
+              label="What should Alexander do?"
+              placeholder={FAILURE_CUSTOM_PLACEHOLDER}
               rows={3}
               required
               value={data.failureFallbackCustom}
@@ -398,6 +317,7 @@ export function Section8Form({ mode = "form" }: Props) {
           id="finalOperatingNotes"
           label=""
           rows={5}
+          placeholder={FINAL_NOTES_PLACEHOLDER}
           value={data.finalOperatingNotes}
           onChange={(v) => updateSection8({ finalOperatingNotes: v })}
         />

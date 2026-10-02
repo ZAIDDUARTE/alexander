@@ -13,7 +13,11 @@ import {
 import { loadLocalDraft, saveLocalDraft, type SaveStatus } from "./persistence";
 import { interpretServerSave } from "./server-save-status";
 import { fetchServerDraft, putServerDraft } from "./server-api";
-import { createDraftAutosaveController, type DraftAutosaveController } from "./autosave";
+import {
+  createDraftAutosaveController,
+  draftAutosaveFingerprint,
+  type DraftAutosaveController,
+} from "./autosave";
 import { reconcileDrafts, hasDraftContent, addCompletedSection } from "./draft-utils";
 import { applyPostSubmissionEditPolicy } from "./submissionIntegrity";
 import { isSection4LinkedFeeProtected } from "./section4FeeLinks";
@@ -229,7 +233,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
       setDraft(winner);
       draftRef.current = winner;
-      hydratedSnapshotRef.current = JSON.stringify(winner);
+      hydratedSnapshotRef.current = draftAutosaveFingerprint(winner);
 
       if (needsLocalSync) {
         saveLocalDraft(winner);
@@ -255,7 +259,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isDraftHydrated) return;
 
-    const serialized = JSON.stringify(draft);
+    const serialized = draftAutosaveFingerprint(draft);
     if (hydratedSnapshotRef.current === null) {
       hydratedSnapshotRef.current = serialized;
       return;
@@ -673,7 +677,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         debounceRef.current = null;
       }
       draftRef.current = next;
-      hydratedSnapshotRef.current = JSON.stringify(next);
+      hydratedSnapshotRef.current = draftAutosaveFingerprint(next);
       setDraft(next);
       setSaveStatus("saving");
       saveLocalDraft(next);

@@ -626,7 +626,7 @@ Legacy financing-permission and remedy-authority constants remain for decoding a
 
 ## Payment Timing
 
-“When is payment normally due?” keeps the same six choices on `paymentDuePolicies`. The helper is “Different payment terms may apply to different types of work or customers.” Saved selections are preserved.
+“When is payment normally due?” keeps the same six choices on `paymentDuePolicies`. The AI helper sentence was removed after Phillip said not to use helper text in this section. Saved selections are preserved.
 
 ## Payment Assistance
 
@@ -856,3 +856,226 @@ Exact fields:
 ## Deferred
 
 Software & Integrations, and Prompt Zero / Company Truth semantic mappings. Not published.
+
+# Stage 6 — Software & Integrations + Final Transcript Cleanup
+
+Local branch `questionnaire-oct1`. Not pushed. Prompt Zero was not started.
+
+## Stage 5 Checkpoint Commit
+
+`634ee62a3cffbe1621458d5a6e74f2261c817f53` — `checkpoint: questionnaire Oct 1 stage 5`
+
+Only the validated Stage 5 questionnaire files were staged. Unrelated untracked files stayed untracked. The commit was not pushed. Baseline on that commit, before Stage 6 edits: typecheck pass, lint pass, 506 tests pass, production build pass.
+
+## Source-Lock Results
+
+`docs/questionnaire-oct1-stage6-source-lock.md` was written before the Stage 6 edits.
+
+VOICE & CONVERSATION: NO CHANGE
+
+HELP ICON / ? POPUP: NOT IMPLEMENTED. Phillip said “maybe.”
+
+PROMPT ZERO / STRUCTURED QUESTIONNAIRE SPEC: NOT PART OF THIS PASS
+
+## Files Modified
+
+- `src/components/onboarding/AdditionalSoftwareCardEditor.tsx`
+- `src/components/onboarding/Section8Form.tsx`
+- `src/components/onboarding/Section8ReviewSummary.tsx`
+- `src/components/onboarding/ui/PhoneField.tsx`
+- `src/lib/onboarding/OnboardingContext.tsx`
+- `src/lib/onboarding/autosave.ts`
+- `src/lib/onboarding/autosave.test.ts`
+- `src/lib/onboarding/draft-utils.ts`
+- `src/lib/onboarding/normalize/section8.ts`
+- `src/lib/onboarding/progress/section8.ts`
+- `src/lib/onboarding/section8-test-helpers.ts`
+- `src/lib/onboarding/section8Catalog.ts`
+- `src/lib/onboarding/submission.test.ts`
+- `src/lib/onboarding/types.ts`
+- `src/lib/onboarding/validation/section8.ts`
+- `src/lib/onboarding/validation/section8.test.ts`
+- `docs/questionnaire-oct1-implementation-log.md`
+
+## Files Added
+
+- `src/lib/onboarding/stage6Migration.ts`
+- `src/lib/onboarding/stage6Migration.test.ts`
+- `docs/questionnaire-oct1-stage6-source-lock.md`
+
+## OCT1 IDs Completed
+
+- OCT1-057 CRM, scheduling, phone, and other-software wording
+- OCT1-058 dispatch question removed from the current questionnaire
+- OCT1-059 capability checklist removed from the current questionnaire
+- OCT1-060 authorization is “I can” or “Someone else on our team”; phone is optional
+- OCT1-061 failure fallback is three choices, default collect-and-send, callback removed
+
+## CRM/FSM
+
+Stored keys stay `crmFsmProvider` and `crmFsmCustomName`. Options were already ServiceTitan, Housecall Pro, Jobber, GoHighLevel, HubSpot, Salesforce, Another system, and We don’t use one. The question is now “What system does your team primarily use for customer records and service jobs?” Another system asks “What system do you use?” with placeholder “Enter software name”.
+
+## Appointment Availability
+
+Stored keys stay `schedulingProvider` and `schedulingCustomName`. Options stay Same system selected above, Google Calendar, Microsoft Outlook / Microsoft 365, Cal.com, Another scheduling system, and We don’t use scheduling software. The question is now “Where does your team look to see when customers can be scheduled?” Another scheduling system asks “What scheduling system do you use?” The old helper sentence under the radios was removed. “Same system selected above” stays disabled when there is no CRM/field-service system.
+
+## Dispatch Removal
+
+The question “What system do you use for dispatching technicians?” no longer renders, is not required, is not a progress unit, and is not shown in review. Current normalization sets `dispatch_system` to null. A legacy `dispatchProvider` or dispatch name is cleared and flagged `DROPPED_OBSOLETE` and `NEEDS_QA`. It is not copied into scheduling, phone, or other software. Section 3 emergency dispatch and Section 4 “immediate dispatch” copy were not edited.
+
+## Phone System
+
+Stored keys stay `phoneProvider` and `phoneCustomName`. The eight options are unchanged, including Not sure. Another phone system asks “What phone system do you use?”
+
+## Other Software
+
+The nine categories are unchanged: Separate customer database, Separate price book / estimating software, Membership / service-plan software, Financing system, Payment system, SMS / texting platform, Email / shared inbox, Other, and None. Dispatch, CRM, scheduling, and phone were not added here.
+
+Selecting None still clears the other categories, and selecting another category clears None. That behavior already lived in `toggleAdditionalCategory`. No questionnaire-wide checkbox refactor was added.
+
+## Per-Category Software Names
+
+Each selected category already had its own `additionalSoftwareCards[].systemName`. The label is now “What software do you use?” and the placeholder is “Enter software name”. One category’s name is not written onto another category. There was no separate generic software-name field to split. A legacy card name stays on that card. An empty card stays empty.
+
+## Authorization
+
+The question is “Who can authorize Alexander to connect to these systems?” Stored ids stay `self_authorized` (“I can”) and `someone_else` (“Someone else on our team”). `not_authorized` is no longer a choice. Someone else shows “Who should we work with?” Name and email are required. Phone is optional and still must be E.164 when it is filled in. Placeholders are Enter name, Enter email, and Enter phone number.
+
+`self_authorized` and `someone_else` are kept, including name, email, and phone. `not_authorized`, `not_sure`, and any other unknown mode become unanswered. Contact text is left on the draft and flagged `NEEDS_QA`. It is not guessed as “I can” or “Someone else.”
+
+## Connection Notice
+
+The notice is the two written paragraphs, then a required “I understand”. A saved `connectionNoticeAcknowledged` value is not reset by migration. The form does not ask for passwords or API credentials.
+
+## Capability Checklist Removal
+
+“Which of these should Alexander be able to do when your software supports it?” no longer renders, is not required, is not a progress unit, and is not in review or current normalization. `authorized_capabilities` is always empty. A legacy checklist or other-capability note is cleared and flagged `DROPPED_OBSOLETE` and `NEEDS_QA`. Fresh defaults are an empty list. Selections are not translated into permissions.
+
+## Integration Failure
+
+The question and the confirmation sentence match the October 1 text. “Dispatched” was removed from that sentence. Choices are collect-and-send, connect with someone on the team, and Follow another rule. Arrange a callback is gone. A fresh questionnaire stores `collect_and_send`. That default is a real answer, not a “Recommended” badge, and it does not mark an otherwise empty draft as user content. A saved `collect_and_send`, `connect_team`, or `custom` answer is kept, including the custom rule text. Follow another rule shows “What should Alexander do?” with placeholder “Tell us how you’d like Alexander to handle it.” only while that choice is active.
+
+`callback` becomes `collect_and_send`, flagged `DEFAULTED_FROM_LEGACY` and `NEEDS_QA`. An unknown value becomes the same default, flagged `DEFAULTED_FROM_UNKNOWN` and `NEEDS_QA`. A blank value receives the default without a note.
+
+## Final Catch-All
+
+The title stays “Is there anything important about your company that we haven’t asked?” The help text stays “Anything else Alexander should know about how your company operates?” The placeholder is “Enter anything else you’d like us to know.” The field is optional. Saved `finalOperatingNotes` text is kept.
+
+## Review / Submit Verification
+
+Section 8 review no longer shows Dispatch or the capability checklist. It shows other-software categories with each category’s software name. Confirmation copy and the submit flow were not rewritten. Current submission normalization does not emit dispatch or capability selections as current answers.
+
+## Voice & Conversation
+
+NO CHANGE — PHILLIP SAID ALREADY GOOD
+
+Section 7 files were not edited.
+
+## Autosave Flicker
+
+Root cause: after a successful save, `applyAcceptedServerTimestamp` wrote a new `updatedAt` back into the draft. The autosave effect treated `JSON.stringify(draft)` as the dirty check, so that timestamp-only update looked like a new edit and saved again. The status flipped between Saving and Saved while the user was idle.
+
+Exact change: `draftAutosaveFingerprint` compares the draft with `updatedAt` omitted. Hydration, the autosave effect, and `saveDraftNow` all use that fingerprint. A real answer change still saves. Autosave was not disabled, and the hide/flush path was not removed.
+
+## Help Icon
+
+NOT CHANGED — TENTATIVE SUGGESTION ONLY
+
+OPTIONAL / NEEDS PRODUCT CONFIRMATION. No popup was added.
+
+## Existing Answer Preservation
+
+Compatible CRM, scheduling, phone, per-category software names, someone-else contact details, the connection acknowledgement, a current failure choice, the optional notes, and Sections 1–7 are left in place. A second load does not replace a saved current failure choice with the default.
+
+## Legacy Migration
+
+`migrateStage6Integrations` runs after the Stage 5 migration and reads the raw Section 8 object. Notes stay on `stage2Migration` and are not shown to the customer.
+
+## Normalization Follow-Up
+
+NORMALIZATION FOLLOW-UP REQUIRED
+
+Current integration profile fields:
+
+- `crm_fsm`
+- `scheduling_system`
+- `dispatch_system` (always null)
+- `phone_system`
+- `additional_systems`
+- `authorized_capabilities` (always empty)
+- `authorized_capability_other` (always null)
+- `connection_owner`
+- `connection_notice_acknowledged`
+- `failure_fallback`
+- `final_operating_notes`
+
+This pass does not decide which API actions Alexander receives.
+
+## OCT1-001–062 Reconciliation
+
+ALL RECONCILED. No ID remains pending.
+
+- OCT1-001 through OCT1-008, OCT1-022, OCT1-023, OCT1-038, and OCT1-062: Stage 1. OCT1-004 and OCT1-006 kept the existing per-row fields.
+- OCT1-009 through OCT1-015 and OCT1-020 through OCT1-021: Stage 2.
+- OCT1-016 through OCT1-019: Stage 3.
+- OCT1-026 through OCT1-038 pricing structure, excluding the money foundation already done in Stage 1: Stage 4A.
+- OCT1-039 through OCT1-051: Stage 4B.
+- OCT1-052 through OCT1-056: Stage 5.
+- OCT1-057 through OCT1-061: Stage 6.
+
+## Source Faithfulness
+
+Stage 6 customer-facing questionnaire changes are DIRECT WRITTEN REQUIREMENT, except the autosave flicker fix, which is DIRECT TRANSCRIPT REQUIREMENT, and the migration notes, fingerprint, and normalization empties, which are TECHNICAL SUPPORT ONLY. The rewritten integration sequence is also described in the Zoom transcript. Voice & Conversation and the help icon were left unchanged because the transcript did not approve a change.
+
+NO UNSOURCED CUSTOMER-FACING QUESTIONNAIRE CHANGE
+
+## Tests
+
+`src/lib/onboarding/stage6Migration.test.ts` covers the current option lists, required follow-up names, optional authorizer phone, the collect-and-send default, legacy dispatch and capability removal, preservation of per-category names, unanswered legacy authorization, callback defaulting, and a current Section 8 round-trip. `autosave.test.ts` checks that a timestamp-only change does not change the save fingerprint.
+
+## Stage 6 QA
+
+- typecheck: pass
+- lint: pass
+- tests: 513 pass, 0 fail (baseline was 506)
+- build: pass
+- interactive browser check: not available
+
+## Deferred
+
+Prompt Zero, question IDs, and Company Truth semantic mappings. Not published.
+
+# Questionnaire Freeze
+
+Status:
+FROZEN
+
+October 1 change register:
+OCT1-001 through OCT1-062 — COMPLETE
+
+Final QA:
+- Desktop browser — PASS
+- Mobile spot-check — PASS
+- Autosave — PASS
+- Saved-answer preservation — PASS
+- Review / confirmation — PASS
+- Typecheck — PASS
+- Lint — PASS
+- Tests — 513 pass / 0 fail
+- Production build — PASS
+
+Unsourced customer-facing changes:
+NONE
+
+Voice & Conversation:
+UNCHANGED as instructed
+
+Prompt Zero / Company Truth:
+NOT PART OF QUESTIONNAIRE FREEZE
+
+Question IDs / Final Questionnaire Specification:
+NEXT WORKSTREAM
+
+Published:
+NO
+

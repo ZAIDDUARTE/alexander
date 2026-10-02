@@ -20,6 +20,7 @@ import { migrateStage3CallerAuthorization } from "./stage3Migration";
 import { migrateStage4aPricing } from "./stage4aMigration";
 import { migrateStage4bPayments } from "./stage4bMigration";
 import { migrateStage5CustomerCare } from "./stage5Migration";
+import { migrateStage6Integrations } from "./stage6Migration";
 import { EXCEPTION_TYPES, CALLER_TYPES, CAPACITY_POLICY_ROWS } from "./section4Catalog";
 import { DEFAULT_FORBIDDEN_STATEMENT_IDS } from "./section5Catalog";
 import { FINANCIAL_REMEDY_ROWS } from "./section5Catalog";
@@ -346,7 +347,7 @@ function section8HasContent(s8: OnboardingDraft["section8"], submission: Onboard
     return true;
   }
   if (s8.connectionNoticeAcknowledged) return true;
-  if (s8.failureFallback) return true;
+  if (s8.failureFallback && s8.failureFallback !== "collect_and_send") return true;
   if (s8.failureFallbackCustom.trim()) return true;
   if (s8.finalOperatingNotes.trim()) return true;
 
@@ -467,15 +468,18 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
     },
     stage2Migration: partial.stage2Migration,
   };
-  return migrateStage5CustomerCare(
-    migrateStage4bPayments(
-      migrateStage4aPricing(
-        migrateStage3CallerAuthorization(migrateStage2Answers(merged).draft).draft,
+  return migrateStage6Integrations(
+    migrateStage5CustomerCare(
+      migrateStage4bPayments(
+        migrateStage4aPricing(
+          migrateStage3CallerAuthorization(migrateStage2Answers(merged).draft).draft,
+          partial.section5,
+        ).draft,
         partial.section5,
       ).draft,
-      partial.section5,
+      partial.section6,
     ).draft,
-    partial.section6,
+    partial.section8,
   ).draft;
 }
 

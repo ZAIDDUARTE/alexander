@@ -14,9 +14,10 @@ type Props = {
   onChange: (e164OrEmpty: string) => void;
   error?: string;
   ariaLabel?: string;
+  placeholder?: string;
 };
 
-export function PhoneField({ id, value, onChange, error, ariaLabel }: Props) {
+export function PhoneField({ id, value, onChange, error, ariaLabel, placeholder }: Props) {
   return (
     <div>
       <input
@@ -32,7 +33,7 @@ export function PhoneField({ id, value, onChange, error, ariaLabel }: Props) {
           if (!value.trim()) return;
           onChange(normalizeToE164(value));
         }}
-        placeholder="+1 415 555 2671"
+        placeholder={placeholder ?? "+1 415 555 2671"}
         className={`${inputClass} ${error ? "border-[var(--color-alexander-required)]" : ""}`}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}

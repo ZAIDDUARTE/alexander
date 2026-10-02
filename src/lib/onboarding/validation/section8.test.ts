@@ -95,20 +95,18 @@ describe("Section 8 validation", () => {
     assert.equal(section8IsValid(section8, systems), true);
   });
 
-  it("F: Q106 same-as resolves Q105 chain", () => {
+  it("F: dispatch is not a current integration fact", () => {
     const { section8, systems } = fullyValidSection8();
     const norm = normalizeSection8(section8, systems);
-    assert.equal(norm.dispatch_system?.software_id, norm.scheduling_system?.software_id);
+    assert.equal(norm.dispatch_system, null);
+    assert.ok(norm.scheduling_system?.software_id);
   });
 
-  it("G: Q106 custom dispatch", () => {
-    const { section8, systems: startSystems } = fullyValidSection8();
-    let systems = startSystems;
+  it("G: a leftover dispatch answer does not block the current questionnaire", () => {
+    const { section8, systems } = fullyValidSection8();
     section8.dispatchProvider = "custom";
     section8.dispatchCustomName = "DispatchPro";
-    const up = upsertRoleSoftware(systems, "", "dispatch", "custom", "DispatchPro");
-    section8.dispatchSoftwareId = up.id;
-    systems = up.systems;
+    assert.equal(validateSection8(section8, systems).dispatchProvider, undefined);
     assert.equal(section8IsValid(section8, systems), true);
   });
 
@@ -187,22 +185,21 @@ describe("Section 8 validation", () => {
     assert.equal(normalizeSection8(section8, stale.systems).additional_systems.length, 0);
   });
 
-  it("O: Q109 all approved defaults present (except Other, which needs custom text)", () => {
-    const s8 = createDefaultSection8();
-    const expected = ALL_INTEGRATION_CAPABILITY_IDS.filter((id) => id !== "other");
-    assert.deepEqual(s8.authorizedCapabilities, expected);
-    assert.ok(s8.authorizedCapabilities.includes("view_warranty_info"));
+  it("O: the capability checklist is not a current default", () => {
+    assert.deepEqual(createDefaultSection8().authorizedCapabilities, []);
+    assert.deepEqual(createDefaultAuthorizedCapabilities(), []);
   });
 
   it("P: Q109 defaults do not dirty fresh draft", () => {
     assert.equal(hasDraftContent(createDefaultDraft()), false);
   });
 
-  it("Q: Q109 Other capability", () => {
+  it("Q: a leftover capability answer does not block validation", () => {
     const { section8, systems } = fullyValidSection8();
     section8.authorizedCapabilities = ["find_customer", "other"];
     section8.authorizedCapabilityOther = "";
-    assert.ok(validateSection8(section8, systems).authorizedCapabilityOther);
+    assert.equal(validateSection8(section8, systems).authorizedCapabilityOther, undefined);
+    assert.equal(section8IsValid(section8, systems), true);
   });
 
   it("R: Q109 does not override Section 4 booking policy", () => {
@@ -218,13 +215,13 @@ describe("Section 8 validation", () => {
     draft.section8.authorizedCapabilities = [...ALL_INTEGRATION_CAPABILITY_IDS];
     const norm = normalizeOnboardingDraft(draft);
     assert.equal(norm.scheduling.defaultBookingMode, section4.defaultBookingMode);
-    assert.ok(norm.integration_profile.authorized_capabilities.length > 0);
+    assert.deepEqual(norm.integration_profile.authorized_capabilities, []);
   });
 
-  it("S: membership/warranty read capabilities exist", () => {
+  it("S: membership and warranty reads are not current capability defaults", () => {
     const s8 = createDefaultSection8();
-    assert.ok(s8.authorizedCapabilities.includes("view_membership_status"));
-    assert.ok(s8.authorizedCapabilities.includes("view_warranty_info"));
+    assert.equal(s8.authorizedCapabilities.includes("view_membership_status"), false);
+    assert.equal(s8.authorizedCapabilities.includes("view_warranty_info"), false);
   });
 
   it("T: Q110 self authorized", () => {
@@ -259,9 +256,10 @@ describe("Section 8 validation", () => {
   });
 
   it("X: Q112 each standard fallback", () => {
-    for (const mode of ["collect_and_send", "callback", "connect_team"] as const) {
+    for (const mode of ["collect_and_send", "connect_team", "custom"] as const) {
       const { section8, systems } = fullyValidSection8();
       section8.failureFallback = mode;
+      if (mode === "custom") section8.failureFallbackCustom = "Email the dispatcher.";
       assert.equal(section8IsValid(section8, systems), true);
     }
   });
@@ -395,8 +393,7 @@ describe("Global review and submission", () => {
 
   it("AS: fresh draft hasDraftContent false", () => {
     assert.equal(hasDraftContent(createDefaultDraft()), false);
-    const caps = createDefaultAuthorizedCapabilities();
-    assert.equal(caps.length, ALL_INTEGRATION_CAPABILITY_IDS.length - 1);
+    assert.deepEqual(createDefaultAuthorizedCapabilities(), []);
   });
 
   it("AT: full normalizer contains integration profile", () => {
@@ -410,11 +407,7 @@ describe("Global review and submission", () => {
   it("AU: Q109 view warranty does not create warranty operational policy", () => {
     const { section8, systems } = fullyValidSection8();
     const norm = normalizeOnboardingDraft(mergeWithDefaults({ section8, systems }));
-    assert.ok(
-      norm.integration_profile.authorized_capabilities.some((c) =>
-        c.includes("warranty"),
-      ),
-    );
+    assert.deepEqual(norm.integration_profile.authorized_capabilities, []);
     assert.equal((norm as { warranty_policy?: unknown }).warranty_policy, undefined);
   });
 });

@@ -1,29 +1,24 @@
 import { isValidE164, PHONE_INVALID_MESSAGE } from "../phone";
 import {
   ADDITIONAL_SOFTWARE_CATEGORIES,
-  ALL_INTEGRATION_CAPABILITY_IDS,
-  type IntegrationCapabilityId,
+  CONNECTION_OWNER_OPTIONS,
+  FAILURE_FALLBACK_OPTIONS,
 } from "../section8Catalog";
 import {
   crmAllowsSchedulingSameAs,
   resolveCrmSoftware,
-  resolveDispatchSoftware,
   resolveSchedulingSoftware,
-  schedulingAllowsDispatchSameAs,
 } from "../softwareRegistry";
 import type { OnboardingDraft, Section8Data, SoftwareRecord } from "../types";
 
 export type FieldErrors = Partial<Record<string, string>>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const OWNER_IDS = new Set<string>(CONNECTION_OWNER_OPTIONS.map((option) => option.id));
+const FAILURE_IDS = new Set<string>(FAILURE_FALLBACK_OPTIONS.map((option) => option.id));
 
 function meaningfulText(value: string): boolean {
   return value.trim().length >= 2;
-}
-
-function capabilitySetValid(caps: IntegrationCapabilityId[]): boolean {
-  if (caps.length === 0) return false;
-  return caps.every((c) => ALL_INTEGRATION_CAPABILITY_IDS.includes(c));
 }
 
 export function validateSection8(
@@ -61,25 +56,6 @@ export function validateSection8(
     errors.schedulingProvider = "Scheduling system could not be resolved.";
   }
 
-  if (!data.dispatchProvider) {
-    errors.dispatchProvider = "Select where technician schedules or dispatch are managed.";
-  } else if (data.dispatchProvider === "same_as_scheduling") {
-    if (!schedulingAllowsDispatchSameAs(data, systems)) {
-      errors.dispatchProvider =
-        "Same system selected above is not available without a resolved scheduling system.";
-    } else if (!resolveDispatchSoftware(data, systems)) {
-      errors.dispatchProvider = "Could not resolve the scheduling system above.";
-    }
-  } else if (data.dispatchProvider === "custom") {
-    if (!meaningfulText(data.dispatchCustomName)) {
-      errors.dispatchCustomName = "Enter the dispatch system name.";
-    } else if (!resolveDispatchSoftware(data, systems)) {
-      errors.dispatchProvider = "Dispatch system could not be resolved.";
-    }
-  } else if (data.dispatchProvider !== "none" && !resolveDispatchSoftware(data, systems)) {
-    errors.dispatchProvider = "Dispatch system could not be resolved.";
-  }
-
   if (!data.phoneProvider) {
     errors.phoneProvider = "Select your business phone system.";
   } else if (data.phoneProvider === "custom") {
@@ -115,15 +91,8 @@ export function validateSection8(
     }
   }
 
-  if (!capabilitySetValid(data.authorizedCapabilities)) {
-    errors.authorizedCapabilities = "Select at least one authorized capability.";
-  }
-  if (data.authorizedCapabilities.includes("other") && !meaningfulText(data.authorizedCapabilityOther)) {
-    errors.authorizedCapabilityOther = "Describe the other capability.";
-  }
-
-  if (!data.connectionOwnerMode) {
-    errors.connectionOwnerMode = "Select whether you are authorized for these systems.";
+  if (!data.connectionOwnerMode || !OWNER_IDS.has(data.connectionOwnerMode)) {
+    errors.connectionOwnerMode = "Select who can authorize Alexander to connect to these systems.";
   } else if (data.connectionOwnerMode === "someone_else") {
     if (!meaningfulText(data.connectionOwnerName)) {
       errors.connectionOwnerName = "Enter the connection owner’s name.";
@@ -133,9 +102,7 @@ export function validateSection8(
     } else if (!EMAIL_PATTERN.test(data.connectionOwnerEmail.trim())) {
       errors.connectionOwnerEmail = "Enter a valid email address.";
     }
-    if (!data.connectionOwnerPhone.trim()) {
-      errors.connectionOwnerPhone = "Enter a phone number.";
-    } else if (!isValidE164(data.connectionOwnerPhone.trim())) {
+    if (data.connectionOwnerPhone.trim() && !isValidE164(data.connectionOwnerPhone.trim())) {
       errors.connectionOwnerPhone = PHONE_INVALID_MESSAGE;
     }
   }
@@ -144,10 +111,10 @@ export function validateSection8(
     errors.connectionNoticeAcknowledged = "Acknowledge the software connection notice to continue.";
   }
 
-  if (!data.failureFallback) {
-    errors.failureFallback = "Select a fallback when software access fails.";
+  if (!data.failureFallback || !FAILURE_IDS.has(data.failureFallback)) {
+    errors.failureFallback = "Select what Alexander should do when he can’t access a system.";
   } else if (data.failureFallback === "custom" && !data.failureFallbackCustom.trim()) {
-    errors.failureFallbackCustom = "Describe the fallback rule Alexander should follow.";
+    errors.failureFallbackCustom = "Tell us how you’d like Alexander to handle it.";
   }
 
   return errors;

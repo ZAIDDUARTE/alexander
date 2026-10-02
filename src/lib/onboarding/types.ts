@@ -41,7 +41,6 @@ import type {
   PhoneProvider,
   SchedulingProvider,
 } from "./section8Catalog";
-import { ALL_INTEGRATION_CAPABILITY_IDS } from "./section8Catalog";
 /**
  * Schema history:
  *  v1 -> v2: ServiceDaySchedule moved from two independent booleans
@@ -1404,12 +1403,9 @@ export type Section8Data = {
   finalOperatingNotes: string;
 };
 
-/**
- * MD “preselect all capabilities” = every concrete approved capability.
- * `other` is an extension affordance requiring custom text — not preselected.
- */
+/** Legacy capability checklist is not a current question. */
 export function createDefaultAuthorizedCapabilities(): IntegrationCapabilityId[] {
-  return ALL_INTEGRATION_CAPABILITY_IDS.filter((id) => id !== "other");
+  return [];
 }
 
 export function createDefaultSection8(): Section8Data {
@@ -1443,7 +1439,7 @@ export function createDefaultSection8(): Section8Data {
 
     connectionNoticeAcknowledged: false,
 
-    failureFallback: "",
+    failureFallback: "collect_and_send",
     failureFallbackCustom: "",
 
     finalOperatingNotes: "",

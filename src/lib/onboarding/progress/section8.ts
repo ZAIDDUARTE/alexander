@@ -15,12 +15,6 @@ function q105Complete(data: Section8Data): boolean {
   return true;
 }
 
-function q106Complete(data: Section8Data): boolean {
-  if (!data.dispatchProvider) return false;
-  if (data.dispatchProvider === "custom") return data.dispatchCustomName.trim().length >= 2;
-  return true;
-}
-
 function q107Complete(data: Section8Data): boolean {
   if (!data.phoneProvider) return false;
   if (data.phoneProvider === "custom") return data.phoneCustomName.trim().length >= 2;
@@ -38,31 +32,35 @@ function q108Complete(data: Section8Data): boolean {
   });
 }
 
-function q109Complete(data: Section8Data): boolean {
-  return data.authorizedCapabilities.length > 0;
+function q110Complete(data: Section8Data): boolean {
+  if (data.connectionOwnerMode !== "self_authorized" && data.connectionOwnerMode !== "someone_else") {
+    return false;
+  }
+  if (data.connectionOwnerMode !== "someone_else") return true;
+  return data.connectionOwnerName.trim().length >= 2 && data.connectionOwnerEmail.trim().length > 0;
 }
 
-function q110Complete(data: Section8Data): boolean {
-  if (!data.connectionOwnerMode) return false;
-  if (data.connectionOwnerMode !== "someone_else") return true;
-  return (
-    data.connectionOwnerName.trim().length >= 2 &&
-    data.connectionOwnerEmail.trim().length > 0 &&
-    data.connectionOwnerPhone.trim().length > 0
-  );
+function q112Complete(data: Section8Data): boolean {
+  if (
+    data.failureFallback !== "collect_and_send" &&
+    data.failureFallback !== "connect_team" &&
+    data.failureFallback !== "custom"
+  ) {
+    return false;
+  }
+  if (data.failureFallback === "custom") return data.failureFallbackCustom.trim().length > 0;
+  return true;
 }
 
 export function getSection8ProgressUnits(data: Section8Data): ProgressUnit[] {
   return [
     { id: "q104", applicable: true, complete: q104Complete(data) },
     { id: "q105", applicable: true, complete: q105Complete(data) },
-    { id: "q106", applicable: true, complete: q106Complete(data) },
     { id: "q107", applicable: true, complete: q107Complete(data) },
     { id: "q108", applicable: true, complete: q108Complete(data) },
-    { id: "q109", applicable: true, complete: q109Complete(data) },
     { id: "q110", applicable: true, complete: q110Complete(data) },
     { id: "q111", applicable: true, complete: data.connectionNoticeAcknowledged },
-    { id: "q112", applicable: true, complete: Boolean(data.failureFallback) },
+    { id: "q112", applicable: true, complete: q112Complete(data) },
     { id: "q113", applicable: true, complete: true },
   ];
 }
