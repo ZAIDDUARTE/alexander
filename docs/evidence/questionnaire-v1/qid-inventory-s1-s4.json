@@ -1,0 +1,1469 @@
+{
+  "roots": 52,
+  "children": 23,
+  "lastRoot": "Q52",
+  "entries": [
+    {
+      "section": "S1",
+      "sectionName": "Your Company",
+      "evidence": "E-S1-01",
+      "title": "What name do your customers know your company by?",
+      "raw": "section1.customerFacingName",
+      "file": "Section1Form.tsx",
+      "type": "Short text",
+      "required": "Required",
+      "id": "Q1",
+      "kind": "root"
+    },
+    {
+      "section": "S1",
+      "sectionName": "Your Company",
+      "evidence": "E-S1-02",
+      "title": "What is your legal business name?",
+      "raw": "section1.legalName",
+      "file": "Section1Form.tsx",
+      "type": "Short text",
+      "required": "Optional",
+      "id": "Q2",
+      "kind": "root"
+    },
+    {
+      "section": "S1",
+      "sectionName": "Your Company",
+      "evidence": "E-S1-03",
+      "title": "What is your main business phone number?",
+      "raw": "section1.mainPhone",
+      "file": "Section1Form.tsx",
+      "type": "Phone number",
+      "required": "Required",
+      "id": "Q3",
+      "kind": "root"
+    },
+    {
+      "section": "S1",
+      "sectionName": "Your Company",
+      "evidence": "E-S1-04",
+      "title": "What is your website?",
+      "raw": "section1.website",
+      "file": "Section1Form.tsx",
+      "type": "URL",
+      "required": "Optional",
+      "id": "Q4",
+      "kind": "root"
+    },
+    {
+      "section": "S1",
+      "sectionName": "Your Company",
+      "evidence": "E-S1-05",
+      "title": "Which of these may Alexander tell customers?",
+      "raw": "section1.approvedClaims",
+      "file": "Section1Form.tsx",
+      "type": "Multi-select / checkboxes",
+      "required": "Required",
+      "notes": "Exact option labels from APPROVED_CLAIM_OPTIONS in Section1Form / catalog",
+      "id": "Q5",
+      "kind": "root"
+    },
+    {
+      "section": "S1",
+      "sectionName": "Your Company",
+      "title": "What other credential or trust claim may Alexander tell customers?",
+      "raw": "section1.otherApprovedClaim",
+      "file": "Section1Form.tsx",
+      "type": "Short text",
+      "required": "Required when displayed",
+      "condition": "Q5 includes other",
+      "id": "Q5A",
+      "parent": "Q5",
+      "kind": "child"
+    },
+    {
+      "section": "S1",
+      "sectionName": "Your Company",
+      "evidence": "E-S1-06",
+      "title": "Are there any license numbers or credential details Alexander may give customers?",
+      "raw": "section1.licensingDetails",
+      "file": "Section1Form.tsx",
+      "type": "Long/open text",
+      "required": "Optional",
+      "id": "Q6",
+      "kind": "root"
+    },
+    {
+      "section": "S1",
+      "sectionName": "Your Company",
+      "evidence": "E-S1-07",
+      "title": "Is there anything Alexander should never claim about your company?",
+      "raw": "section1.forbiddenClaims",
+      "file": "Section1Form.tsx",
+      "type": "Long/open text",
+      "required": "Optional",
+      "id": "Q7",
+      "kind": "root"
+    },
+    {
+      "section": "S1",
+      "sectionName": "Your Company",
+      "evidence": "E-S1-08",
+      "title": "What are your normal office hours?",
+      "raw": "section1.officeHours",
+      "file": "Section1Form.tsx",
+      "type": "Weekly schedule",
+      "required": "Required",
+      "id": "Q8",
+      "kind": "root"
+    },
+    {
+      "section": "S1",
+      "sectionName": "Your Company",
+      "evidence": "E-S1-09",
+      "title": "When are service appointments normally available?",
+      "raw": "section1.serviceHours",
+      "file": "Section1Form.tsx",
+      "type": "Weekly schedule",
+      "required": "Required",
+      "id": "Q9",
+      "kind": "root"
+    },
+    {
+      "section": "S1",
+      "sectionName": "Your Company",
+      "evidence": "E-S1-10",
+      "title": "When should Alexander answer your calls?",
+      "raw": "section1.answeringMode",
+      "file": "Section1Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q10",
+      "kind": "root"
+    },
+    {
+      "section": "S1",
+      "sectionName": "Your Company",
+      "title": "What hours should Alexander answer?",
+      "raw": "section1.answeringSchedule",
+      "file": "Section1Form.tsx",
+      "type": "Weekly schedule",
+      "required": "Required when displayed",
+      "condition": "Q10 = specific_hours",
+      "id": "Q10A",
+      "parent": "Q10",
+      "kind": "child"
+    },
+    {
+      "section": "S1",
+      "sectionName": "Your Company",
+      "evidence": "E-S1-11",
+      "title": "Is there any recurring availability rule Alexander should know?",
+      "raw": "section1.recurringAvailabilityNotes",
+      "file": "Section1Form.tsx",
+      "type": "Long/open text",
+      "required": "Optional",
+      "id": "Q11",
+      "kind": "root"
+    },
+    {
+      "section": "S2",
+      "sectionName": "Your Services",
+      "evidence": "E-S2-01",
+      "title": "Which plumbing services does your company provide?",
+      "raw": "section2.plumbingServices[serviceId].{policy,condition}",
+      "file": "Section2Form.tsx + ServicePolicy.tsx",
+      "type": "Matrix — single select per row",
+      "required": "Required",
+      "options": [
+        {
+          "id": "offered",
+          "label": "We offer this"
+        },
+        {
+          "id": "with_conditions",
+          "label": "With conditions"
+        },
+        {
+          "id": "ask_team",
+          "label": "Ask our team first"
+        },
+        {
+          "id": "not_offered",
+          "label": "We don’t offer this"
+        }
+      ],
+      "matrixRows": [
+        {
+          "id": "general-plumbing-repair",
+          "label": "General plumbing repair"
+        },
+        {
+          "id": "toilet-repair-replacement",
+          "label": "Toilet repair or replacement"
+        },
+        {
+          "id": "faucet-sink-repair",
+          "label": "Faucet or sink repair"
+        },
+        {
+          "id": "garbage-disposal",
+          "label": "Garbage disposal"
+        },
+        {
+          "id": "shower-tub-repair",
+          "label": "Shower or tub repair"
+        },
+        {
+          "id": "water-heater-repair",
+          "label": "Water heater repair"
+        },
+        {
+          "id": "water-heater-replacement",
+          "label": "Water heater replacement"
+        },
+        {
+          "id": "tankless-water-heaters",
+          "label": "Tankless water heaters"
+        },
+        {
+          "id": "shutoff-main-valves",
+          "label": "Shutoff or main valves"
+        },
+        {
+          "id": "pressure-regulators",
+          "label": "Pressure regulators"
+        },
+        {
+          "id": "water-service-lines",
+          "label": "Water service lines"
+        },
+        {
+          "id": "frozen-pipes",
+          "label": "Frozen pipes"
+        },
+        {
+          "id": "slab-leaks",
+          "label": "Slab leaks"
+        },
+        {
+          "id": "repiping",
+          "label": "Repiping"
+        },
+        {
+          "id": "fixture-installation",
+          "label": "Fixture installation"
+        },
+        {
+          "id": "appliance-plumbing-connections",
+          "label": "Appliance plumbing connections"
+        },
+        {
+          "id": "gas-line-plumbing-non-emergency",
+          "label": "Gas-line plumbing (non-emergency)"
+        },
+        {
+          "id": "excavation",
+          "label": "Excavation"
+        },
+        {
+          "id": "trenchless-sewer-service-line-work",
+          "label": "Trenchless sewer/service-line work"
+        },
+        {
+          "id": "water-filtration-softening-ro",
+          "label": "Water filtration / softening / reverse osmosis"
+        },
+        {
+          "id": "remodel-project-work",
+          "label": "Remodel or project plumbing"
+        },
+        {
+          "id": "other-specialty-plumbing",
+          "label": "Specialty plumbing"
+        }
+      ],
+      "notes": "Per-row condition when with_conditions is an item field, not a separate Q-ID",
+      "id": "Q12",
+      "kind": "root"
+    },
+    {
+      "section": "S2",
+      "sectionName": "Your Services",
+      "evidence": "E-S2-02",
+      "title": "Which of these services does your company provide?",
+      "raw": "section2.diagnosticServices[serviceId].{policy,condition}",
+      "file": "Section2Form.tsx + ServicePolicy.tsx",
+      "type": "Matrix — single select per row",
+      "required": "Required",
+      "options": [
+        {
+          "id": "offered",
+          "label": "We offer this"
+        },
+        {
+          "id": "with_conditions",
+          "label": "With conditions"
+        },
+        {
+          "id": "ask_team",
+          "label": "Ask our team first"
+        },
+        {
+          "id": "not_offered",
+          "label": "We don’t offer this"
+        }
+      ],
+      "matrixRows": [
+        {
+          "id": "general-diagnostic-service-visits",
+          "label": "General diagnostic/service visit"
+        },
+        {
+          "id": "plumbing-inspections",
+          "label": "Plumbing inspection"
+        },
+        {
+          "id": "leak-detection",
+          "label": "Leak detection"
+        },
+        {
+          "id": "drain-cleaning",
+          "label": "Drain cleaning"
+        },
+        {
+          "id": "sewer-drain-camera-inspections",
+          "label": "Sewer/drain camera inspection"
+        },
+        {
+          "id": "hydro-jetting-advanced-drain-cleaning",
+          "label": "Hydro-jetting"
+        }
+      ],
+      "id": "Q13",
+      "kind": "root"
+    },
+    {
+      "section": "S2",
+      "sectionName": "Your Services",
+      "evidence": "E-S2-03",
+      "title": "Who does your company serve?",
+      "raw": "section2.customerPropertyTypes[typeId].{policy,condition}",
+      "file": "Section2Form.tsx + ServicePolicy.tsx",
+      "type": "Matrix — single select per row",
+      "required": "Required",
+      "options": [
+        {
+          "id": "offered",
+          "label": "We offer this"
+        },
+        {
+          "id": "with_conditions",
+          "label": "With conditions"
+        },
+        {
+          "id": "ask_team",
+          "label": "Ask our team first"
+        },
+        {
+          "id": "not_offered",
+          "label": "We don’t offer this"
+        }
+      ],
+      "matrixRows": [
+        {
+          "id": "homeowners",
+          "label": "Homeowners"
+        },
+        {
+          "id": "tenants",
+          "label": "Tenants"
+        },
+        {
+          "id": "landlords-property-managers",
+          "label": "Landlords / property managers"
+        },
+        {
+          "id": "single-family-homes",
+          "label": "Single-family homes"
+        },
+        {
+          "id": "condos-hoas",
+          "label": "Condos / HOAs"
+        },
+        {
+          "id": "multifamily-properties",
+          "label": "Multifamily properties"
+        },
+        {
+          "id": "commercial-properties",
+          "label": "Commercial properties"
+        },
+        {
+          "id": "real-estate-inspection-transaction-work",
+          "label": "Real-estate inspection / transaction work"
+        },
+        {
+          "id": "insurance-related-work",
+          "label": "Insurance-related work"
+        }
+      ],
+      "id": "Q14",
+      "kind": "root"
+    },
+    {
+      "section": "S2",
+      "sectionName": "Your Services",
+      "evidence": "E-S2-04",
+      "title": "Will you install or work with items supplied by the customer?",
+      "raw": "section2.customerSuppliedMaterialsPolicy",
+      "file": "Section2Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "options": [
+        {
+          "id": "offered",
+          "label": "We offer this"
+        },
+        {
+          "id": "with_conditions",
+          "label": "With conditions"
+        },
+        {
+          "id": "ask_team",
+          "label": "Ask our team first"
+        },
+        {
+          "id": "not_offered",
+          "label": "We don’t offer this"
+        }
+      ],
+      "id": "Q15",
+      "kind": "root"
+    },
+    {
+      "section": "S2",
+      "sectionName": "Your Services",
+      "title": "What are the conditions?",
+      "raw": "section2.customerSuppliedMaterialsCondition",
+      "file": "Section2Form.tsx",
+      "type": "Long/open text",
+      "required": "Required when displayed",
+      "condition": "Q15 = with_conditions",
+      "id": "Q15A",
+      "parent": "Q15",
+      "kind": "child"
+    },
+    {
+      "section": "S2",
+      "sectionName": "Your Services",
+      "evidence": "E-S2-05",
+      "title": "Will you repair or finish work another plumber started?",
+      "raw": "section2.correctiveWorkPolicy",
+      "file": "Section2Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "options": [
+        {
+          "id": "offered",
+          "label": "We offer this"
+        },
+        {
+          "id": "with_conditions",
+          "label": "With conditions"
+        },
+        {
+          "id": "ask_team",
+          "label": "Ask our team first"
+        },
+        {
+          "id": "not_offered",
+          "label": "We don’t offer this"
+        }
+      ],
+      "id": "Q16",
+      "kind": "root"
+    },
+    {
+      "section": "S2",
+      "sectionName": "Your Services",
+      "title": "What are the conditions?",
+      "raw": "section2.correctiveWorkCondition",
+      "file": "Section2Form.tsx",
+      "type": "Long/open text",
+      "required": "Required when displayed",
+      "condition": "Q16 = with_conditions",
+      "id": "Q16A",
+      "parent": "Q16",
+      "kind": "child"
+    },
+    {
+      "section": "S2",
+      "sectionName": "Your Services",
+      "evidence": "E-S2-06",
+      "title": "How would you like to define your normal service area?",
+      "raw": "section2.serviceAreaDefinitionMode + active geo branch fields",
+      "file": "Section2Form.tsx",
+      "type": "Single select + composite structured input",
+      "required": "Required",
+      "id": "Q17",
+      "kind": "root"
+    },
+    {
+      "section": "S2",
+      "sectionName": "Your Services",
+      "evidence": "E-S2-07",
+      "title": "Are there any areas inside or near your service area that you do not serve?",
+      "raw": "section2 excluded-area fields",
+      "file": "Section2Form.tsx",
+      "type": "Composite structured input",
+      "required": "Optional",
+      "id": "Q18",
+      "kind": "root"
+    },
+    {
+      "section": "S2",
+      "sectionName": "Your Services",
+      "evidence": "E-S2-08",
+      "title": "Are there areas you serve only under certain conditions?",
+      "raw": "section2.hasConditionalTerritory",
+      "file": "Section2Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "options": [
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        }
+      ],
+      "id": "Q19",
+      "kind": "root"
+    },
+    {
+      "section": "S2",
+      "sectionName": "Your Services",
+      "title": "Conditional territory details",
+      "raw": "section2.conditionalTerritories[]",
+      "file": "Section2Form.tsx",
+      "type": "Repeatable structured rows",
+      "required": "Required when displayed",
+      "condition": "Q19 = yes",
+      "id": "Q19A",
+      "parent": "Q19",
+      "kind": "child"
+    },
+    {
+      "section": "S2",
+      "sectionName": "Your Services",
+      "evidence": "E-S2-09",
+      "title": "Is your after-hours service area different?",
+      "raw": "section2.afterHoursAreaMode + after-hours geo",
+      "file": "Section2Form.tsx",
+      "type": "Single select + composite structured input",
+      "required": "Required",
+      "id": "Q20",
+      "kind": "root"
+    },
+    {
+      "section": "S3",
+      "sectionName": "Emergencies",
+      "evidence": "E-S3-01",
+      "title": "How should Alexander treat each of these situations?",
+      "raw": "section3.emergencyClassifications[scenarioId]",
+      "file": "EmergencyClassification.tsx",
+      "type": "Matrix — single select per row",
+      "required": "Required",
+      "options": [
+        {
+          "id": "emergency",
+          "label": "Emergency"
+        },
+        {
+          "id": "urgent",
+          "label": "Urgent, not emergency"
+        },
+        {
+          "id": "routine",
+          "label": "Routine"
+        },
+        {
+          "id": "human_review",
+          "label": "Human review required"
+        }
+      ],
+      "matrixRows": [
+        {
+          "id": "uncontrolled-water-leak-inside-property",
+          "label": "Uncontrolled water leaking inside the property",
+          "default": "emergency"
+        },
+        {
+          "id": "water-leak-near-electrical-equipment",
+          "label": "Water leaking near electrical equipment",
+          "default": "emergency"
+        },
+        {
+          "id": "suspected-gas-leak-or-odor",
+          "label": "Suspected gas leak or gas odor",
+          "default": "emergency"
+        },
+        {
+          "id": "sewage-entering-property",
+          "label": "Sewage actively entering the property",
+          "default": "emergency"
+        },
+        {
+          "id": "multiple-fixtures-backing-up",
+          "label": "Multiple fixtures backing up at the same time",
+          "default": "urgent"
+        },
+        {
+          "id": "toilet-overflowing-uncontrolled",
+          "label": "Toilet overflowing and the customer cannot stop it",
+          "default": "emergency"
+        },
+        {
+          "id": "only-usable-toilet-not-working",
+          "label": "The property's only usable toilet is not working",
+          "default": "urgent"
+        },
+        {
+          "id": "major-water-heater-leak-or-rupture",
+          "label": "Major water-heater leak or rupture",
+          "default": "emergency"
+        },
+        {
+          "id": "dangerous-water-heater-symptoms",
+          "label": "Potentially dangerous water-heater symptoms",
+          "default": "emergency"
+        },
+        {
+          "id": "sump-pump-failure-flooding",
+          "label": "Sump-pump failure with active or imminent flooding",
+          "default": "emergency"
+        },
+        {
+          "id": "frozen-pipe-confirmed-leak",
+          "label": "Frozen pipe with a confirmed leak",
+          "default": "emergency"
+        },
+        {
+          "id": "complete-loss-of-water",
+          "label": "Complete loss of water to the property",
+          "default": "urgent"
+        },
+        {
+          "id": "major-water-service-line-leak",
+          "label": "Major water-service-line leak",
+          "default": "emergency"
+        },
+        {
+          "id": "serious-standing-water-unknown-source",
+          "label": "Serious standing water from an unknown source",
+          "default": "emergency"
+        },
+        {
+          "id": "unclear-situation-may-be-dangerous",
+          "label": "An unclear situation that may be dangerous",
+          "default": "human_review"
+        }
+      ],
+      "defaultValue": "Per-row EMERGENCY_ROW_DEFAULTS",
+      "id": "Q21",
+      "kind": "root"
+    },
+    {
+      "section": "S3",
+      "sectionName": "Emergencies",
+      "evidence": "E-S3-02",
+      "title": "Are there any emergencies where Alexander must get human approval before arranging emergency dispatch?",
+      "raw": "section3.dispatchApproval (+ dispatchApprovalOtherDetail)",
+      "file": "Section3Form.tsx",
+      "type": "Multi-select / checkboxes",
+      "required": "Required",
+      "id": "Q22",
+      "kind": "root"
+    },
+    {
+      "section": "S3",
+      "sectionName": "Emergencies",
+      "evidence": "E-S3-03",
+      "title": "What should Alexander do with calls that come in after hours?",
+      "raw": "section3.afterHoursDisposition.{emergency,urgent_contained,routine}",
+      "file": "AfterHoursDispositionMatrix.tsx",
+      "type": "Matrix — single select per row",
+      "required": "Required",
+      "options": [
+        {
+          "id": "contact_on_call",
+          "label": "Contact our on-call team"
+        },
+        {
+          "id": "schedule_service",
+          "label": "Schedule service"
+        },
+        {
+          "id": "take_message",
+          "label": "Take a message for follow-up"
+        }
+      ],
+      "matrixRows": [
+        {
+          "id": "emergency",
+          "label": "Emergency",
+          "default": "contact_on_call"
+        },
+        {
+          "id": "urgent_contained",
+          "label": "Urgent, but not an emergency",
+          "default": "schedule_service"
+        },
+        {
+          "id": "routine",
+          "label": "Routine / non-urgent",
+          "default": "schedule_service"
+        }
+      ],
+      "defaultValue": "emergency→contact_on_call; urgent_contained→schedule_service; routine→schedule_service",
+      "id": "Q23",
+      "kind": "root"
+    },
+    {
+      "section": "S3",
+      "sectionName": "Emergencies",
+      "evidence": "E-S3-04",
+      "title": "When is after-hours emergency field service available?",
+      "raw": "section3.emergencyServiceMode",
+      "file": "Section3Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q24",
+      "kind": "root"
+    },
+    {
+      "section": "S3",
+      "sectionName": "Emergencies",
+      "evidence": "E-S3-05",
+      "title": "Who should Alexander contact first?",
+      "raw": "section3.primaryContactId → contacts[]",
+      "file": "Section3Form.tsx",
+      "type": "Contact selector / contact editor",
+      "required": "Required",
+      "id": "Q25",
+      "kind": "root"
+    },
+    {
+      "section": "S3",
+      "sectionName": "Emergencies",
+      "evidence": "E-S3-06",
+      "title": "Is there a backup person Alexander should contact?",
+      "raw": "section3.hasBackupContact",
+      "file": "Section3Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "options": [
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        }
+      ],
+      "id": "Q26",
+      "kind": "root"
+    },
+    {
+      "section": "S3",
+      "sectionName": "Emergencies",
+      "title": "Backup contact",
+      "raw": "section3.backupContactId → contacts[]",
+      "file": "Section3Form.tsx",
+      "type": "Contact selector / contact editor",
+      "required": "Required when displayed",
+      "condition": "Q26 = yes",
+      "id": "Q26A",
+      "parent": "Q26",
+      "kind": "child"
+    },
+    {
+      "section": "S3",
+      "sectionName": "Emergencies",
+      "evidence": "E-S3-07",
+      "title": "What should Alexander do if nobody on your team answers?",
+      "raw": "section3.nobodyRespondsFallback",
+      "file": "Section3Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q27",
+      "kind": "root"
+    },
+    {
+      "section": "S3",
+      "sectionName": "Emergencies",
+      "title": "Custom nobody-responds rule",
+      "raw": "section3.nobodyRespondsCustom",
+      "file": "Section3Form.tsx",
+      "type": "Long/open text",
+      "required": "Required when displayed",
+      "condition": "Q27 = custom",
+      "id": "Q27A",
+      "parent": "Q27",
+      "kind": "child"
+    },
+    {
+      "section": "S3",
+      "sectionName": "Emergencies",
+      "evidence": "E-S3-08",
+      "title": "How should Alexander retry an unanswered contact?",
+      "raw": "section3.retryPolicy",
+      "file": "Section3Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q28",
+      "kind": "root"
+    },
+    {
+      "section": "S3",
+      "sectionName": "Emergencies",
+      "title": "Custom retry rule",
+      "raw": "section3.retryCustom",
+      "file": "Section3Form.tsx",
+      "type": "Long/open text",
+      "required": "Required when displayed",
+      "condition": "Q28 = custom",
+      "id": "Q28A",
+      "parent": "Q28",
+      "kind": "child"
+    },
+    {
+      "section": "S3",
+      "sectionName": "Emergencies",
+      "evidence": "E-S3-09",
+      "title": "What should Alexander do if an emergency comes in and your schedule is already full?",
+      "raw": "section3.capacityMode",
+      "file": "Section3Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q29",
+      "kind": "root"
+    },
+    {
+      "section": "S3",
+      "sectionName": "Emergencies",
+      "title": "Capacity-mode branch details",
+      "raw": "section3.reservedCapacityNotes | emergencyOverrideNotes | capacityApproverContactId",
+      "file": "Section3Form.tsx",
+      "type": "Composite structured input",
+      "required": "Required when displayed",
+      "condition": "Q29 selects a branch that reveals notes/approver fields",
+      "id": "Q29A",
+      "parent": "Q29",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-01",
+      "title": "What should Alexander do if a caller asks to speak with a person?",
+      "raw": "section4.humanRequestPolicy (+ humanRequestCustomRule)",
+      "file": "Section4Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q30",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "title": "Custom human-request rule",
+      "raw": "section4.humanRequestCustomRule",
+      "file": "Section4Form.tsx",
+      "type": "Long/open text",
+      "required": "Required when displayed",
+      "condition": "Q30 = custom",
+      "id": "Q30A",
+      "parent": "Q30",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-02",
+      "title": "What should Alexander do if a caller doesn’t want to speak with AI?",
+      "raw": "section4.aiRefusalPolicy (+ aiRefusalCustomRule)",
+      "file": "Section4Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q31",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "title": "Custom AI-refusal rule",
+      "raw": "section4.aiRefusalCustomRule",
+      "file": "Section4Form.tsx",
+      "type": "Long/open text",
+      "required": "Required when displayed",
+      "condition": "Q31 = custom",
+      "id": "Q31A",
+      "parent": "Q31",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-03",
+      "title": "Who can approve these types of exceptions?",
+      "raw": "section4.exceptionAuthority[exceptionTypeId]",
+      "file": "ExceptionAuthorityMatrix.tsx",
+      "type": "Matrix — single select per row",
+      "required": "Required",
+      "matrixRows": [
+        {
+          "id": "scheduling",
+          "label": "Scheduling exception"
+        },
+        {
+          "id": "service_area",
+          "label": "Service-area exception"
+        },
+        {
+          "id": "fee_or_price",
+          "label": "Fee or price exception"
+        },
+        {
+          "id": "discount_or_promotion",
+          "label": "Discount or promotion exception"
+        },
+        {
+          "id": "refund_credit_goodwill",
+          "label": "Refund, credit or goodwill exception"
+        },
+        {
+          "id": "callback_previous_work",
+          "label": "Warranty or callback exception"
+        },
+        {
+          "id": "other",
+          "label": "Other exception"
+        }
+      ],
+      "id": "Q32",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-04",
+      "title": "What should Alexander do if the person who must approve an exception isn’t available?",
+      "raw": "section4.approverUnavailablePolicy",
+      "file": "Section4Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q33",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "title": "Other approver-unavailable rule",
+      "raw": "section4.approverUnavailableOther",
+      "file": "Section4Form.tsx",
+      "type": "Long/open text",
+      "required": "Required when displayed",
+      "condition": "Q33 = other",
+      "id": "Q33A",
+      "parent": "Q33",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-05",
+      "title": "What can different types of callers authorize?",
+      "raw": "section4.callerPermissions[callerTypeId]",
+      "file": "CallerAuthorizationMatrix.tsx",
+      "type": "Matrix — single select per row",
+      "required": "Required",
+      "options": [
+        {
+          "id": "schedule_only",
+          "label": "Schedule only"
+        },
+        {
+          "id": "schedule_diagnostic",
+          "label": "Schedule + diagnostic fee"
+        },
+        {
+          "id": "full_authorization",
+          "label": "Full authorization"
+        },
+        {
+          "id": "human_approval_required",
+          "label": "Human approval required"
+        }
+      ],
+      "matrixRows": [
+        {
+          "id": "homeowner",
+          "label": "Homeowner",
+          "default": "full_authorization"
+        },
+        {
+          "id": "tenant",
+          "label": "Tenant",
+          "default": "schedule_only"
+        },
+        {
+          "id": "landlord_property_manager",
+          "label": "Landlord / property manager",
+          "default": "full_authorization"
+        },
+        {
+          "id": "spouse_family",
+          "label": "Spouse / family member",
+          "default": "full_authorization"
+        },
+        {
+          "id": "remote_family",
+          "label": "Remote family member",
+          "default": "full_authorization"
+        },
+        {
+          "id": "realtor_buyer_seller",
+          "label": "Realtor",
+          "default": "schedule_only"
+        },
+        {
+          "id": "other_third_party",
+          "label": "Other third party",
+          "default": "human_approval_required"
+        }
+      ],
+      "defaultValue": "CALLER_AUTHORITY_DEFAULTS per caller type",
+      "id": "Q34",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-06",
+      "title": "Are there spending limits for any of these callers?",
+      "raw": "section4.hasSpendingLimits",
+      "file": "Section4Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "options": [
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        }
+      ],
+      "id": "Q35",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "title": "Spending limit rows",
+      "raw": "section4.spendingLimits[]",
+      "file": "Section4Form.tsx",
+      "type": "Repeatable structured rows",
+      "required": "Required when displayed",
+      "condition": "Q35 = yes",
+      "notes": "callerTypeId + maxAmount; generated row ids",
+      "id": "Q35A",
+      "parent": "Q35",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-07",
+      "title": "Do emergency situations change any of these authorization rules?",
+      "raw": "section4.emergencyAuthorizationMode",
+      "file": "Section4Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q36",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "title": "Emergency special authorization rules",
+      "raw": "section4.emergencyAuthorizationRules",
+      "file": "Section4Form.tsx",
+      "type": "Long/open text",
+      "required": "Required when displayed",
+      "condition": "Q36 = special_rules",
+      "id": "Q36A",
+      "parent": "Q36",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-08",
+      "title": "When an eligible customer wants service, what may Alexander normally do?",
+      "raw": "section4.defaultBookingMode",
+      "file": "Section4Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "options": [
+        {
+          "id": "book_appointment",
+          "label": "Book an available appointment"
+        },
+        {
+          "id": "send_to_team",
+          "label": "Send the request to our team"
+        }
+      ],
+      "defaultValue": "book_appointment",
+      "id": "Q37",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-09",
+      "title": "How far in advance may Alexander schedule appointments?",
+      "raw": "section4 booking-horizon fields",
+      "file": "Section4Form.tsx",
+      "type": "Composite structured input",
+      "required": "Required",
+      "id": "Q38",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-10",
+      "title": "What appointment windows do you offer?",
+      "raw": "section4.appointmentWindows[]",
+      "file": "AppointmentWindowEditor.tsx",
+      "type": "Repeatable structured rows",
+      "required": "Required",
+      "matrixRows": [
+        {
+          "id": "morning",
+          "label": "Morning"
+        },
+        {
+          "id": "late_morning",
+          "label": "Late morning"
+        },
+        {
+          "id": "early_afternoon",
+          "label": "Early afternoon"
+        },
+        {
+          "id": "afternoon",
+          "label": "Afternoon"
+        },
+        {
+          "id": "late_afternoon",
+          "label": "Late afternoon"
+        }
+      ],
+      "notes": "Template shells enabled by default; start/end empty until filled",
+      "id": "Q39",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-11",
+      "title": "When an appointment is successfully confirmed, what information may Alexander repeat to the customer?",
+      "raw": "section4.confirmationInfo[]",
+      "file": "Section4Form.tsx",
+      "type": "Multi-select / checkboxes",
+      "required": "Required",
+      "notes": "createDefaultConfirmationInfo preselects all catalog confirmation options",
+      "id": "Q40",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-12",
+      "title": "Do any types of jobs follow different booking rules?",
+      "raw": "section4.hasServiceBookingRules",
+      "file": "Section4Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q41",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "title": "Service booking rule rows",
+      "raw": "section4.serviceBookingRules[]",
+      "file": "Section4Form.tsx",
+      "type": "Repeatable structured rows",
+      "required": "Required when displayed",
+      "condition": "Q41 = yes",
+      "id": "Q41A",
+      "parent": "Q41",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-13",
+      "title": "When may Alexander offer these appointments?",
+      "raw": "section4.capacityPolicies.{same_day,holiday}.{policy,condition}",
+      "file": "Section4Form.tsx",
+      "type": "Matrix — single select per row",
+      "required": "Required",
+      "notes": "Rows same_day and holiday; with_conditions reveals condition placeholders",
+      "id": "Q42",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-14",
+      "title": "What may Alexander do when a customer wants to reschedule?",
+      "raw": "section4.rescheduleAuthority",
+      "file": "Section4Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q43",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "title": "Reschedule conditions",
+      "raw": "section4.rescheduleConditions",
+      "file": "Section4Form.tsx",
+      "type": "Long/open text",
+      "required": "Required when displayed",
+      "condition": "Q43 = conditional",
+      "id": "Q43A",
+      "parent": "Q43",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-15",
+      "title": "What may Alexander do when a customer wants to cancel?",
+      "raw": "section4.cancellationAuthority",
+      "file": "Section4Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q44",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "title": "Cancellation conditions",
+      "raw": "section4.cancellationConditions",
+      "file": "Section4Form.tsx",
+      "type": "Long/open text",
+      "required": "Required when displayed",
+      "condition": "Q44 = conditional",
+      "id": "Q44A",
+      "parent": "Q44",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-16",
+      "title": "Do you charge a late-cancellation fee?",
+      "raw": "section4.lateCancellationFeeMode (+ linked fee notice/when; NO amount in Scheduling)",
+      "file": "Section4Form.tsx",
+      "type": "Single select + composite structured input",
+      "required": "Required",
+      "id": "Q45",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "title": "Late-cancellation fee details (notice / when)",
+      "raw": "linked FeeRecord fields + late-cancellation when/notice",
+      "file": "Section4Form.tsx",
+      "type": "Composite structured input",
+      "required": "Required when displayed",
+      "condition": "Q45 = yes or conditional",
+      "id": "Q45A",
+      "parent": "Q45",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-17",
+      "title": "Do you charge a no-show fee?",
+      "raw": "section4.noShowFeeMode (+ linked fee when; NO amount in Scheduling)",
+      "file": "Section4Form.tsx",
+      "type": "Single select + composite structured input",
+      "required": "Required",
+      "id": "Q46",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "title": "No-show fee details (when)",
+      "raw": "linked FeeRecord + no-show when",
+      "file": "Section4Form.tsx",
+      "type": "Composite structured input",
+      "required": "Required when displayed",
+      "condition": "Q46 = yes or conditional",
+      "id": "Q46A",
+      "parent": "Q46",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-18",
+      "title": "Are there exceptions to your cancellation or no-show rules?",
+      "raw": "section4.cancellationNoShowExceptions",
+      "file": "Section4Form.tsx",
+      "type": "Long/open text",
+      "required": "Optional",
+      "id": "Q47",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-19",
+      "title": "What should Alexander do if the customer needs service but there are no appropriate appointments available?",
+      "raw": "section4.noAvailabilityFallbackOrder[]",
+      "file": "Section4Form.tsx + PriorityOrderList.tsx",
+      "type": "Ordered multi-select",
+      "required": "Required",
+      "id": "Q48",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-20",
+      "title": "May Alexander arrange a callback when no appointment is available?",
+      "raw": "section4.mayArrangeCallback",
+      "file": "Section4Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "options": [
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        }
+      ],
+      "id": "Q49",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-21",
+      "title": "What phone number should Alexander use for the callback?",
+      "raw": "section4.callbackNumberPolicy",
+      "file": "Section4Form.tsx",
+      "type": "Single select",
+      "required": "Required when displayed",
+      "condition": "Q49 = yes",
+      "id": "Q49A",
+      "parent": "Q49",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-22",
+      "title": "Who should receive or handle scheduling callbacks?",
+      "raw": "section4.callbackOwnerContactId → contacts[]",
+      "file": "Section4Form.tsx",
+      "type": "Contact selector / contact editor",
+      "required": "Required when displayed",
+      "condition": "Q49 = yes",
+      "id": "Q49B",
+      "parent": "Q49",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-23",
+      "title": "Are there any jobs that require a particular technician?",
+      "raw": "section4 technician-requirement fields",
+      "file": "Section4Form.tsx",
+      "type": "Single select + composite structured input",
+      "required": "Required",
+      "id": "Q50",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "title": "Technician requirement details",
+      "raw": "section4 technician requirement detail fields",
+      "file": "Section4Form.tsx",
+      "type": "Composite structured input",
+      "required": "Required when displayed",
+      "condition": "Q50 = yes (reveals detail panel)",
+      "id": "Q50A",
+      "parent": "Q50",
+      "kind": "child"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-24",
+      "title": "What should Alexander do if a customer asks for a specific technician?",
+      "raw": "section4.specificTechnicianPolicy",
+      "file": "Section4Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q51",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "evidence": "E-S4-25",
+      "title": "What should Alexander do when a customer has several plumbing issues?",
+      "raw": "section4.multiIssuePolicy",
+      "file": "Section4Form.tsx",
+      "type": "Single select",
+      "required": "Required",
+      "id": "Q52",
+      "kind": "root"
+    },
+    {
+      "section": "S4",
+      "sectionName": "Scheduling",
+      "title": "Multi-issue custom / branch details",
+      "raw": "section4 multi-issue conditional fields",
+      "file": "Section4Form.tsx",
+      "type": "Composite structured input",
+      "required": "Required when displayed",
+      "condition": "Q52 selects a branch that reveals extra fields",
+      "id": "Q52A",
+      "parent": "Q52",
+      "kind": "child"
+    }
+  ]
+}

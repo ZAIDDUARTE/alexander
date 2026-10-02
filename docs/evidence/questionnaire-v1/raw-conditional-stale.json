@@ -1,0 +1,1075 @@
+{
+  "schemaVersion": 10,
+  "updatedAt": "1970-01-01T00:00:00.000Z",
+  "currentRoute": "/onboarding",
+  "navigation": {
+    "stage": "welcome",
+    "sectionId": 1,
+    "completedSections": []
+  },
+  "section1": {
+    "customerFacingName": "Acme Plumbing",
+    "legalName": "Acme Plumbing LLC",
+    "mainPhone": "+14155552671",
+    "website": "",
+    "approvedClaims": [
+      "licensed",
+      "insured"
+    ],
+    "otherApprovedClaim": "",
+    "licensingDetails": "",
+    "forbiddenClaims": "",
+    "officeHours": {
+      "monday": {
+        "closed": false,
+        "start": "08:00",
+        "end": "17:00"
+      },
+      "tuesday": {
+        "closed": false,
+        "start": "08:00",
+        "end": "17:00"
+      },
+      "wednesday": {
+        "closed": false,
+        "start": "08:00",
+        "end": "17:00"
+      },
+      "thursday": {
+        "closed": false,
+        "start": "08:00",
+        "end": "17:00"
+      },
+      "friday": {
+        "closed": false,
+        "start": "08:00",
+        "end": "17:00"
+      },
+      "saturday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "sunday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      }
+    },
+    "serviceHours": {
+      "monday": {
+        "mode": "regular",
+        "start": "08:00",
+        "end": "18:00"
+      },
+      "tuesday": {
+        "mode": "regular",
+        "start": "08:00",
+        "end": "18:00"
+      },
+      "wednesday": {
+        "mode": "regular",
+        "start": "08:00",
+        "end": "18:00"
+      },
+      "thursday": {
+        "mode": "regular",
+        "start": "08:00",
+        "end": "18:00"
+      },
+      "friday": {
+        "mode": "regular",
+        "start": "08:00",
+        "end": "18:00"
+      },
+      "saturday": {
+        "mode": "regular",
+        "start": "08:00",
+        "end": "18:00"
+      },
+      "sunday": {
+        "mode": "no_service",
+        "start": null,
+        "end": null
+      }
+    },
+    "answeringMode": "24_7",
+    "answeringSchedule": {
+      "monday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "tuesday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "wednesday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "thursday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "friday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "saturday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "sunday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      }
+    },
+    "recurringAvailabilityNotes": ""
+  },
+  "section2": {
+    "plumbingServices": {
+      "general-plumbing-repair": {
+        "policy": "offered",
+        "condition": "STALE: only after photo approval — should not normalize"
+      },
+      "toilet-repair-replacement": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "faucet-sink-repair": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "garbage-disposal": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "shower-tub-repair": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "water-heater-repair": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "water-heater-replacement": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "tankless-water-heaters": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "shutoff-main-valves": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "pressure-regulators": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "water-service-lines": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "frozen-pipes": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "slab-leaks": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "repiping": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "fixture-installation": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "appliance-plumbing-connections": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "gas-line-plumbing-non-emergency": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "excavation": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "trenchless-sewer-service-line-work": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "water-filtration-softening-ro": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "remodel-project-work": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "other-specialty-plumbing": {
+        "policy": "offered",
+        "condition": ""
+      }
+    },
+    "diagnosticServices": {
+      "general-diagnostic-service-visits": {
+        "policy": "not_offered",
+        "condition": "STALE: diagnostic condition while not offered"
+      },
+      "plumbing-inspections": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "leak-detection": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "drain-cleaning": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "sewer-drain-camera-inspections": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "hydro-jetting-advanced-drain-cleaning": {
+        "policy": "offered",
+        "condition": ""
+      }
+    },
+    "customerPropertyTypes": {
+      "homeowners": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "tenants": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "landlords-property-managers": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "single-family-homes": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "condos-hoas": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "multifamily-properties": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "commercial-properties": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "real-estate-inspection-transaction-work": {
+        "policy": "offered",
+        "condition": ""
+      },
+      "insurance-related-work": {
+        "policy": "offered",
+        "condition": ""
+      }
+    },
+    "customerSuppliedMaterialsPolicy": "not_offered",
+    "customerSuppliedMaterialsCondition": "",
+    "correctiveWorkPolicy": "not_offered",
+    "correctiveWorkCondition": "",
+    "serviceAreaDefinitionMode": "cities",
+    "serviceAreaZipCodes": [],
+    "serviceAreaCities": [
+      "Rosamond"
+    ],
+    "serviceAreaDistance": {
+      "address": "",
+      "radiusMiles": ""
+    },
+    "excludedTerritory": "",
+    "hasConditionalTerritory": "no",
+    "conditionalTerritories": [],
+    "afterHoursAreaMode": "same",
+    "afterHoursServiceArea": "",
+    "afterHoursDefinitionMode": "",
+    "afterHoursZipCodes": [],
+    "afterHoursCities": [],
+    "afterHoursDistance": {
+      "address": "",
+      "radiusMiles": ""
+    }
+  },
+  "section3": {
+    "emergencyClassifications": {
+      "uncontrolled-water-leak-inside-property": "emergency",
+      "water-leak-near-electrical-equipment": "emergency",
+      "suspected-gas-leak-or-odor": "emergency",
+      "sewage-entering-property": "emergency",
+      "multiple-fixtures-backing-up": "emergency",
+      "toilet-overflowing-uncontrolled": "emergency",
+      "only-usable-toilet-not-working": "emergency",
+      "major-water-heater-leak-or-rupture": "emergency",
+      "dangerous-water-heater-symptoms": "emergency",
+      "sump-pump-failure-flooding": "emergency",
+      "frozen-pipe-confirmed-leak": "emergency",
+      "complete-loss-of-water": "emergency",
+      "major-water-service-line-leak": "emergency",
+      "serious-standing-water-unknown-source": "emergency",
+      "unclear-situation-may-be-dangerous": "emergency"
+    },
+    "dispatchApproval": [
+      "none"
+    ],
+    "dispatchApprovalOtherDetail": "",
+    "afterHoursDisposition": {
+      "emergency": "contact_on_call",
+      "urgent_contained": "schedule_service",
+      "routine": "take_message"
+    },
+    "emergencyServiceMode": "24_7",
+    "emergencyServiceSchedule": {
+      "monday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "tuesday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "wednesday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "thursday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "friday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "saturday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "sunday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      }
+    },
+    "primaryContactId": "contact-ro34iyjvmuqzreea",
+    "hasBackupContact": "no",
+    "backupContactId": "contact-ro34iyjvmuqzreea",
+    "nobodyRespondsFallback": "callback",
+    "nobodyRespondsCustomRule": "",
+    "retryRule": "move_immediately_to_next",
+    "retryCustomRule": "",
+    "capacityMode": "arrange_callback",
+    "reservedCapacityText": "",
+    "overrideConditionsText": "",
+    "approverContactId": "",
+    "reservedCapacityNotes": "STALE reserved notes",
+    "emergencyOverrideNotes": "STALE override notes"
+  },
+  "section4": {
+    "humanRequestPolicy": "connect_right_away",
+    "humanRequestCustomRule": "",
+    "aiRefusalPolicy": "connect_to_person",
+    "aiRefusalCustomRule": "",
+    "exceptionAuthority": {
+      "scheduling": "alexander",
+      "service_area": "alexander",
+      "fee_or_price": "alexander",
+      "discount_or_promotion": "alexander",
+      "refund_credit_goodwill": "alexander",
+      "callback_previous_work": "alexander",
+      "other": "alexander"
+    },
+    "exceptionApproverContactIds": {},
+    "approverUnavailablePolicy": "callback",
+    "approverUnavailableCustomRule": "",
+    "callerPermissions": {
+      "homeowner": "full_authorization",
+      "tenant": "schedule_only",
+      "landlord_property_manager": "full_authorization",
+      "spouse_family": "full_authorization",
+      "remote_family": "full_authorization",
+      "realtor_buyer_seller": "schedule_only",
+      "other_third_party": "human_approval_required"
+    },
+    "hasSpendingLimits": "no",
+    "spendingLimits": [
+      {
+        "id": "sl-stale",
+        "callerTypeId": "tenant",
+        "maxAmount": "500.00"
+      }
+    ],
+    "emergencyAuthMode": "same_rules",
+    "emergencyAuthSpecialRules": "",
+    "defaultBookingMode": "book_appointment",
+    "bookingHorizonDays": "30",
+    "bookingHorizonNoMaximum": false,
+    "appointmentWindows": [
+      {
+        "id": "morning",
+        "label": "Morning",
+        "start": "08:00",
+        "end": "10:00",
+        "enabled": true
+      },
+      {
+        "id": "late_morning",
+        "label": "Late morning",
+        "start": "",
+        "end": "",
+        "enabled": false
+      },
+      {
+        "id": "early_afternoon",
+        "label": "Early afternoon",
+        "start": "",
+        "end": "",
+        "enabled": false
+      },
+      {
+        "id": "afternoon",
+        "label": "Afternoon",
+        "start": "",
+        "end": "",
+        "enabled": false
+      },
+      {
+        "id": "late_afternoon",
+        "label": "Late afternoon",
+        "start": "",
+        "end": "",
+        "enabled": false
+      }
+    ],
+    "confirmationInfo": [
+      "appointment_date",
+      "appointment_time_or_window",
+      "requested_service",
+      "customer_name_and_address",
+      "callback_phone",
+      "email_address"
+    ],
+    "hasServiceBookingRules": "no",
+    "serviceBookingRules": [],
+    "capacityPolicies": {
+      "same_day": {
+        "policy": "allowed",
+        "condition": ""
+      },
+      "holiday": {
+        "policy": "allowed",
+        "condition": ""
+      }
+    },
+    "rescheduleAuthority": "direct",
+    "rescheduleCondition": "",
+    "cancellationAuthority": "direct",
+    "cancellationCondition": "",
+    "lateCancellationFeeMode": "no",
+    "lateCancellationFeeId": "",
+    "noShowFeeMode": "no",
+    "noShowFeeId": "",
+    "cancellationExceptions": "",
+    "noAvailabilityPriority": [
+      "offer_next_available",
+      "look_for_approved_window",
+      "add_to_callback_waitlist",
+      "ask_team_for_help"
+    ],
+    "mayArrangeCallback": "no",
+    "callbackNumberPolicy": "calling_from",
+    "callbackOwnerContactId": "contact-ro34iyjvmuqzreea",
+    "hasTechnicianAssignments": "no",
+    "technicianAssignments": [],
+    "specificTechnicianRequest": "book_if_confirmed_available",
+    "multiIssueMode": "one_appointment",
+    "separateIssueServiceIds": [],
+    "separateIssueOther": false,
+    "separateIssueOtherDetail": ""
+  },
+  "section5": {
+    "pricingModels": [
+      "flat_rate"
+    ],
+    "pricingModelOther": "",
+    "mayQuoteServicePrices": "not_allowed",
+    "servicePrices": [
+      {
+        "serviceId": "general-plumbing-repair",
+        "mode": "exact",
+        "exactAmount": "149.00",
+        "startingAtAmount": "",
+        "rangeMin": "",
+        "rangeMax": "",
+        "hourlyAmount": "",
+        "conditions": "STALE price conditions"
+      }
+    ],
+    "materialMarkupPolicy": "no",
+    "materialMarkupCustomerExplanation": "STALE markup explanation",
+    "unknownPriceBehavior": "technician_after_evaluation",
+    "unknownPriceCustomRule": "",
+    "additionalFeeSelection": [
+      "none"
+    ],
+    "additionalFeeDetails": {
+      "service_diagnostic": {
+        "amount": "",
+        "applicability": "",
+        "credit": "",
+        "creditWhen": ""
+      },
+      "after_hours": {
+        "amount": "",
+        "applicability": "",
+        "credit": "",
+        "creditWhen": ""
+      },
+      "travel": {
+        "amount": "",
+        "applicability": "",
+        "credit": "",
+        "creditWhen": ""
+      },
+      "cancellation": {
+        "amount": "",
+        "applicability": "",
+        "credit": "",
+        "creditWhen": ""
+      },
+      "no_show": {
+        "amount": "",
+        "applicability": "",
+        "credit": "",
+        "creditWhen": ""
+      },
+      "minimum_service": {
+        "amount": "",
+        "applicability": "",
+        "credit": "",
+        "creditWhen": ""
+      },
+      "estimate_consultation": {
+        "amount": "",
+        "applicability": "",
+        "credit": "",
+        "creditWhen": ""
+      },
+      "other": {
+        "amount": "",
+        "applicability": "",
+        "credit": "",
+        "creditWhen": ""
+      }
+    },
+    "noSeparateFees": false,
+    "hasAreaTravelOrMinimum": "no",
+    "areaPricingRows": [],
+    "visitTypeByServiceId": {
+      "general-plumbing-repair": "",
+      "toilet-repair-replacement": "",
+      "faucet-sink-repair": "",
+      "garbage-disposal": "",
+      "shower-tub-repair": "",
+      "water-heater-repair": "",
+      "water-heater-replacement": "",
+      "tankless-water-heaters": "",
+      "shutoff-main-valves": "",
+      "pressure-regulators": "",
+      "water-service-lines": "",
+      "frozen-pipes": "",
+      "slab-leaks": "",
+      "repiping": "",
+      "fixture-installation": "",
+      "appliance-plumbing-connections": "",
+      "gas-line-plumbing-non-emergency": "",
+      "excavation": "",
+      "trenchless-sewer-service-line-work": "",
+      "water-filtration-softening-ro": "",
+      "remodel-project-work": "",
+      "other-specialty-plumbing": "",
+      "general-diagnostic-service-visits": "",
+      "plumbing-inspections": "",
+      "leak-detection": "",
+      "drain-cleaning": "",
+      "sewer-drain-camera-inspections": "",
+      "hydro-jetting-advanced-drain-cleaning": ""
+    },
+    "paidDiagnosticExplanation": "",
+    "paidDiagnosticFeeId": "",
+    "generalPricingAuthority": "",
+    "servicePricingRules": {},
+    "forbiddenStatements": [
+      "no_guarantee_before_diagnosis",
+      "never_invent_price",
+      "no_promise_no_additional",
+      "no_disclose_markup",
+      "no_unauthorized_discount"
+    ],
+    "forbiddenStatementOther": "",
+    "hasPromotions": "",
+    "promotions": [],
+    "promotionStacking": "",
+    "promotionStackingRule": "",
+    "promotionModificationAuthority": "",
+    "promotionModificationRule": "",
+    "paymentMethods": [
+      "credit_card"
+    ],
+    "paymentMethodOther": "",
+    "paymentDuePolicies": [
+      "at_time_of_service"
+    ],
+    "paymentAssistance": "secure_link",
+    "paymentCollectionScope": [
+      "booking_or_service_fees",
+      "deposits",
+      "completed_invoices",
+      "outstanding_balances"
+    ],
+    "paymentCollectionOther": "",
+    "financialRemedies": [
+      "none"
+    ],
+    "depositWorkDetail": "",
+    "depositRule": "",
+    "progressPaymentProjectsDetail": "",
+    "progressPaymentRule": "",
+    "invoiceCustomersDetail": "",
+    "invoiceTerms": "",
+    "paymentDueOtherRule": "",
+    "offersFinancing": "",
+    "financingProviderTerms": "",
+    "financingPermissions": [],
+    "financingPermissionOtherDetail": "",
+    "financingEligibilityStatement": "",
+    "remedyAuthority": {
+      "refund": "",
+      "account_credit": "",
+      "fee_waiver": "",
+      "discount_goodwill": "",
+      "return_visit": ""
+    },
+    "remedyRules": {
+      "refund": "",
+      "account_credit": "",
+      "fee_waiver": "",
+      "discount_goodwill": "",
+      "return_visit": ""
+    },
+    "financialApproverContactId": ""
+  },
+  "section6": {
+    "previousWorkInitialAction": "schedule_return_visit",
+    "returnVisitEligibilityRule": "Within 30 days of original work when the issue matches the prior service.",
+    "previousWorkCustomRule": "",
+    "repeatCallbackAction": "human_review_after_first",
+    "escalationTriggers": [
+      "asks_manager",
+      "repair_not_solved",
+      "disputes_charge",
+      "refund_credit_request",
+      "property_damage",
+      "legal_threat",
+      "chargeback_threat",
+      "repeated_dissatisfaction"
+    ],
+    "escalationTriggerOther": "",
+    "forbiddenUnhappyPromises": [
+      "no_admit_fault",
+      "no_refund_unauthorized",
+      "no_free_work_unauthorized",
+      "no_compensation_unauthorized",
+      "no_specific_outcome"
+    ],
+    "forbiddenUnhappyPromiseOther": "",
+    "nonServiceCallPolicies": {
+      "vendor_supplier": {
+        "disposition": "take_message",
+        "contactId": ""
+      },
+      "sales_solicitation": {
+        "disposition": "take_message",
+        "contactId": ""
+      },
+      "job_applicant": {
+        "disposition": "take_message",
+        "contactId": ""
+      },
+      "current_employee": {
+        "disposition": "take_message",
+        "contactId": ""
+      },
+      "media_inquiry": {
+        "disposition": "send_specific",
+        "contactId": "contact-ro34iyjvmuqzreea"
+      },
+      "attorney_legal": {
+        "disposition": "take_message",
+        "contactId": ""
+      },
+      "government_regulator": {
+        "disposition": "take_message",
+        "contactId": ""
+      },
+      "wrong_number_spam": {
+        "disposition": "take_message",
+        "contactId": ""
+      }
+    },
+    "customerHistoryPolicy": "use_available_history",
+    "customerHistoryCustomRule": "",
+    "restrictedInformation": [
+      "payment_information",
+      "another_customer",
+      "sensitive_account"
+    ],
+    "restrictedInformationOther": "",
+    "additionalServicePolicy": "only_when_asked",
+    "additionalServiceCustomRule": "",
+    "unusualCallNotes": ""
+  },
+  "section7": {
+    "englishOnly": false,
+    "callerLanguages": [
+      "english",
+      "spanish"
+    ],
+    "otherSupportedLanguage": "",
+    "voiceSelection": "voice_a",
+    "anotherApprovedVoiceId": "",
+    "communicationStyle": "warm_professional",
+    "spokenNameMode": "alexander",
+    "spokenDisplayName": "",
+    "aiDisclosureStyle": "opening_ai_receptionist",
+    "aiDisclosureCustom": "",
+    "pronunciationMode": "none",
+    "pronunciationEntries": [],
+    "languageSwitchingPolicy": "ask_preference",
+    "languageSwitchingCustomRule": "",
+    "perceivedVoicePreference": "",
+    "accentPreference": "",
+    "accentOtherApproved": "",
+    "formalityPreference": "",
+    "brandPhrasesAndAvoidances": "",
+    "additionalReviewNotes": ""
+  },
+  "section8": {
+    "crmFsmProvider": "none",
+    "crmFsmCustomName": "STALE custom CRM name",
+    "crmFsmSoftwareId": "sw-2zbgxur6",
+    "schedulingProvider": "none",
+    "schedulingCustomName": "STALE scheduling name",
+    "schedulingSoftwareId": "",
+    "dispatchProvider": "",
+    "dispatchCustomName": "",
+    "dispatchSoftwareId": "",
+    "phoneProvider": "not_sure",
+    "phoneCustomName": "STALE phone name",
+    "phoneSoftwareId": "sw-lgzad33x",
+    "additionalSoftwareCategories": [
+      "none"
+    ],
+    "additionalSoftwareCards": [
+      {
+        "categoryId": "payment",
+        "softwareId": "",
+        "systemName": "STALE PaymentSoft",
+        "desiredAccess": "",
+        "otherCategoryLabel": "",
+        "otherDetails": "STALE other details"
+      }
+    ],
+    "authorizedCapabilities": [],
+    "authorizedCapabilityOther": "",
+    "connectionOwnerMode": "self_authorized",
+    "connectionOwnerName": "STALE Owner Name",
+    "connectionOwnerEmail": "stale-owner@example.com",
+    "connectionOwnerPhone": "+14155550199",
+    "connectionNoticeAcknowledged": true,
+    "failureFallback": "collect_and_send",
+    "failureFallbackCustom": "STALE custom failure rule",
+    "finalOperatingNotes": ""
+  },
+  "contacts": [
+    {
+      "id": "contact-ro34iyjvmuqzreea",
+      "nameOrRole": "Jamie Rivera, Dispatch Manager",
+      "phone": "+14155552671",
+      "availability": {
+        "monday": {
+          "closed": false,
+          "start": "08:00",
+          "end": "17:00"
+        },
+        "tuesday": {
+          "closed": false,
+          "start": "08:00",
+          "end": "17:00"
+        },
+        "wednesday": {
+          "closed": false,
+          "start": "08:00",
+          "end": "17:00"
+        },
+        "thursday": {
+          "closed": false,
+          "start": "08:00",
+          "end": "17:00"
+        },
+        "friday": {
+          "closed": false,
+          "start": "08:00",
+          "end": "17:00"
+        },
+        "saturday": {
+          "closed": true,
+          "start": null,
+          "end": null
+        },
+        "sunday": {
+          "closed": true,
+          "start": null,
+          "end": null
+        }
+      },
+      "callCategories": [
+        "emergencies"
+      ],
+      "otherCategory": ""
+    }
+  ],
+  "fees": [],
+  "systems": [
+    {
+      "id": "sw-2zbgxur6",
+      "role": "crm_fsm",
+      "providerKey": "servicetitan",
+      "displayName": "ServiceTitan",
+      "customName": null,
+      "desiredAccess": null
+    },
+    {
+      "id": "sw-lgzad33x",
+      "role": "phone",
+      "providerKey": "ringcentral",
+      "displayName": "RingCentral",
+      "customName": null,
+      "desiredAccess": null
+    }
+  ],
+  "submission": {
+    "status": "draft",
+    "submittedAt": null,
+    "lastSubmittedContentRevision": null,
+    "confirmations": {
+      "answersAccurate": true,
+      "capabilitiesDependOnIntegrations": true,
+      "actionsRequireSupportAuthorizationConfirmation": true
+    }
+  },
+  "stage2Migration": [
+    {
+      "path": "section5.legacyServicePricing.general-plumbing-repair",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.toilet-repair-replacement",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.faucet-sink-repair",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.garbage-disposal",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.shower-tub-repair",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.water-heater-repair",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.water-heater-replacement",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.tankless-water-heaters",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.shutoff-main-valves",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.pressure-regulators",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.water-service-lines",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.frozen-pipes",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.slab-leaks",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.repiping",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.fixture-installation",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.appliance-plumbing-connections",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.gas-line-plumbing-non-emergency",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.excavation",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.trenchless-sewer-service-line-work",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.water-filtration-softening-ro",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.remodel-project-work",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.other-specialty-plumbing",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.general-diagnostic-service-visits",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.plumbing-inspections",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.leak-detection",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.drain-cleaning",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.sewer-drain-camera-inspections",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.legacyServicePricing.hydro-jetting-advanced-drain-cleaning",
+      "from": "do_not_discuss",
+      "to": "",
+      "status": "NEEDS_QA"
+    },
+    {
+      "path": "section5.obsoletePricingBlock",
+      "from": "legacy-pricing-block",
+      "to": "",
+      "status": "DROPPED_OBSOLETE"
+    }
+  ]
+}

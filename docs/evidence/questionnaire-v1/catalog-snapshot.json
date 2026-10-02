@@ -1,0 +1,873 @@
+{
+  "SCHEMA_VERSION": 10,
+  "section2": {
+    "PLUMBING_SERVICES": [
+      {
+        "id": "general-plumbing-repair",
+        "label": "General plumbing repair"
+      },
+      {
+        "id": "toilet-repair-replacement",
+        "label": "Toilet repair or replacement"
+      },
+      {
+        "id": "faucet-sink-repair",
+        "label": "Faucet or sink repair"
+      },
+      {
+        "id": "garbage-disposal",
+        "label": "Garbage disposal"
+      },
+      {
+        "id": "shower-tub-repair",
+        "label": "Shower or tub repair"
+      },
+      {
+        "id": "water-heater-repair",
+        "label": "Water heater repair"
+      },
+      {
+        "id": "water-heater-replacement",
+        "label": "Water heater replacement"
+      },
+      {
+        "id": "tankless-water-heaters",
+        "label": "Tankless water heaters"
+      },
+      {
+        "id": "shutoff-main-valves",
+        "label": "Shutoff or main valves"
+      },
+      {
+        "id": "pressure-regulators",
+        "label": "Pressure regulators"
+      },
+      {
+        "id": "water-service-lines",
+        "label": "Water service lines"
+      },
+      {
+        "id": "frozen-pipes",
+        "label": "Frozen pipes"
+      },
+      {
+        "id": "slab-leaks",
+        "label": "Slab leaks"
+      },
+      {
+        "id": "repiping",
+        "label": "Repiping"
+      },
+      {
+        "id": "fixture-installation",
+        "label": "Fixture installation"
+      },
+      {
+        "id": "appliance-plumbing-connections",
+        "label": "Appliance plumbing connections"
+      },
+      {
+        "id": "gas-line-plumbing-non-emergency",
+        "label": "Gas-line plumbing (non-emergency)"
+      },
+      {
+        "id": "excavation",
+        "label": "Excavation"
+      },
+      {
+        "id": "trenchless-sewer-service-line-work",
+        "label": "Trenchless sewer/service-line work"
+      },
+      {
+        "id": "water-filtration-softening-ro",
+        "label": "Water filtration / softening / reverse osmosis"
+      },
+      {
+        "id": "remodel-project-work",
+        "label": "Remodel or project plumbing"
+      },
+      {
+        "id": "other-specialty-plumbing",
+        "label": "Specialty plumbing"
+      }
+    ],
+    "DIAGNOSTIC_SERVICES": [
+      {
+        "id": "general-diagnostic-service-visits",
+        "label": "General diagnostic/service visit"
+      },
+      {
+        "id": "plumbing-inspections",
+        "label": "Plumbing inspection"
+      },
+      {
+        "id": "leak-detection",
+        "label": "Leak detection"
+      },
+      {
+        "id": "drain-cleaning",
+        "label": "Drain cleaning"
+      },
+      {
+        "id": "sewer-drain-camera-inspections",
+        "label": "Sewer/drain camera inspection"
+      },
+      {
+        "id": "hydro-jetting-advanced-drain-cleaning",
+        "label": "Hydro-jetting"
+      }
+    ],
+    "CUSTOMER_PROPERTY_TYPES": [
+      {
+        "id": "homeowners",
+        "label": "Homeowners"
+      },
+      {
+        "id": "tenants",
+        "label": "Tenants"
+      },
+      {
+        "id": "landlords-property-managers",
+        "label": "Landlords / property managers"
+      },
+      {
+        "id": "single-family-homes",
+        "label": "Single-family homes"
+      },
+      {
+        "id": "condos-hoas",
+        "label": "Condos / HOAs"
+      },
+      {
+        "id": "multifamily-properties",
+        "label": "Multifamily properties"
+      },
+      {
+        "id": "commercial-properties",
+        "label": "Commercial properties"
+      },
+      {
+        "id": "real-estate-inspection-transaction-work",
+        "label": "Real-estate inspection / transaction work"
+      },
+      {
+        "id": "insurance-related-work",
+        "label": "Insurance-related work"
+      }
+    ]
+  },
+  "section3": {
+    "EMERGENCY_SCENARIOS": [
+      {
+        "id": "uncontrolled-water-leak-inside-property",
+        "label": "Uncontrolled water leaking inside the property"
+      },
+      {
+        "id": "water-leak-near-electrical-equipment",
+        "label": "Water leaking near electrical equipment"
+      },
+      {
+        "id": "suspected-gas-leak-or-odor",
+        "label": "Suspected gas leak or gas odor"
+      },
+      {
+        "id": "sewage-entering-property",
+        "label": "Sewage actively entering the property"
+      },
+      {
+        "id": "multiple-fixtures-backing-up",
+        "label": "Multiple fixtures backing up at the same time"
+      },
+      {
+        "id": "toilet-overflowing-uncontrolled",
+        "label": "Toilet overflowing and the customer cannot stop it"
+      },
+      {
+        "id": "only-usable-toilet-not-working",
+        "label": "The property's only usable toilet is not working"
+      },
+      {
+        "id": "major-water-heater-leak-or-rupture",
+        "label": "Major water-heater leak or rupture"
+      },
+      {
+        "id": "dangerous-water-heater-symptoms",
+        "label": "Potentially dangerous water-heater symptoms"
+      },
+      {
+        "id": "sump-pump-failure-flooding",
+        "label": "Sump-pump failure with active or imminent flooding"
+      },
+      {
+        "id": "frozen-pipe-confirmed-leak",
+        "label": "Frozen pipe with a confirmed leak"
+      },
+      {
+        "id": "complete-loss-of-water",
+        "label": "Complete loss of water to the property"
+      },
+      {
+        "id": "major-water-service-line-leak",
+        "label": "Major water-service-line leak"
+      },
+      {
+        "id": "serious-standing-water-unknown-source",
+        "label": "Serious standing water from an unknown source"
+      },
+      {
+        "id": "unclear-situation-may-be-dangerous",
+        "label": "An unclear situation that may be dangerous"
+      }
+    ],
+    "EMERGENCY_ROW_DEFAULTS": {
+      "uncontrolled-water-leak-inside-property": "emergency",
+      "water-leak-near-electrical-equipment": "emergency",
+      "suspected-gas-leak-or-odor": "emergency",
+      "sewage-entering-property": "emergency",
+      "multiple-fixtures-backing-up": "urgent",
+      "toilet-overflowing-uncontrolled": "emergency",
+      "only-usable-toilet-not-working": "urgent",
+      "major-water-heater-leak-or-rupture": "emergency",
+      "dangerous-water-heater-symptoms": "emergency",
+      "sump-pump-failure-flooding": "emergency",
+      "frozen-pipe-confirmed-leak": "emergency",
+      "complete-loss-of-water": "urgent",
+      "major-water-service-line-leak": "emergency",
+      "serious-standing-water-unknown-source": "emergency",
+      "unclear-situation-may-be-dangerous": "human_review"
+    }
+  },
+  "section4": {
+    "CALLER_TYPES": [
+      {
+        "id": "homeowner",
+        "label": "Homeowner"
+      },
+      {
+        "id": "tenant",
+        "label": "Tenant"
+      },
+      {
+        "id": "landlord_property_manager",
+        "label": "Landlord / property manager"
+      },
+      {
+        "id": "spouse_family",
+        "label": "Spouse / family member"
+      },
+      {
+        "id": "remote_family",
+        "label": "Remote family member"
+      },
+      {
+        "id": "realtor_buyer_seller",
+        "label": "Realtor"
+      },
+      {
+        "id": "other_third_party",
+        "label": "Other third party"
+      }
+    ],
+    "EXCEPTION_TYPES": [
+      {
+        "id": "scheduling",
+        "label": "Scheduling exception"
+      },
+      {
+        "id": "service_area",
+        "label": "Service-area exception"
+      },
+      {
+        "id": "fee_or_price",
+        "label": "Fee or price exception"
+      },
+      {
+        "id": "discount_or_promotion",
+        "label": "Discount or promotion exception"
+      },
+      {
+        "id": "refund_credit_goodwill",
+        "label": "Refund, credit or goodwill exception"
+      },
+      {
+        "id": "callback_previous_work",
+        "label": "Warranty or callback exception"
+      },
+      {
+        "id": "other",
+        "label": "Other exception"
+      }
+    ],
+    "APPOINTMENT_WINDOW_TEMPLATES": [
+      {
+        "id": "morning",
+        "label": "Morning"
+      },
+      {
+        "id": "late_morning",
+        "label": "Late morning"
+      },
+      {
+        "id": "early_afternoon",
+        "label": "Early afternoon"
+      },
+      {
+        "id": "afternoon",
+        "label": "Afternoon"
+      },
+      {
+        "id": "late_afternoon",
+        "label": "Late afternoon"
+      }
+    ]
+  },
+  "section5": {
+    "PRICING_MODEL_OPTIONS": [
+      {
+        "id": "flat_rate",
+        "label": "Flat-rate / upfront pricing"
+      },
+      {
+        "id": "hourly_labor_materials",
+        "label": "Hourly labor + materials"
+      },
+      {
+        "id": "fixed_prices_certain_services",
+        "label": "Fixed prices for certain services"
+      },
+      {
+        "id": "after_diagnosis",
+        "label": "Price determined after the technician evaluates the job"
+      },
+      {
+        "id": "estimate_required",
+        "label": "Estimate or quote required for larger work"
+      },
+      {
+        "id": "other",
+        "label": "Other"
+      }
+    ],
+    "QUOTE_PERMISSION_OPTIONS": [
+      {
+        "id": "allowed",
+        "label": "Yes — Alexander may quote the prices we provide below"
+      },
+      {
+        "id": "not_allowed",
+        "label": "No — Alexander should not quote service prices"
+      }
+    ],
+    "SERVICE_PRICE_MODE_OPTIONS": [
+      {
+        "id": "exact",
+        "label": "Exact price"
+      },
+      {
+        "id": "starting_at",
+        "label": "Starting at"
+      },
+      {
+        "id": "range",
+        "label": "Price range"
+      },
+      {
+        "id": "hourly",
+        "label": "Hourly"
+      },
+      {
+        "id": "estimate",
+        "label": "Requires an estimate / diagnosis"
+      }
+    ],
+    "UNKNOWN_PRICE_OPTIONS": [
+      {
+        "id": "technician_after_evaluation",
+        "label": "Explain that pricing will be provided after the job is evaluated"
+      },
+      {
+        "id": "team_provides_pricing",
+        "label": "Have our team provide the price"
+      }
+    ],
+    "ADDITIONAL_FEE_OPTIONS": [
+      {
+        "id": "service_diagnostic",
+        "label": "Service / diagnostic fee"
+      },
+      {
+        "id": "after_hours",
+        "label": "After-hours / emergency fee"
+      },
+      {
+        "id": "travel",
+        "label": "Travel fee"
+      },
+      {
+        "id": "cancellation",
+        "label": "Cancellation fee"
+      },
+      {
+        "id": "no_show",
+        "label": "No-show fee"
+      },
+      {
+        "id": "minimum_service",
+        "label": "Minimum service charge"
+      },
+      {
+        "id": "estimate_consultation",
+        "label": "Estimate / consultation fee"
+      },
+      {
+        "id": "other",
+        "label": "Other"
+      },
+      {
+        "id": "none",
+        "label": "We don’t charge additional fees"
+      }
+    ],
+    "PAYMENT_METHOD_OPTIONS": [
+      {
+        "id": "credit_card",
+        "label": "Credit card"
+      },
+      {
+        "id": "debit_card",
+        "label": "Debit card"
+      },
+      {
+        "id": "cash",
+        "label": "Cash"
+      },
+      {
+        "id": "check",
+        "label": "Check"
+      },
+      {
+        "id": "ach",
+        "label": "ACH / bank transfer"
+      },
+      {
+        "id": "financing",
+        "label": "Financing"
+      },
+      {
+        "id": "invoice",
+        "label": "Invoice / account billing"
+      },
+      {
+        "id": "other",
+        "label": "Other"
+      }
+    ],
+    "PAYMENT_DUE_OPTIONS": [
+      {
+        "id": "at_time_of_service",
+        "label": "At time of service"
+      },
+      {
+        "id": "when_work_completed",
+        "label": "When work is completed"
+      },
+      {
+        "id": "deposit_required",
+        "label": "Deposit required before certain work"
+      },
+      {
+        "id": "progress_payments",
+        "label": "Progress payments for larger projects"
+      },
+      {
+        "id": "invoice_after_service",
+        "label": "Invoice after service for approved customers"
+      },
+      {
+        "id": "other",
+        "label": "Other"
+      }
+    ],
+    "PAYMENT_ASSISTANCE_OPTIONS": [
+      {
+        "id": "secure_link",
+        "label": "Yes — Alexander may send customers a secure payment link"
+      },
+      {
+        "id": "secure_link_and_authorized_method",
+        "label": "Yes — Alexander may send a secure payment link and use an approved payment method already on file when authorized"
+      },
+      {
+        "id": "send_to_team",
+        "label": "No — Alexander should send payment requests to our team"
+      }
+    ],
+    "PAYMENT_COLLECTION_OPTIONS": [
+      {
+        "id": "booking_or_service_fees",
+        "label": "Booking or service fees"
+      },
+      {
+        "id": "deposits",
+        "label": "Deposits"
+      },
+      {
+        "id": "completed_invoices",
+        "label": "Completed service invoices"
+      },
+      {
+        "id": "outstanding_balances",
+        "label": "Outstanding balances"
+      },
+      {
+        "id": "progress_payments",
+        "label": "Progress payments"
+      },
+      {
+        "id": "other",
+        "label": "Other"
+      }
+    ],
+    "DEFAULT_PAYMENT_COLLECTION_SCOPE": [
+      "booking_or_service_fees",
+      "deposits",
+      "completed_invoices",
+      "outstanding_balances"
+    ],
+    "FINANCIAL_REMEDY_OPTIONS": [
+      {
+        "id": "refund",
+        "label": "Refund"
+      },
+      {
+        "id": "account_credit",
+        "label": "Account credit"
+      },
+      {
+        "id": "fee_waiver",
+        "label": "Fee waiver"
+      },
+      {
+        "id": "discount_goodwill",
+        "label": "Discount / goodwill adjustment"
+      },
+      {
+        "id": "return_visit",
+        "label": "Free or reduced-price return visit"
+      },
+      {
+        "id": "none",
+        "label": "None — human approval is required"
+      }
+    ]
+  },
+  "section6": {
+    "NON_SERVICE_CALL_TYPE_ROWS": [
+      {
+        "id": "vendor_supplier",
+        "label": "Vendor or supplier"
+      },
+      {
+        "id": "sales_solicitation",
+        "label": "Sales solicitation"
+      },
+      {
+        "id": "job_applicant",
+        "label": "Job applicant"
+      },
+      {
+        "id": "current_employee",
+        "label": "Current employee"
+      },
+      {
+        "id": "media_inquiry",
+        "label": "Media inquiry"
+      },
+      {
+        "id": "attorney_legal",
+        "label": "Attorney / legal inquiry"
+      },
+      {
+        "id": "government_regulator",
+        "label": "Government / regulator"
+      },
+      {
+        "id": "wrong_number_spam",
+        "label": "Wrong number / spam"
+      }
+    ],
+    "NON_SERVICE_DISPOSITION_OPTIONS": [
+      {
+        "id": "send_specific",
+        "label": "Transfer the call"
+      },
+      {
+        "id": "take_message",
+        "label": "Take a message"
+      },
+      {
+        "id": "politely_decline",
+        "label": "Politely decline"
+      },
+      {
+        "id": "human_review",
+        "label": "Human review"
+      }
+    ],
+    "DEFAULT_NON_SERVICE_DISPOSITIONS": {
+      "vendor_supplier": "take_message",
+      "sales_solicitation": "politely_decline",
+      "job_applicant": "take_message",
+      "current_employee": "send_specific",
+      "media_inquiry": "human_review",
+      "attorney_legal": "human_review",
+      "government_regulator": "human_review",
+      "wrong_number_spam": "politely_decline"
+    }
+  },
+  "section8": {
+    "CRM_FSM_OPTIONS": [
+      {
+        "id": "servicetitan",
+        "label": "ServiceTitan"
+      },
+      {
+        "id": "housecall_pro",
+        "label": "Housecall Pro"
+      },
+      {
+        "id": "jobber",
+        "label": "Jobber"
+      },
+      {
+        "id": "gohighlevel",
+        "label": "GoHighLevel"
+      },
+      {
+        "id": "hubspot",
+        "label": "HubSpot"
+      },
+      {
+        "id": "salesforce",
+        "label": "Salesforce"
+      },
+      {
+        "id": "custom",
+        "label": "Another system"
+      },
+      {
+        "id": "none",
+        "label": "We don’t use one"
+      }
+    ],
+    "SCHEDULING_OPTIONS": [
+      {
+        "id": "same_as_crm",
+        "label": "Same system selected above"
+      },
+      {
+        "id": "google_calendar",
+        "label": "Google Calendar"
+      },
+      {
+        "id": "microsoft_outlook",
+        "label": "Microsoft Outlook / Microsoft 365"
+      },
+      {
+        "id": "cal_com",
+        "label": "Cal.com"
+      },
+      {
+        "id": "custom",
+        "label": "Another scheduling system"
+      },
+      {
+        "id": "none",
+        "label": "We don’t use scheduling software"
+      }
+    ],
+    "PHONE_OPTIONS": [
+      {
+        "id": "ringcentral",
+        "label": "RingCentral"
+      },
+      {
+        "id": "dialpad",
+        "label": "Dialpad"
+      },
+      {
+        "id": "zoom_phone",
+        "label": "Zoom Phone"
+      },
+      {
+        "id": "gohighlevel",
+        "label": "GoHighLevel"
+      },
+      {
+        "id": "traditional_landline",
+        "label": "Traditional landline / carrier"
+      },
+      {
+        "id": "mobile_phones",
+        "label": "Mobile phones"
+      },
+      {
+        "id": "custom",
+        "label": "Another phone system"
+      },
+      {
+        "id": "not_sure",
+        "label": "Not sure"
+      }
+    ],
+    "ADDITIONAL_SOFTWARE_CATEGORIES": [
+      {
+        "id": "separate_customer_database",
+        "label": "Separate customer database"
+      },
+      {
+        "id": "price_book_estimating",
+        "label": "Separate price book / estimating software"
+      },
+      {
+        "id": "membership",
+        "label": "Membership / service-plan software"
+      },
+      {
+        "id": "financing",
+        "label": "Financing system"
+      },
+      {
+        "id": "payment",
+        "label": "Payment system"
+      },
+      {
+        "id": "sms_texting",
+        "label": "SMS / texting platform"
+      },
+      {
+        "id": "email_inbox",
+        "label": "Email / shared inbox"
+      },
+      {
+        "id": "other",
+        "label": "Other"
+      },
+      {
+        "id": "none",
+        "label": "None"
+      }
+    ],
+    "CONNECTION_OWNER_OPTIONS": [
+      {
+        "id": "self_authorized",
+        "label": "I can"
+      },
+      {
+        "id": "someone_else",
+        "label": "Someone else on our team"
+      }
+    ],
+    "FAILURE_FALLBACK_OPTIONS": [
+      {
+        "id": "collect_and_send",
+        "label": "Collect the customer’s information and send the request to our team"
+      },
+      {
+        "id": "connect_team",
+        "label": "Try to connect the customer with someone on our team"
+      },
+      {
+        "id": "custom",
+        "label": "Follow another rule"
+      }
+    ],
+    "Q114_CONFIRMATIONS": [
+      {
+        "key": "answersAccurate",
+        "label": "I confirm that these answers accurately describe how I want Alexander to represent and operate for my company."
+      },
+      {
+        "key": "capabilitiesDependOnIntegrations",
+        "label": "I understand that some capabilities depend on the software and integrations my company uses."
+      },
+      {
+        "key": "actionsRequireSupportAuthorizationConfirmation",
+        "label": "I understand that Alexander will only perform actions that are supported, authorized, and successfully confirmed."
+      }
+    ]
+  },
+  "defaultsSample": {
+    "section3Emergency": {
+      "uncontrolled-water-leak-inside-property": "emergency",
+      "water-leak-near-electrical-equipment": "emergency",
+      "suspected-gas-leak-or-odor": "emergency",
+      "sewage-entering-property": "emergency",
+      "multiple-fixtures-backing-up": "urgent",
+      "toilet-overflowing-uncontrolled": "emergency",
+      "only-usable-toilet-not-working": "urgent",
+      "major-water-heater-leak-or-rupture": "emergency",
+      "dangerous-water-heater-symptoms": "emergency",
+      "sump-pump-failure-flooding": "emergency",
+      "frozen-pipe-confirmed-leak": "emergency",
+      "complete-loss-of-water": "urgent",
+      "major-water-service-line-leak": "emergency",
+      "serious-standing-water-unknown-source": "emergency",
+      "unclear-situation-may-be-dangerous": "human_review"
+    },
+    "section3AfterHours": {
+      "emergency": "contact_on_call",
+      "urgent_contained": "schedule_service",
+      "routine": "schedule_service"
+    },
+    "section4Booking": "book_appointment",
+    "section5Quote": "not_allowed",
+    "section5Unknown": "technician_after_evaluation",
+    "section5Assistance": "secure_link",
+    "section5Collection": [
+      "booking_or_service_fees",
+      "deposits",
+      "completed_invoices",
+      "outstanding_balances"
+    ],
+    "section5Remedies": [
+      "none"
+    ],
+    "section5Area": "no",
+    "section6NonService": {
+      "vendor_supplier": {
+        "disposition": "take_message",
+        "contactId": ""
+      },
+      "sales_solicitation": {
+        "disposition": "politely_decline",
+        "contactId": ""
+      },
+      "job_applicant": {
+        "disposition": "take_message",
+        "contactId": ""
+      },
+      "current_employee": {
+        "disposition": "send_specific",
+        "contactId": ""
+      },
+      "media_inquiry": {
+        "disposition": "human_review",
+        "contactId": ""
+      },
+      "attorney_legal": {
+        "disposition": "human_review",
+        "contactId": ""
+      },
+      "government_regulator": {
+        "disposition": "human_review",
+        "contactId": ""
+      },
+      "wrong_number_spam": {
+        "disposition": "politely_decline",
+        "contactId": ""
+      }
+    },
+    "section8Failure": "collect_and_send"
+  }
+}
