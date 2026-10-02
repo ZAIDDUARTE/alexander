@@ -1,4 +1,5 @@
 import { canonicalJsonBytes, canonicalStringify, sha256Hex } from "./canonical";
+import { revisionDigest } from "./submission-row";
 import { isSafeSubmissionKey, submissionObjectKeys } from "./keys";
 import type { PersistenceLogEvent } from "./logger";
 import type {
@@ -169,7 +170,7 @@ export async function submitDraft(
   const draft = existingSubmission
     ? withPreservedSubmission(input.draft, existingSubmission, existingSession)
     : input.draft;
-  const submittedAt = existingSubmission ? existingSubmission.submittedAt : input.submittedAt;
+const submittedAt = existingSubmission?.submittedAt ?? input.submittedAt;
 
   let keys;
   try {
@@ -296,7 +297,7 @@ export async function inspectSession(ports: PersistencePorts, sessionId: string)
     const normalized = await ports.objects.getObject(row.s3NormalizedKey);
     const manifest = await ports.objects.getObject(row.s3ManifestKey);
     inspected.push({
-      contentRevisionSha256: sha256Hex(row.contentRevision),
+      contentRevisionSha256: revisionDigest(row.contentRevision),
       rawSha256: row.rawSha256,
       normalizedSha256: row.normalizedSha256,
       rawBytes: raw?.byteLength ?? 0,

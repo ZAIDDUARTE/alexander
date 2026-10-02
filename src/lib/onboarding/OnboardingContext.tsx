@@ -12,7 +12,7 @@ import {
 } from "react";
 import { loadLocalDraft, saveLocalDraft, type SaveStatus } from "./persistence";
 import { interpretServerSave } from "./server-save-status";
-import { fetchServerDraft, putServerDraft } from "./server-api";
+import { fetchServerDraft, putServerDraft, setInvitedDraftVersion } from "./server-api";
 import {
   createDraftAutosaveController,
   draftAutosaveFingerprint,
@@ -158,7 +158,17 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         draftRef.current = next;
         setDraft(next);
       },
+      onAuthoritativeDraft: (next, version) => {
+        setInvitedDraftVersion(version);
+        hydratedSnapshotRef.current = draftAutosaveFingerprint(next);
+        draftRef.current = next;
+        setDraft(next);
+      },
       onResult: (result) => {
+        if (result.invited && result.reason === "stale_draft") {
+          setSaveStatus("saved");
+          return;
+        }
         const status = interpretServerSave(result);
         setSaveStatus(status);
         if (status === "saved" || status === "saved-local") {
@@ -218,8 +228,19 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
       try {
         const result = await fetchServerDraft();
+        if (cancelled) return;
         server = result.draft;
         serverCanSync = result.durableAvailable || result.redisAvailable || result.persistence === "local";
+        if (result.invited) {
+          const winner = result.draft ?? createDefaultDraft();
+          setInvitedDraftVersion(result.draftVersion);
+          setDraft(winner);
+          draftRef.current = winner;
+          hydratedSnapshotRef.current = draftAutosaveFingerprint(winner);
+          setIsDraftHydrated(true);
+          return;
+        }
+        setInvitedDraftVersion(null);
       } catch {
         server = null;
       }

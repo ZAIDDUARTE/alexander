@@ -9,6 +9,8 @@ export type DraftSaveResult = {
   savedDurable: boolean;
   durableAvailable: boolean;
   persistence: "durable" | "local" | "unavailable";
+  invited?: boolean;
+  draftVersion?: number | null;
 };
 
 export type DraftAutosaveController = {
@@ -72,6 +74,7 @@ export function createDraftAutosaveController(deps: {
   getRoute: () => string;
   onResult: (result: DraftSaveResult) => void;
   onLocalDraftAdjusted: (draft: OnboardingDraft) => void;
+  onAuthoritativeDraft?: (draft: OnboardingDraft, draftVersion: number | null) => void;
   nowIso?: () => string;
 }): DraftAutosaveController {
   let inFlight = false;
@@ -89,6 +92,12 @@ export function createDraftAutosaveController(deps: {
   async function saveOnce(options?: { keepalive?: boolean }): Promise<DraftSaveResult> {
     const sent = deps.getLatest();
     let result = await deps.save(sent, deps.getRoute(), options);
+
+    if (!result.ok && result.reason === "stale_draft" && result.invited) {
+      if (result.draft) deps.onAuthoritativeDraft?.(result.draft, result.draftVersion ?? null);
+      deps.onResult(result);
+      return result;
+    }
 
     if (!result.ok && result.reason === "stale_draft") {
       const bumped = bumpUpdatedAtForConflictRetry(

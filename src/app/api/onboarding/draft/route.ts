@@ -4,6 +4,7 @@ import {
   putDraftResponse,
   redisAvailable,
 } from "@/lib/server/draft-service";
+import { respondInvitedGet, respondInvitedPut } from "@/lib/server/invited-draft";
 import {
   getOnboardingSessionId,
   getOrCreateOnboardingSessionId,
@@ -14,13 +15,14 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function GET() {
+  const invited = await respondInvitedGet();
+  if (invited) return invited;
   const sessionId = await getOrCreateOnboardingSessionId();
   const result = await getDraftResponse(sessionId);
   return NextResponse.json(result.body, { status: result.status });
 }
 
 export async function PUT(request: Request) {
-  const sessionId = await getOrCreateOnboardingSessionId();
   let body: unknown;
   try {
     body = await request.json();
@@ -31,6 +33,9 @@ export async function PUT(request: Request) {
       { status: 400 },
     );
   }
+  const invited = await respondInvitedPut(body);
+  if (invited) return invited;
+  const sessionId = await getOrCreateOnboardingSessionId();
   const result = await putDraftResponse(sessionId, body);
   return NextResponse.json(result.body, { status: result.status });
 }

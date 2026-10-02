@@ -11,6 +11,14 @@ import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-sec
 import { Pool, type QueryResultRow } from "pg";
 import { sha256Hex } from "../../src/lib/server/persistence/canonical";
 import { handlePersistenceOperation } from "../../src/lib/server/persistence/engine";
+import {
+  handleOnboardingAccessOperation,
+  type SqlPool,
+} from "../../src/lib/server/persistence/onboarding-access";
+import {
+  isVisibleLegacySubmission,
+  mapSubmissionRow,
+} from "../../src/lib/server/persistence/submission-row";
 import { isSafeSubmissionKey } from "../../src/lib/server/persistence/keys";
 import { createLineLogger } from "../../src/lib/server/persistence/logger";
 import type {
@@ -63,21 +71,7 @@ function mapSession(row: QueryResultRow): SessionRecord {
 }
 
 function mapSubmission(row: QueryResultRow): SubmissionRecord {
-  return {
-    sessionId: String(row.session_id),
-    contentRevision: String(row.content_revision),
-    questionnaireSchemaVersion: Number(row.questionnaire_schema_version),
-    rawDraft: row.raw_draft_json as DraftEnvelope,
-    normalized: row.normalized_config_json,
-    s3Prefix: String(row.s3_prefix),
-    s3RawKey: String(row.s3_raw_key),
-    s3NormalizedKey: String(row.s3_normalized_key),
-    s3ManifestKey: String(row.s3_manifest_key),
-    rawSha256: String(row.raw_sha256),
-    normalizedSha256: String(row.normalized_sha256),
-    submittedAt: iso(row.submitted_at) ?? "",
-    createdAt: iso(row.created_at) ?? "",
-  };
+  return mapSubmissionRow(row);
 }
 
 let pool: Pool | null = null;
@@ -157,7 +151,7 @@ function createDatabase(): DatabasePort {
         "SELECT * FROM onboarding_submissions WHERE session_id = $1 ORDER BY created_at",
         [sessionId],
       );
-      return result.rows.map(mapSubmission);
+      return result.rows.filter(isVisibleLegacySubmission).map(mapSubmission);
     },
     async applyDraft(record) {
       const db = await getPool();
@@ -342,5 +336,17 @@ function createObjectStore(): ObjectStorePort {
 const log = createLineLogger();
 
 export async function handler(event: unknown): Promise<unknown> {
+  const operation =
+    event && typeof event === "object" && "operation" in event
+      ? String((event as { operation?: unknown }).operation ?? "")
+      : "";
+  if (
+    operation === "redeemInvitation" ||
+    operation === "resolveAccess" ||
+    operation === "saveInvitedDraft"
+  ) {
+    const pool = await getPool();
+    return handleOnboardingAccessOperation(event as Record<string, unknown>, pool as unknown as SqlPool);
+  }
   return handlePersistenceOperation(event, { db: createDatabase(), objects: createObjectStore() }, log);
 }

@@ -13,6 +13,8 @@ export type FetchDraftResponse = {
   redisAvailable: boolean;
   durableAvailable?: boolean;
   persistence?: PersistenceModeName;
+  invited?: boolean;
+  draftVersion?: number | null;
 };
 
 export async function fetchServerDraft(): Promise<{
@@ -20,6 +22,8 @@ export async function fetchServerDraft(): Promise<{
   redisAvailable: boolean;
   durableAvailable: boolean;
   persistence: PersistenceModeName;
+  invited: boolean;
+  draftVersion: number | null;
 }> {
   try {
     const res = await fetch("/api/onboarding/draft", {
@@ -29,14 +33,28 @@ export async function fetchServerDraft(): Promise<{
     });
 
     if (!res.ok) {
-      return { draft: null, redisAvailable: false, durableAvailable: false, persistence: "unavailable" };
+      return {
+        draft: null,
+        redisAvailable: false,
+        durableAvailable: false,
+        persistence: "unavailable",
+        invited: false,
+        draftVersion: null,
+      };
     }
 
     const body = (await res.json()) as FetchDraftResponse;
     const persistence = body.persistence ?? "unavailable";
     const durableAvailable = body.durableAvailable ?? false;
     if (!body.draft) {
-      return { draft: null, redisAvailable: body.redisAvailable, durableAvailable, persistence };
+      return {
+        draft: null,
+        redisAvailable: body.redisAvailable,
+        durableAvailable,
+        persistence,
+        invited: body.invited === true,
+        draftVersion: typeof body.draftVersion === "number" ? body.draftVersion : null,
+      };
     }
 
     return {
@@ -44,10 +62,29 @@ export async function fetchServerDraft(): Promise<{
       redisAvailable: body.redisAvailable,
       durableAvailable,
       persistence,
+      invited: body.invited === true,
+      draftVersion: typeof body.draftVersion === "number" ? body.draftVersion : null,
     };
   } catch {
-    return { draft: null, redisAvailable: false, durableAvailable: false, persistence: "unavailable" };
+    return {
+      draft: null,
+      redisAvailable: false,
+      durableAvailable: false,
+      persistence: "unavailable",
+      invited: false,
+      draftVersion: null,
+    };
   }
+}
+
+let invitedDraftVersion: number | null = null;
+
+export function setInvitedDraftVersion(version: number | null): void {
+  invitedDraftVersion = version;
+}
+
+export function getInvitedDraftVersion(): number | null {
+  return invitedDraftVersion;
 }
 
 function failureResult(
@@ -74,13 +111,17 @@ export async function putServerDraft(
     currentRoute,
   );
 
+  const version = getInvitedDraftVersion();
   let res: Response;
   try {
     res = await fetch("/api/onboarding/draft", {
       method: "PUT",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ draft: payload }),
+      body: JSON.stringify({
+        draft: payload,
+        ...(version != null ? { expectedVersion: version } : {}),
+      }),
       keepalive: options?.keepalive ?? false,
     });
   } catch {
@@ -97,6 +138,8 @@ export async function putServerDraft(
     savedDurable?: boolean;
     durableAvailable?: boolean;
     persistence?: PersistenceModeName;
+    invited?: boolean;
+    draftVersion?: number | null;
   } = {};
   try {
     body = (await res.json()) as typeof body;
@@ -113,8 +156,12 @@ export async function putServerDraft(
       savedDurable: false,
       durableAvailable: body.durableAvailable ?? false,
       persistence: body.persistence ?? "unavailable",
+      invited: body.invited === true,
+      draftVersion: typeof body.draftVersion === "number" ? body.draftVersion : null,
     });
   }
+
+  if (typeof body.draftVersion === "number") setInvitedDraftVersion(body.draftVersion);
 
   return {
     ok: true,
@@ -124,6 +171,8 @@ export async function putServerDraft(
     durableAvailable: body.durableAvailable ?? false,
     persistence: body.persistence ?? "unavailable",
     draft: body.draft ? fromRedisDraft(body.draft) : null,
+    invited: body.invited === true,
+    draftVersion: typeof body.draftVersion === "number" ? body.draftVersion : null,
   };
 }
 
