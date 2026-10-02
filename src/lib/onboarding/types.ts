@@ -837,11 +837,90 @@ export type RemedyId =
 
 export type RemedyAuthority = "within_rules" | "human_approval" | "never";
 
+export type QuotePermission = "allowed" | "not_allowed";
+
+export type ServicePriceMode = "exact" | "starting_at" | "range" | "hourly" | "estimate";
+
+export type ServicePriceRecord = {
+  serviceId: string;
+  mode: ServicePriceMode | "";
+  exactAmount: string;
+  startingAmount: string;
+  rangeMin: string;
+  rangeMax: string;
+  hourlyAmount: string;
+  conditions: string;
+};
+
+export type AdditionalFeeCategory =
+  | "service_diagnostic"
+  | "after_hours"
+  | "travel"
+  | "cancellation"
+  | "no_show"
+  | "minimum_service"
+  | "estimate_consultation"
+  | "other";
+
+export type AdditionalFeeSelection = AdditionalFeeCategory | "none";
+
+export type AdditionalFeeCredit = "always" | "sometimes" | "never";
+
+export type AdditionalFeeDetail = {
+  amount: string;
+  applicability: string;
+  credit: AdditionalFeeCredit | "";
+  creditWhen: string;
+};
+
+export const ADDITIONAL_FEE_CATEGORIES: readonly AdditionalFeeCategory[] = [
+  "service_diagnostic",
+  "after_hours",
+  "travel",
+  "cancellation",
+  "no_show",
+  "minimum_service",
+  "estimate_consultation",
+  "other",
+];
+
+export function createEmptyAdditionalFeeDetail(): AdditionalFeeDetail {
+  return { amount: "", applicability: "", credit: "", creditWhen: "" };
+}
+
+export function createDefaultAdditionalFeeDetails(): Record<AdditionalFeeCategory, AdditionalFeeDetail> {
+  return {
+    service_diagnostic: createEmptyAdditionalFeeDetail(),
+    after_hours: createEmptyAdditionalFeeDetail(),
+    travel: createEmptyAdditionalFeeDetail(),
+    cancellation: createEmptyAdditionalFeeDetail(),
+    no_show: createEmptyAdditionalFeeDetail(),
+    minimum_service: createEmptyAdditionalFeeDetail(),
+    estimate_consultation: createEmptyAdditionalFeeDetail(),
+    other: createEmptyAdditionalFeeDetail(),
+  };
+}
+
+export function createEmptyServicePrice(serviceId: string): ServicePriceRecord {
+  return {
+    serviceId,
+    mode: "",
+    exactAmount: "",
+    startingAmount: "",
+    rangeMin: "",
+    rangeMax: "",
+    hourlyAmount: "",
+    conditions: "",
+  };
+}
+
 export type AreaPricingRow = {
   id: string;
   area: string;
+  /** Legacy numeric fields. Current answers use feeOrMinimum. */
   travelFee: string;
   minimumCharge: string;
+  feeOrMinimum: string;
 };
 
 export type ServicePricingRule = {
@@ -887,10 +966,15 @@ export function createDefaultForbiddenStatements(): ForbiddenStatementId[] {
 export type Section5Data = {
   pricingModels: PricingModelId[];
   pricingModelOther: string;
+  /** May Alexander quote service prices? Default is not_allowed. */
+  mayQuoteServicePrices: QuotePermission;
+  servicePrices: ServicePriceRecord[];
   materialMarkupPolicy: MaterialMarkupPolicy | "";
   materialMarkupCustomerExplanation: string;
   unknownPriceBehavior: UnknownPriceBehaviorId | "";
   unknownPriceCustomRule: string;
+  additionalFeeSelection: AdditionalFeeSelection[];
+  additionalFeeDetails: Record<AdditionalFeeCategory, AdditionalFeeDetail>;
   /** Q68 — mutually exclusive with active fee cards when true. */
   noSeparateFees: boolean;
   hasAreaTravelOrMinimum: YesNo | "";
@@ -953,12 +1037,16 @@ export function createDefaultSection5(): Section5Data {
   return {
     pricingModels: [],
     pricingModelOther: "",
+    mayQuoteServicePrices: "not_allowed",
+    servicePrices: [],
     materialMarkupPolicy: "",
     materialMarkupCustomerExplanation: "",
-    unknownPriceBehavior: "",
+    unknownPriceBehavior: "technician_after_evaluation",
     unknownPriceCustomRule: "",
+    additionalFeeSelection: [],
+    additionalFeeDetails: createDefaultAdditionalFeeDetails(),
     noSeparateFees: false,
-    hasAreaTravelOrMinimum: "",
+    hasAreaTravelOrMinimum: "no",
     areaPricingRows: [],
     visitTypeByServiceId: createDefaultVisitTypeByService(),
     paidDiagnosticExplanation: "",

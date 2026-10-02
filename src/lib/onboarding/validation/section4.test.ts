@@ -337,10 +337,8 @@ describe("validateSection4 — P: Q54 late-cancellation fee linkage", () => {
     const data = fullyValidSection4([owner], [fee]);
     withLateCancellationFee(data, fee, "yes");
     fee.amountFixed = "";
-    assert.ok(validateSection4(data, [owner], [fee])["lateCancellationFee.amountFixed"]);
-
-    fee.amountFixed = "75";
     fee.noticeRequired = "";
+    assert.equal(validateSection4(data, [owner], [fee])["lateCancellationFee.amountFixed"], undefined);
     assert.ok(validateSection4(data, [owner], [fee])["lateCancellationFee.noticeRequired"]);
 
     fee.noticeRequired = "24 hours";
@@ -363,9 +361,7 @@ describe("validateSection4 — Q: Q55 no-show fee linkage", () => {
     const data = fullyValidSection4([owner], [fee]);
     withNoShowFee(data, fee, "yes");
     fee.amountFixed = "";
-    assert.ok(validateSection4(data, [owner], [fee])["noShowFee.amountFixed"]);
-
-    fee.amountFixed = "50";
+    assert.equal(validateSection4(data, [owner], [fee])["noShowFee.amountFixed"], undefined);
     assert.equal(section4IsValid(data, [owner], [fee]), true);
   });
 });

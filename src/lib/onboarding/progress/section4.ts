@@ -95,7 +95,6 @@ function feeModeComplete(
   if (!feeId.trim()) return false;
   const fee = fees.find((f) => f.id === feeId);
   if (!fee || !fee.active) return false;
-  if (!isPositiveMoney(fee.amountFixed)) return false;
   if (requireNotice && !fee.noticeRequired.trim()) return false;
   if (mode === "conditional" && !fee.applicationRule.trim()) return false;
   return true;

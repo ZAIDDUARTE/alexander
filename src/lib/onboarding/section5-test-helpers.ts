@@ -91,9 +91,11 @@ export function fullyValidSection5(
   const data = createDefaultSection5();
 
   data.pricingModels = ["flat_rate"];
+  data.mayQuoteServicePrices = "not_allowed";
   data.materialMarkupPolicy = "no";
   data.unknownPriceBehavior = "technician_after_evaluation";
-  data.noSeparateFees = true;
+  data.additionalFeeSelection = ["none"];
+  data.noSeparateFees = false;
 
   data.hasAreaTravelOrMinimum = "no";
   setAllVisitTypes(data, "normal_service");

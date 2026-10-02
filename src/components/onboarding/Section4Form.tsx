@@ -830,14 +830,6 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
           lateFee && (
             <ConditionalPanel>
               <div className="space-y-3">
-                <MoneyField
-                  id="lateFeeAmount"
-                  label="Fee amount"
-                  required
-                  value={lateFee.amountFixed}
-                  onChange={(v) => updateFee(data.lateCancellationFeeId, { amountFixed: v })}
-                  error={submitted ? errors["lateCancellationFee.amountFixed"] : undefined}
-                />
                 <TextField
                   id="lateFeeNotice"
                   label="Notice required before cancellation"
@@ -875,17 +867,9 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
           onChange={(v) => handleFeeModeChange("no_show", v)}
           error={submitted ? errors.noShowFeeMode : undefined}
         />
-        {(data.noShowFeeMode === "yes" || data.noShowFeeMode === "conditional") && noShowFee && (
+        {data.noShowFeeMode === "conditional" && noShowFee && (
           <ConditionalPanel>
             <div className="space-y-3">
-              <MoneyField
-                id="noShowFeeAmount"
-                label="Fee amount"
-                required
-                value={noShowFee.amountFixed}
-                onChange={(v) => updateFee(data.noShowFeeId, { amountFixed: v })}
-                error={submitted ? errors["noShowFee.amountFixed"] : undefined}
-              />
               {data.noShowFeeMode === "conditional" && (
                 <TextareaField
                   id="noShowFeeRule"

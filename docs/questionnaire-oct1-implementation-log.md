@@ -341,3 +341,230 @@ NORMALIZATION FOLLOW-UP REQUIRED.
 ## Deferred Items
 
 Pricing and payments rebuild, customer care, software and integrations, and the remaining October 1 structural deletions. Not published.
+
+# Stage 4A — Core Pricing & Fees
+
+Local branch `questionnaire-oct1`. Not pushed. Stage 4B was not started.
+
+## Checkpoint Commit
+
+`328f051` — `checkpoint: questionnaire Oct 1 stages 1-3`
+
+Stages 1–3 were committed locally before this pricing work. Unrelated untracked files (the October 1 source document, the pre-implementation audit, the data-architecture audit, the specification documents, and transcripts) were left unstaged. After the checkpoint, the working tree was clean except those unrelated files.
+
+Baseline after that commit, before Stage 4A edits: typecheck pass, lint pass, 474 tests pass, production build pass.
+
+## Files Modified
+
+- `src/components/onboarding/Section4Form.tsx`
+- `src/components/onboarding/Section5Form.tsx`
+- `src/components/onboarding/ui/Fields.tsx`
+- `src/lib/onboarding/draft-utils.ts`
+- `src/lib/onboarding/normalize/section5.ts`
+- `src/lib/onboarding/normalize/section5.test.ts`
+- `src/lib/onboarding/pricingServices.ts`
+- `src/lib/onboarding/progress/section4.ts`
+- `src/lib/onboarding/progress/section4.test.ts`
+- `src/lib/onboarding/progress/section5.ts`
+- `src/lib/onboarding/progress/section5.test.ts`
+- `src/lib/onboarding/section4FeeLinks.test.ts`
+- `src/lib/onboarding/section5-test-helpers.ts`
+- `src/lib/onboarding/section5Catalog.ts`
+- `src/lib/onboarding/stage2Migration.ts`
+- `src/lib/onboarding/types.ts`
+- `src/lib/onboarding/validation/section4.ts`
+- `src/lib/onboarding/validation/section4.test.ts`
+- `src/lib/onboarding/validation/section5.ts`
+- `src/lib/onboarding/validation/section5.test.ts`
+
+## Files Added
+
+- `src/components/onboarding/PricingCoreFields.tsx`
+- `src/lib/onboarding/section5Pricing.ts`
+- `src/lib/onboarding/stage4aMigration.ts`
+- `src/lib/onboarding/stage4aMigration.test.ts`
+
+## Files Removed From the Current Questionnaire
+
+- `src/components/onboarding/VisitTypeMatrix.tsx`
+- `src/components/onboarding/ServicePricingCards.tsx`
+- `src/components/onboarding/FeeCardEditor.tsx`
+
+Legacy type constants used to read an old draft remain in `section5Catalog.ts` and on `Section5Data`. They are not rendered.
+
+## OCT1 IDs Completed
+
+- OCT1-024 late-cancellation dollar amount moved to Pricing
+- OCT1-025 no-show dollar amount moved to Pricing
+- OCT1-026 pricing-model wording, same stored ids
+- OCT1-027 quote permission
+- OCT1-028 opt-in prices for “We offer this” only
+- OCT1-029 service pricing modes
+- OCT1-030 conditional amount fields
+- OCT1-031 service-price conditions placeholder
+- OCT1-032 unknown-price behavior, two choices
+- OCT1-033 additional-fee checklist
+- OCT1-034 amount, applicability, and crediting
+- OCT1-035 “when credited” when Sometimes
+- OCT1-036 applicability placeholders that the October 1 source supplied
+- OCT1-037 area fee or minimum as text
+- OCT1-038 markup explanation prefill, verified in the rebuilt section
+- OCT1-039 visit-type matrix removed
+- OCT1-040 paid-diagnostic follow-up removed
+- OCT1-041 old approved-price cards replaced
+- OCT1-042 never-say pricing checklist removed
+- OCT1-043 discounts, stacking, and the old fee/discount waiver question removed
+
+## New Pricing Model
+
+Question: “How does your company normally determine what a customer pays?”
+
+Multi-select, same stored ids. The `after_diagnosis` label is now “Price determined after the technician evaluates the job”. Other still opens the existing free-text field. No helper commentary was added.
+
+## Quote Permission
+
+Question: “May Alexander quote prices for your services?”
+
+Stored as `mayQuoteServicePrices`: `allowed` or `not_allowed`.
+
+A new questionnaire starts at `not_allowed` (“No — Alexander should not quote service prices”). A saved current value is kept. An old draft that has no such field becomes `not_allowed` and is flagged `DEFAULTED_FROM_LEGACY`. Old approved-price cards are not treated as permission to quote.
+
+## Service Pricing
+
+Shown only when quote permission is Yes. The question is “What service prices may Alexander quote?”
+
+Candidates come from `getOfferedPricingServices`, which reads the canonical Section 2 catalog and keeps only policy `offered`. With conditions, ask our team first, we don’t offer this, and unanswered (“not sure”) are excluded. The label is the catalog label for that service id.
+
+Each offered service starts as “+ Add pricing”. Adding creates one `servicePrices` record for that id. A second record for the same id is rejected. Removing the record takes it out of the active answer.
+
+Modes: `exact`, `starting_at`, `range`, `hourly`, `estimate`. Exact, starting-at, and hourly use one `MoneyField`. Range uses minimum and maximum, both required, maximum greater than or equal to minimum. Estimate / diagnosis has no amount. Changing mode clears the amounts that no longer apply, so an inactive amount cannot block validation and is not submitted as the current price. Every active record has an optional conditions field. The October 1 drain-clearing sentence is the placeholder only.
+
+If a service later leaves “We offer this”, its record stays on the draft but is omitted from the pricing list, from validation, from review, and from normalization. It reappears if the service is offered again. Section 2 is not cleared.
+
+## Unknown Price
+
+Question: “What should Alexander do when he doesn't have an approved price?”
+
+- `technician_after_evaluation` — “Explain that pricing will be provided after the job is evaluated” (default)
+- `team_provides_pricing` — “Have our team provide the price”
+
+Those two stored values are kept. `approved_price_or_range`, `fee_plus_separate_quote`, `custom`, and any other old value become the default and are flagged `NEEDS_QA`. “Give an approved price or range when one is available” is not mapped into this question.
+
+## Additional Fees
+
+Question: “Which additional fees does your company charge?”
+
+`service_diagnostic`, `after_hours`, `travel`, `cancellation`, `no_show`, `minimum_service`, `estimate_consultation`, `other`, and `none`.
+
+`none` (“We don’t charge additional fees”) cannot be an active selection together with a real fee. The checkbox control enforces that, and validation rejects a contradictory stored selection. Unselected fee details stay on the draft and are not submitted.
+
+Each selected fee requires an amount (`MoneyField`, digits only, greater than zero, at most two decimals), “When does it apply?”, and crediting: Always, Sometimes, or Never. Sometimes reveals “When is it credited?” The supplied October 1 examples are placeholders. Travel, minimum, estimate/consultation, and Other have no invented placeholder.
+
+## Cancellation / No-Show Amount Migration
+
+Scheduling still asks whether a late-cancellation fee applies, the notice window, the conditional rule, and the exceptions note. It still asks whether a no-show fee applies, the conditional rule, and the same exceptions note. The dollar inputs are gone. Scheduling validation and progress no longer require `amountFixed`.
+
+When an old draft says the fee applies (Yes or conditional) and the new fee checklist is not already saved:
+
+- Cancellation fee is selected in Pricing.
+- A valid fixed amount is copied into that fee’s amount and then cleared from the Scheduling fee record.
+- The Scheduling application rule is copied into “When does it apply?” when that text already exists. No new sentence is written.
+- Notice hours, conditions, and exceptions stay on Scheduling.
+
+The same rule moves a no-show amount. A later reload does not put the amount back onto Scheduling and does not overwrite a saved Pricing selection.
+
+## Area Fees
+
+Question: “Do any areas have different travel fees or minimum charges?”
+
+Default `no`. Yes opens repeatable rows of Area and Fee or minimum. Fee or minimum is text. Example placeholder: “$100 travel fee and $250 minimum service charge”. It is not a `MoneyField` and it is not parsed into a number.
+
+Previously entered service areas are offered as suggestions on the Area field (zip codes, cities, conditional territories, after-hours areas, and distance descriptions already collected in Section 2). This reuses the existing geography list. It is not a new cross-section selector.
+
+An old row that stored a travel amount and a minimum amount is joined into that text field and flagged `MAPPED`. The old numeric fields are cleared.
+
+## Markup
+
+Question: “Does your company mark up parts or materials?”
+
+Yes, Sometimes, or No. Yes or Sometimes shows “What may Alexander tell customers about material pricing?” The approved sentence is written only when that explanation is empty at the moment the customer selects Yes or Sometimes. A saved explanation is kept. Reload does not overwrite it. No hides the field and clears it, which was already the behavior.
+
+## Old Questions Removed
+
+The customer-facing block that began with “How should Alexander handle these types of visits?” and ended immediately before “What payment methods do you accept?” is gone. That includes:
+
+- visit-type matrix
+- paid-diagnostic follow-up
+- old approved service-price cards
+- “What should Alexander never say about pricing?”
+- discounts, coupons, and promotions
+- promotion stacking
+- “May Alexander waive or modify a fee or discount?”
+- the old free-form fee-card editor
+
+Payment methods and every question after them are unchanged, including payment timing, financing, financial remedies, and the financial approver.
+
+## Legacy Migration
+
+Notes continue on `draft.stage2Migration` and are not shown to the customer. Stage 4A statuses used here: `MAPPED`, `DEFAULTED_FROM_LEGACY`, `DEFAULTED_FROM_UNKNOWN`, `DROPPED_OBSOLETE`, `NEEDS_QA`.
+
+Flagged cases:
+
+- quote permission defaulted for an old draft
+- old service-price cards that have no explicit pricing type (`NEEDS_QA`, no guessed Exact / Starting at / Range / Hourly)
+- old fee cards with no direct category, including the combined cancellation/no-show template and permit/inspection
+- cancellation amount moved
+- no-show amount moved
+- unknown-price value that is not one of the two current choices
+- the obsolete pre-payment block dropped
+
+Direct fee maps only: Diagnostic/service-call → Service / diagnostic; Emergency or after-hours → After-hours / emergency; Travel → Travel; Minimum service charge → Minimum service charge; Other → Other. A fixed amount, the applicability text, and Yes/No/Sometimes crediting (Always/Never/Sometimes) are copied when those fields already mean the same thing. Waiver fields are ignored. Dispatch is not mapped to Service / diagnostic.
+
+## Existing Answer Preservation
+
+Compatible pricing-method selections, markup policy and customer wording, Scheduling policy/notice/conditions/exceptions, payment methods, payment timing, caller authorization, emergencies, and other sections are left in place. A second load does not replace a current Stage 4A answer with a default.
+
+## Normalization Follow-Up
+
+NORMALIZATION FOLLOW-UP REQUIRED.
+
+`normalize/section5.ts` now passes through the new collection and emits empty visit types, old service-price rules, forbidden statements, and promotions. That pass-through is not a Company Truth redesign. These current questionnaire fields are not yet mapped onto Company Truth pricing facts:
+
+- `mayQuoteServicePrices`
+- `servicePrices` (service id, mode, exact / starting / range / hourly amounts, conditions)
+- the two-choice `unknownPriceBehavior`
+- `additionalFeeSelection` and `additionalFeeDetails` (amount, applicability, credit, credit explanation)
+- `areaPricingRows.feeOrMinimum` as prose rather than two currency amounts
+- cancellation and no-show dollar amounts, which now live on the Pricing fee details rather than Scheduling `amountFixed`
+
+The Stage 3 caller-authority follow-up is unchanged: authority is still not translated into schedule, fee, repair, or payment facts.
+
+## Tests
+
+`src/lib/onboarding/stage4aMigration.test.ts` covers pricing choices, quote-permission default and preservation and legacy default, offered-only eligibility, all five pricing modes, range minimum/maximum, inactive amounts, dormant prices, unknown-price mapping, fee exclusivity and Sometimes crediting, cancellation and no-show amount moves, area text, markup prefill, and a representative old Section 5 draft.
+
+## Stage 4A QA
+
+- typecheck: pass
+- lint: pass
+- tests: 485 pass, 0 fail (baseline was 474)
+- build: pass
+- interactive browser check: not available
+
+## Deferred to Stage 4B
+
+Do not treat these as done:
+
+- “What payment methods do you accept?” was left as it is
+- “When is payment normally due?” and its follow-ups
+- payment assistance (“Can Alexander help customers make a payment?”)
+- what Alexander may help collect payment for
+- the new financial-remedy model
+- financing-detail deletion
+- payment-due follow-up deletion
+- financial-approver deletion
+- membership / service-plan resolution
+
+There is no membership or service-plan question inside Section 5. The only related current surfaces are the Section 6 restricted-information option that mentions memberships and the Section 8 software category `membership` (“Membership / service-plan software”). The October 1 Pricing sequence ends with the new financial-remedy model and then Customer Care, so Stage 4B has to decide whether those mentions stay. They were not deleted or edited in Stage 4A.
+
+Also still deferred: Customer Care, Software & Integrations, and any other post-payment cleanup.

@@ -94,12 +94,11 @@ describe("getSection4Progress — complete valid section", () => {
     const fee = validLateCancellationFee();
     const data = fullyValidSection4([owner], [fee]);
     withLateCancellationFee(data, fee, "yes");
-    fee.amountFixed = "";
+    fee.noticeRequired = "";
     const units = getSection4ProgressUnits(data, [owner], [fee]);
     const q54 = units[15];
     assert.equal(q54.complete, false);
 
-    fee.amountFixed = "75";
     fee.noticeRequired = "24 hours";
     const unitsFixed = getSection4ProgressUnits(data, [owner], [fee]);
     assert.equal(unitsFixed[15].complete, true);

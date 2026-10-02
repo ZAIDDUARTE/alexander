@@ -61,18 +61,12 @@ describe("normalizeSection5 — Q73 stale service refs", () => {
 });
 
 describe("normalizeSection5 — Q68 active fees only", () => {
-  it("excludes inactive fees and honors noSeparateFees", () => {
+  it("does not treat old custom fee cards as current pricing fees", () => {
     const active = validQ68Fee();
-    const inactive = validQ68Fee({ active: false, name: "Inactive fee" });
     const data = fullyValidSection5();
-    data.noSeparateFees = false;
-    const normalized = normalizeSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [active, inactive]);
-    assert.equal(normalized.fees.length, 1);
-    assert.equal(normalized.fees[0].id, active.id);
-
-    data.noSeparateFees = true;
-    const noFees = normalizeSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [active]);
-    assert.deepEqual(noFees.fees, []);
+    const normalized = normalizeSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [active]);
+    assert.deepEqual(normalized.fees, []);
+    assert.deepEqual(normalized.additionalFees.selection, ["none"]);
   });
 });
 
@@ -87,7 +81,7 @@ describe("normalizeSection5 — Q81 fee-waiver precedence vs Q68", () => {
       nonWaivable,
       waivable,
     ]);
-    assert.deepEqual(normalized.feeWaiverPrecedence.nonWaivableFeeIds, [nonWaivable.id]);
+    assert.deepEqual(normalized.feeWaiverPrecedence.nonWaivableFeeIds, []);
     assert.equal(normalized.feeWaiverPrecedence.feeWaiverRemedyAuthority, "within_rules");
     assert.match(normalized.feeWaiverPrecedence.feeWaiverRemedyRule ?? "", /manager approval/i);
   });
@@ -98,9 +92,6 @@ describe("normalizeSection5 — Q70 keeps all services", () => {
     const s2 = section2WithEligibleServices({ [FIRST_JOB_SERVICE_ID]: "not_offered" });
     const data = fullyValidSection5(s2);
     data.visitTypeByServiceId[FIRST_JOB_SERVICE_ID] = "not_offered";
-    const row = normalizeSection5(data, s2, [], []).visitTypes.find(
-      (r) => r.serviceId === FIRST_JOB_SERVICE_ID,
-    );
-    assert.equal(row?.visitType, "not_offered");
+    assert.deepEqual(normalizeSection5(data, s2, [], []).visitTypes, []);
   });
 });

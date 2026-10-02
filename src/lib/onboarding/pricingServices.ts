@@ -25,3 +25,24 @@ export function getPricingDiscussEligibleServices(section2: Section2Data): Servi
 export function getPricingDiscussEligibleServiceIds(section2: Section2Data): Set<string> {
   return new Set(getPricingDiscussEligibleServices(section2).map((s) => s.id));
 }
+
+/**
+ * Services Alexander may be given a quotable price for.
+ * Only the current Section 2 state "We offer this".
+ */
+export function getOfferedPricingServices(section2: Section2Data): ServiceCatalogItem[] {
+  const out: ServiceCatalogItem[] = [];
+  for (const item of JOB_CATALOG) {
+    const entry = section2.plumbingServices[item.id] ?? section2.diagnosticServices[item.id];
+    if (entry?.policy === "offered") out.push(item);
+  }
+  return out;
+}
+
+export function offeredPricingServiceIds(section2: Section2Data): Set<string> {
+  return new Set(getOfferedPricingServices(section2).map((service) => service.id));
+}
+
+export function pricingServiceLabel(serviceId: string): string {
+  return JOB_CATALOG.find((service) => service.id === serviceId)?.label ?? serviceId;
+}

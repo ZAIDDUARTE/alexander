@@ -8,29 +8,76 @@ export const PRICING_MODEL_OPTIONS: readonly CatalogItem[] = [
   { id: "flat_rate", label: "Flat-rate / upfront pricing" },
   { id: "hourly_labor_materials", label: "Hourly labor + materials" },
   { id: "fixed_prices_certain_services", label: "Fixed prices for certain services" },
-  { id: "after_diagnosis", label: "Price determined after technician diagnosis" },
+  { id: "after_diagnosis", label: "Price determined after the technician evaluates the job" },
   { id: "estimate_required", label: "Estimate or quote required for larger work" },
   { id: "other", label: "Other" },
 ] as const;
 
-/** Q67 — unknown exact price behavior. */
+/** Current unknown-price behavior. Legacy ids are migration inputs only. */
 export const UNKNOWN_PRICE_OPTIONS: readonly CatalogItem[] = [
   {
     id: "technician_after_evaluation",
-    label: "Explain that the technician will provide pricing after evaluating the job",
+    label: "Explain that pricing will be provided after the job is evaluated",
   },
-  {
-    id: "approved_price_or_range",
-    label: "Give an approved price or range when one is available",
-  },
-  {
-    id: "fee_plus_separate_quote",
-    label:
-      "Explain the applicable service/diagnostic fee and that additional work is quoted separately",
-  },
-  { id: "team_provides_pricing", label: "Arrange for our team to provide pricing" },
-  { id: "custom", label: "Follow another rule" },
+  { id: "team_provides_pricing", label: "Have our team provide the price" },
 ] as const;
+
+export const QUOTE_PERMISSION_OPTIONS: readonly CatalogItem[] = [
+  { id: "allowed", label: "Yes — Alexander may quote the prices we provide below" },
+  { id: "not_allowed", label: "No — Alexander should not quote service prices" },
+] as const;
+
+export const SERVICE_PRICE_MODE_OPTIONS: readonly CatalogItem[] = [
+  { id: "exact", label: "Exact price" },
+  { id: "starting_at", label: "Starting at" },
+  { id: "range", label: "Price range" },
+  { id: "hourly", label: "Hourly" },
+  { id: "estimate", label: "Requires an estimate / diagnosis" },
+] as const;
+
+export const ADDITIONAL_FEE_OPTIONS: readonly CatalogItem[] = [
+  { id: "service_diagnostic", label: "Service / diagnostic fee" },
+  { id: "after_hours", label: "After-hours / emergency fee" },
+  { id: "travel", label: "Travel fee" },
+  { id: "cancellation", label: "Cancellation fee" },
+  { id: "no_show", label: "No-show fee" },
+  { id: "minimum_service", label: "Minimum service charge" },
+  { id: "estimate_consultation", label: "Estimate / consultation fee" },
+  { id: "other", label: "Other" },
+  { id: "none", label: "We don’t charge additional fees" },
+] as const;
+
+export const ADDITIONAL_FEE_CREDIT_OPTIONS: readonly CatalogItem[] = [
+  { id: "always", label: "Always" },
+  { id: "sometimes", label: "Sometimes" },
+  { id: "never", label: "Never" },
+] as const;
+
+export const SERVICE_PRICE_CONDITIONS_PLACEHOLDER =
+  "Example: $149 for a standard residential drain clearing during normal business hours. Main sewer lines are priced separately.";
+
+export const FEE_APPLICABILITY_PLACEHOLDERS: Partial<Record<string, string>> = {
+  service_diagnostic: "Example: Standard residential service calls.",
+  after_hours: "Example: Service performed outside normal business hours, including nights and weekends.",
+  cancellation: "Example: Cancellations less than 2 hours before the appointment.",
+  no_show:
+    "Example: The technician arrives for a confirmed appointment but can't access the property or reach the customer.",
+};
+
+export const FEE_CREDIT_WHEN_PLACEHOLDER =
+  "Example: Credited when the customer approves the recommended repair during the visit.";
+
+export const AREA_FEE_OR_MINIMUM_PLACEHOLDER =
+  "$100 travel fee and $250 minimum service charge";
+
+/** Old fee-card category ids that map directly onto the current checklist. */
+export const LEGACY_FEE_CATEGORY_MAP: Record<string, string> = {
+  diagnostic_service_call: "service_diagnostic",
+  emergency_after_hours: "after_hours",
+  travel: "travel",
+  minimum_service_charge: "minimum_service",
+  other: "other",
+};
 
 /** Q68 optional category templates (category label only). */
 export const FEE_CATEGORY_TEMPLATES: readonly CatalogItem[] = [

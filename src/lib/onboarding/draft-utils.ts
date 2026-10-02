@@ -17,6 +17,7 @@ import {
 } from "./section3Defaults";
 import { migrateStage2Answers } from "./stage2Migration";
 import { migrateStage3CallerAuthorization } from "./stage3Migration";
+import { migrateStage4aPricing } from "./stage4aMigration";
 import { EXCEPTION_TYPES, CALLER_TYPES, CAPACITY_POLICY_ROWS } from "./section4Catalog";
 import { DEFAULT_FORBIDDEN_STATEMENT_IDS } from "./section5Catalog";
 import { FINANCIAL_REMEDY_ROWS } from "./section5Catalog";
@@ -221,15 +222,29 @@ function section4HasContent(s4: OnboardingDraft["section4"], fees: FeeRecord[]):
 function section5HasContent(s5: OnboardingDraft["section5"]): boolean {
   if (s5.pricingModels.length > 0) return true;
   if (s5.pricingModelOther.trim()) return true;
+  if (s5.mayQuoteServicePrices === "allowed") return true;
+  if (s5.servicePrices.length > 0) return true;
   if (s5.materialMarkupPolicy) return true;
   if (s5.materialMarkupCustomerExplanation.trim()) return true;
-  if (s5.unknownPriceBehavior) return true;
+  if (s5.unknownPriceBehavior && s5.unknownPriceBehavior !== "technician_after_evaluation") return true;
   if (s5.unknownPriceCustomRule.trim()) return true;
+  if (s5.additionalFeeSelection.length > 0) return true;
+  if (
+    Object.values(s5.additionalFeeDetails).some(
+      (detail) =>
+        detail.amount.trim() ||
+        detail.applicability.trim() ||
+        detail.credit ||
+        detail.creditWhen.trim(),
+    )
+  ) {
+    return true;
+  }
   if (s5.noSeparateFees) return true;
   const defaultForbidden = DEFAULT_FORBIDDEN_STATEMENT_IDS.slice().sort().join(",");
   const currentForbidden = [...s5.forbiddenStatements].slice().sort().join(",");
   if (currentForbidden !== defaultForbidden) return true;
-  if (s5.hasAreaTravelOrMinimum) return true;
+  if (s5.hasAreaTravelOrMinimum === "yes") return true;
   if (s5.areaPricingRows.length > 0) return true;
   if (s5.forbiddenStatementOther.trim()) return true;
   if (s5.hasPromotions) return true;
@@ -445,7 +460,10 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
     },
     stage2Migration: partial.stage2Migration,
   };
-  return migrateStage3CallerAuthorization(migrateStage2Answers(merged).draft).draft;
+  return migrateStage4aPricing(
+    migrateStage3CallerAuthorization(migrateStage2Answers(merged).draft).draft,
+    partial.section5,
+  ).draft;
 }
 
 export function toRedisDraft(draft: OnboardingDraft, currentRoute: string): RedisOnboardingDraft {

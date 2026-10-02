@@ -88,10 +88,6 @@ function validateFeeForMode(
     return;
   }
 
-  if (!isPositiveMoney(fee.amountFixed)) {
-    errors[`${fieldPrefix}Fee.amountFixed`] = "Enter a valid amount greater than zero.";
-  }
-
   if (requireNotice && !fee.noticeRequired.trim()) {
     errors[`${fieldPrefix}Fee.noticeRequired`] = "Enter the notice required before cancellation.";
   }

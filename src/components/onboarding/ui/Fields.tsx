@@ -17,6 +17,7 @@ export function TextField({
   disabled = false,
   ariaLabel,
   autoComplete,
+  list,
 }: {
   id: string;
   label: string;
@@ -31,6 +32,7 @@ export function TextField({
   disabled?: boolean;
   ariaLabel?: string;
   autoComplete?: string;
+  list?: string;
 }) {
   return (
     <div>
@@ -57,6 +59,7 @@ export function TextField({
         placeholder={placeholder}
         disabled={disabled}
         autoComplete={autoComplete}
+        list={list}
         aria-label={label ? undefined : ariaLabel}
         className={`${inputClass} ${error ? "border-[var(--color-alexander-required)]" : ""} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
         aria-invalid={error ? true : undefined}
