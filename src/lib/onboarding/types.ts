@@ -835,6 +835,21 @@ export type RemedyId =
   | "discount_goodwill"
   | "return_visit";
 
+export type FinancialRemedySelection = RemedyId | "none";
+
+export type PaymentAssistanceAuthority =
+  | "secure_link"
+  | "secure_link_and_authorized_method"
+  | "send_to_team";
+
+export type PaymentCollectionScopeId =
+  | "booking_or_service_fees"
+  | "deposits"
+  | "completed_invoices"
+  | "outstanding_balances"
+  | "progress_payments"
+  | "other";
+
 export type RemedyAuthority = "within_rules" | "human_approval" | "never";
 
 export type QuotePermission = "allowed" | "not_allowed";
@@ -996,6 +1011,10 @@ export type Section5Data = {
   paymentMethods: PaymentMethodId[];
   paymentMethodOther: string;
   paymentDuePolicies: PaymentDueId[];
+  paymentAssistance: PaymentAssistanceAuthority;
+  paymentCollectionScope: PaymentCollectionScopeId[];
+  paymentCollectionOther: string;
+  financialRemedies: FinancialRemedySelection[];
   depositWorkDetail: string;
   depositRule: string;
   progressPaymentProjectsDetail: string;
@@ -1064,6 +1083,15 @@ export function createDefaultSection5(): Section5Data {
     paymentMethods: [],
     paymentMethodOther: "",
     paymentDuePolicies: [],
+    paymentAssistance: "secure_link",
+    paymentCollectionScope: [
+      "booking_or_service_fees",
+      "deposits",
+      "completed_invoices",
+      "outstanding_balances",
+    ],
+    paymentCollectionOther: "",
+    financialRemedies: ["none"],
     depositWorkDetail: "",
     depositRule: "",
     progressPaymentProjectsDetail: "",

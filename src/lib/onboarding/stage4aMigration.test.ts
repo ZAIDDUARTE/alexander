@@ -339,7 +339,13 @@ describe("Stage 4A legacy hydration", () => {
     assert.equal(migrated.section5.hasPromotions, "");
     assert.deepEqual(migrated.section5.paymentMethods, ["check", "invoice"]);
     assert.deepEqual(migrated.section5.paymentDuePolicies, ["invoice_after_service"]);
-    assert.equal(migrated.section5.invoiceTerms, "Net 15");
+    assert.equal(migrated.section5.invoiceTerms, "");
+    assert.equal(
+      migrated.stage2Migration?.some(
+        (note) => note.path === "section5.invoiceTerms" && note.status === "DROPPED_OBSOLETE",
+      ),
+      true,
+    );
     const again = mergeWithDefaults(migrated);
     assert.equal(again.section5.mayQuoteServicePrices, "not_allowed");
     assert.equal(again.section5.additionalFeeDetails.service_diagnostic.amount, "89");

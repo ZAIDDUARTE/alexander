@@ -2,6 +2,17 @@
 
 type Option<T extends string> = { value: T; label: string };
 
+/** "none" is exclusive with every other choice. */
+export function toggleExclusiveNone<T extends string>(value: T[], option: T): T[] {
+  if (option === ("none" as T)) {
+    return value.includes("none" as T) ? [] : [option];
+  }
+  let next = value.filter((item) => item !== ("none" as T));
+  if (next.includes(option)) next = next.filter((item) => item !== option);
+  else next = [...next, option];
+  return next;
+}
+
 export function CheckboxGroup<T extends string>({
   name,
   options,
@@ -16,17 +27,7 @@ export function CheckboxGroup<T extends string>({
   error?: string;
 }) {
   const toggle = (opt: T) => {
-    if (opt === ("none" as T)) {
-      onChange(value.includes("none" as T) ? [] : [opt]);
-      return;
-    }
-    let next = value.filter((v) => v !== ("none" as T));
-    if (next.includes(opt)) {
-      next = next.filter((v) => v !== opt);
-    } else {
-      next = [...next, opt];
-    }
-    onChange(next);
+    onChange(toggleExclusiveNone(value, opt));
   };
 
   return (

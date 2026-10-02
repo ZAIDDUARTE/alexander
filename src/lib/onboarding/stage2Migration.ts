@@ -26,7 +26,9 @@ export type Stage2MigrationStatus =
   | "DEFAULTED_FROM_LEGACY"
   | "DEFAULTED_FROM_UNKNOWN"
   | "DROPPED_OBSOLETE"
-  | "NEEDS_QA";
+  | "NEEDS_QA"
+  | "DEFAULTED_NEW_FIELD"
+  | "MAPPED_FROM_LEGACY";
 
 export type Stage2MigrationField = {
   path: string;

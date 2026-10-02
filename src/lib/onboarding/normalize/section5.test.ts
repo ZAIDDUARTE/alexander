@@ -73,7 +73,7 @@ describe("normalizeSection5 — Q68 active fees only", () => {
 describe("normalizeSection5 — Q81 fee-waiver precedence vs Q68", () => {
   it("records non-waivable fee ids separately from general fee-waiver remedy authority", () => {
     const data = fullyValidSection5();
-    data.remedyAuthority.fee_waiver = "within_rules";
+    data.financialRemedies = ["fee_waiver"];
     data.remedyRules.fee_waiver = "May waive up to $50 with manager approval.";
     const nonWaivable = validQ68Fee({ waiverPolicy: "no" });
     const waivable = validQ68Fee({ waiverPolicy: "yes", waiverRule: "One-time courtesy." });
@@ -82,8 +82,12 @@ describe("normalizeSection5 — Q81 fee-waiver precedence vs Q68", () => {
       waivable,
     ]);
     assert.deepEqual(normalized.feeWaiverPrecedence.nonWaivableFeeIds, []);
-    assert.equal(normalized.feeWaiverPrecedence.feeWaiverRemedyAuthority, "within_rules");
+    assert.equal(normalized.feeWaiverPrecedence.feeWaiverRemedyAuthority, null);
     assert.match(normalized.feeWaiverPrecedence.feeWaiverRemedyRule ?? "", /manager approval/i);
+    assert.deepEqual(
+      normalized.financialRemedyRules.map((row) => row.id),
+      ["fee_waiver"],
+    );
   });
 });
 

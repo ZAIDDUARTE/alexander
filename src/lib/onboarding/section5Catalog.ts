@@ -218,6 +218,61 @@ export const FINANCIAL_REMEDY_ROWS: readonly CatalogItem[] = [
   { id: "return_visit", label: "Free or reduced-price return visit" },
 ] as const;
 
+export const FINANCIAL_REMEDY_OPTIONS: readonly CatalogItem[] = [
+  ...FINANCIAL_REMEDY_ROWS,
+  { id: "none", label: "None — human approval is required" },
+] as const;
+
+export const PAYMENT_ASSISTANCE_OPTIONS: readonly CatalogItem[] = [
+  { id: "secure_link", label: "Yes — Alexander may send customers a secure payment link" },
+  {
+    id: "secure_link_and_authorized_method",
+    label:
+      "Yes — Alexander may send a secure payment link and use an approved payment method already on file when authorized",
+  },
+  { id: "send_to_team", label: "No — Alexander should send payment requests to our team" },
+] as const;
+
+export const PAYMENT_COLLECTION_OPTIONS: readonly CatalogItem[] = [
+  { id: "booking_or_service_fees", label: "Booking or service fees" },
+  { id: "deposits", label: "Deposits" },
+  { id: "completed_invoices", label: "Completed service invoices" },
+  { id: "outstanding_balances", label: "Outstanding balances" },
+  { id: "progress_payments", label: "Progress payments" },
+  { id: "other", label: "Other" },
+] as const;
+
+export const DEFAULT_PAYMENT_COLLECTION_SCOPE = [
+  "booking_or_service_fees",
+  "deposits",
+  "completed_invoices",
+  "outstanding_balances",
+] as const;
+
+export const PAYMENT_DUE_HELP =
+  "Different payment terms may apply to different types of work or customers.";
+
+export const REMEDY_RULE_PLACEHOLDERS: Record<string, string> = {
+  refund:
+    "Example: Alexander may approve refunds up to $50 for duplicate charges. Anything else requires human approval.",
+  account_credit:
+    "Example: Alexander may issue an account credit up to $50 for approved service-recovery situations.",
+  fee_waiver:
+    "Example: Alexander may waive the service fee up to $89 when we missed the confirmed appointment window.",
+  discount_goodwill:
+    "Example: Alexander may offer up to $25 as a goodwill adjustment for an approved customer-service issue.",
+  return_visit:
+    "Example: Alexander may offer a free return visit when the customer reports the same problem within 7 days of our original service.",
+};
+
+export const REMEDY_RULE_LABELS: Record<string, string> = {
+  refund: "Refund — rules or limits",
+  account_credit: "Account credit — rules or limits",
+  fee_waiver: "Fee waiver — rules or limits",
+  discount_goodwill: "Discount / goodwill adjustment — rules or limits",
+  return_visit: "Free or reduced-price return visit — rules or limits",
+};
+
 export const REMEDY_AUTHORITY_OPTIONS: readonly CatalogItem[] = [
   { id: "within_rules", label: "Alexander may approve within our rules" },
   { id: "human_approval", label: "Human approval required" },

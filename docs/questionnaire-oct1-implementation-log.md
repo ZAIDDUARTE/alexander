@@ -568,3 +568,156 @@ Do not treat these as done:
 There is no membership or service-plan question inside Section 5. The only related current surfaces are the Section 6 restricted-information option that mentions memberships and the Section 8 software category `membership` (“Membership / service-plan software”). The October 1 Pricing sequence ends with the new financial-remedy model and then Customer Care, so Stage 4B has to decide whether those mentions stay. They were not deleted or edited in Stage 4A.
 
 Also still deferred: Customer Care, Software & Integrations, and any other post-payment cleanup.
+
+# Stage 4B — Payments & Financial Remedies
+
+Local branch `questionnaire-oct1`. Not pushed. Stage 5 was not started.
+
+## Checkpoint Commit
+
+`bdce966e66c126cd768530951f26653d888f1645` — `checkpoint: questionnaire Oct 1 stage 4A`
+
+Only the validated Stage 4A questionnaire files were staged. Unrelated untracked files stayed untracked. The commit was not pushed. After the commit, the working tree was clean except those unrelated files.
+
+Baseline on that commit, before Stage 4B was finished: typecheck pass, lint pass, 485 tests pass, production build pass.
+
+## Files Modified
+
+- `src/components/onboarding/Section5Form.tsx`
+- `src/components/onboarding/ui/CheckboxGroup.tsx`
+- `src/lib/onboarding/draft-utils.ts`
+- `src/lib/onboarding/normalize/section5.ts`
+- `src/lib/onboarding/normalize/section5.test.ts`
+- `src/lib/onboarding/progress/section5.ts`
+- `src/lib/onboarding/section5-test-helpers.ts`
+- `src/lib/onboarding/section5Catalog.ts`
+- `src/lib/onboarding/stage2Migration.ts`
+- `src/lib/onboarding/stage4aMigration.test.ts`
+- `src/lib/onboarding/types.ts`
+- `src/lib/onboarding/validation/section5.ts`
+- `src/lib/onboarding/validation/section5.test.ts`
+- `docs/questionnaire-oct1-implementation-log.md`
+
+## Files Added
+
+- `src/lib/onboarding/stage4bMigration.ts`
+- `src/lib/onboarding/stage4bMigration.test.ts`
+
+## Files Removed From the Current Questionnaire
+
+- `src/components/onboarding/FinancialRemedyMatrix.tsx`
+
+Legacy financing-permission and remedy-authority constants remain for decoding an old draft. They are not rendered.
+
+## OCT1 Change IDs Completed
+
+- OCT1-044 financing-detail flow removed
+- OCT1-045 payment methods kept, including Financing
+- OCT1-046 payment timing kept; detail follow-ups removed
+- OCT1-047 payment-assistance authority added
+- OCT1-048 payment collection scope added
+- OCT1-049 financial remedies replaced with a multi-select
+- OCT1-050 per-remedy rule placeholders
+- OCT1-051 pricing financial-approver question removed
+
+## Payment Methods
+
+“What payment methods do you accept?” is unchanged. Stored key: `paymentMethods`. Choices remain credit card, debit card, cash, check, ACH / bank transfer, financing, invoice / account billing, and other. Other still uses `paymentMethodOther`. Selecting Financing does not open a financing-detail flow.
+
+## Payment Timing
+
+“When is payment normally due?” keeps the same six choices on `paymentDuePolicies`. The helper is “Different payment terms may apply to different types of work or customers.” Saved selections are preserved.
+
+## Payment Assistance
+
+“Can Alexander help customers make a payment?” is a required single select on `paymentAssistance`.
+
+- `secure_link` — Yes — Alexander may send customers a secure payment link
+- `secure_link_and_authorized_method` — Yes — Alexander may send a secure payment link and use an approved payment method already on file when authorized
+- `send_to_team` — No — Alexander should send payment requests to our team
+
+A fresh form starts on `secure_link`. A saved current value is kept. A legacy draft with no equivalent field becomes `secure_link` and is flagged `DEFAULTED_NEW_FIELD`. An unrecognized value becomes `secure_link` and is flagged `DEFAULTED_FROM_UNKNOWN`. The choice is not inferred from payment methods, financing, invoice terms, or CRM data. Enum keys are not shown.
+
+## Payment Collection Scope
+
+“What may Alexander help collect payment for?” is always visible. It is not hidden when the assistance answer is “send payment requests to our team.”
+
+Stored key: `paymentCollectionScope`, plus `paymentCollectionOther` when Other is selected.
+
+A fresh form preselects booking or service fees, deposits, completed service invoices, and outstanding balances. Progress payments and Other are not preselected. A saved current selection is kept and is not reset to those four on a later load. A legacy draft with no such field receives the four defaults and is flagged `DEFAULTED_NEW_FIELD`.
+
+Validation requires at least one choice. Other requires the existing free-text detail.
+
+## Financial Remedies
+
+“What financial remedies may Alexander approve without human approval?” is a multi-select on `financialRemedies`.
+
+Choices: refund, account credit, fee waiver, discount / goodwill adjustment, free or reduced-price return visit, and none.
+
+A fresh form starts on None. None is mutually exclusive with every real remedy through the shared checkbox behavior (`toggleExclusiveNone`). Validation also rejects a stored combination of None plus a remedy.
+
+## Per-Remedy Rules
+
+Each selected remedy has its own required open-text field on the existing `remedyRules` record. The labels are “Refund — rules or limits” and the same pattern for the other four remedies. The October 1 examples are placeholders only. These fields are not money inputs. Unselected rules do not block validation. None requires no rule fields. Deselecting a remedy clears its rule in the current form so review does not show it.
+
+## Financing Cleanup
+
+Financing remains only as a payment-method checkbox. The standalone questions (offer financing, provider, what Alexander may do, eligibility statement, application link, begin application, transfer) are not rendered, required, counted, reviewed, or submitted as current answers. Legacy detail is cleared and flagged `DROPPED_OBSOLETE` on `section5.financingDetail`. It is not converted into payment-assistance permission.
+
+## Financial Approver Cleanup
+
+“Who should Alexander contact when human approval is required?” is gone from Pricing. `financialApproverContactId` is cleared when an old draft has it and flagged `DROPPED_OBSOLETE`. Section 1, Section 3 contacts, Section 4 exception authority and booking fields, and the contacts list are not modified by that cleanup.
+
+## Payment-Due Detail Cleanup
+
+Deposit, progress-payment, invoice, and other payment-due explanation fields are not current questions. Non-empty legacy text is cleared and flagged `DROPPED_OBSOLETE`. It is not copied into another field. The Other timing checkbox remains, without a required explanation.
+
+## Legacy Migration
+
+`migrateStage4bPayments` runs after the Stage 4A migration and reads the raw section so a second load does not overwrite a saved Stage 4B answer.
+
+Remedy mapping: an old row marked “Alexander may approve within our rules” (`within_rules`) becomes a selected remedy of the same id. Human approval and never offered do not. If no remedy was independently approvable, the new answer is None. Existing rule text stays only on the remedy that was `within_rules`. Rule text left on a remedy that is not selected is flagged `NEEDS_QA` and is not copied onto the selected remedies.
+
+Migration notes use `PRESERVED` only as an existing status type. This pass records `DEFAULTED_NEW_FIELD`, `DEFAULTED_FROM_UNKNOWN`, `MAPPED_FROM_LEGACY`, `DROPPED_OBSOLETE`, and `NEEDS_QA`. Notes stay on `stage2Migration` and are not shown to customers.
+
+## Existing Answer Preservation
+
+Payment-method selections, payment-timing selections, Stage 4A pricing answers, cancellation and no-show pricing data, caller authorization, emergency and after-hours data, and unrelated sections are left in place. Stage 4A is not reset.
+
+## Membership Resolution
+
+NO PRICING CHANGE REQUIRED
+
+Section 5 has no membership or service-plan question. Section 6 restricted-information membership options and Section 8 “Membership / service-plan software” were not edited.
+
+## Normalization Follow-Up
+
+NORMALIZATION FOLLOW-UP REQUIRED
+
+`normalizeSection5` exposes the new questionnaire values structurally and no longer emits obsolete financing detail, payment-due explanations, the old remedy-authority matrix, or the pricing approver as current facts. It does not interpret those values as Company Truth.
+
+Exact fields still awaiting a Company Truth mapping:
+
+- `paymentAssistance`
+- `paymentCollectionScope`
+- `paymentCollectionOther`
+- `financialRemedies`
+- `remedyRules` (emitted as `financialRemedyRules` for selected remedies that have text)
+
+Stage 4A fields that remain unmapped are unchanged: `mayQuoteServicePrices`, `servicePrices`, the two-choice `unknownPriceBehavior`, `additionalFeeSelection`, `additionalFeeDetails`, area `feeOrMinimum` prose, and cancellation / no-show amounts now stored on Pricing fees. Stage 3 caller authority is still not translated into schedule, fee, repair, or payment facts.
+
+## Tests
+
+`src/lib/onboarding/stage4bMigration.test.ts` covers payment-method choices, Financing without a detail flow, preserved timing, dropped due-detail, assistance default and reload, collection defaults and edited selections, legacy defaults with migration notes, financing cleanup, the None default, None exclusivity, per-remedy rule validation, mixed old-matrix mapping, approver removal without touching other contacts, a full legacy Section 5 hydration, and a complete current Section 5 round-trip.
+
+## Stage 4B QA
+
+- typecheck: pass
+- lint: pass
+- tests: 500 pass, 0 fail (baseline was 485)
+- build: pass
+- interactive browser check: not available
+
+## Deferred
+
+Customer Care, Software & Integrations, Voice & Conversation, and Prompt Zero / Company Truth semantic mappings. Not published.

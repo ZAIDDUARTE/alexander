@@ -1,4 +1,4 @@
-import { FINANCIAL_REMEDY_ROWS } from "../section5Catalog";
+import { PAYMENT_ASSISTANCE_OPTIONS, PAYMENT_COLLECTION_OPTIONS } from "../section5Catalog";
 import { getOfferedPricingServices, pricingServiceLabel } from "../pricingServices";
 import {
   activeServicePrices,
@@ -6,18 +6,10 @@ import {
   additionalFeeSelectionConflict,
   servicePriceRecordErrors,
 } from "../section5Pricing";
-import { approverContactIsValid } from "../validation/section3";
 import type { Contact, FeeRecord, RemedyId, Section2Data, Section5Data } from "../types";
-import { contactHasIdentity, createDefaultSection2 } from "../types";
+import { createDefaultSection2 } from "../types";
 
 type ProgressUnit = { applicable: boolean; complete: boolean };
-
-function remedyRequiresHumanApproval(data: Section5Data): boolean {
-  for (const row of FINANCIAL_REMEDY_ROWS) {
-    if (data.remedyAuthority[row.id as RemedyId] === "human_approval") return true;
-  }
-  return false;
-}
 
 function areaRowsComplete(data: Section5Data): boolean {
   if (data.areaPricingRows.length === 0) return false;
@@ -55,14 +47,16 @@ function additionalFeesComplete(data: Section5Data): boolean {
   return true;
 }
 
+const ASSISTANCE_IDS = new Set(PAYMENT_ASSISTANCE_OPTIONS.map((option) => option.id));
+const COLLECTION_IDS = new Set(PAYMENT_COLLECTION_OPTIONS.map((option) => option.id));
+
 function remediesComplete(data: Section5Data): boolean {
-  for (const row of FINANCIAL_REMEDY_ROWS) {
-    const id = row.id as RemedyId;
-    const authority = data.remedyAuthority[id];
-    if (!authority) return false;
-    if (authority === "within_rules" && !data.remedyRules[id].trim()) return false;
-  }
-  return true;
+  const remedies = data.financialRemedies;
+  if (remedies.length === 0) return false;
+  const actual = remedies.filter((id): id is RemedyId => id !== "none");
+  if (remedies.includes("none") && actual.length > 0) return false;
+  if (remedies.includes("none")) return true;
+  return actual.every((id) => Boolean(data.remedyRules[id]?.trim()));
 }
 
 /**
@@ -75,35 +69,12 @@ export function getSection5ProgressUnits(
   fees: FeeRecord[] = [],
 ): ProgressUnit[] {
   void fees;
+  void contacts;
   const showServicePrices = data.mayQuoteServicePrices === "allowed";
   const showAreaRows = data.hasAreaTravelOrMinimum === "yes";
-  const showFinancing = data.offersFinancing === "yes";
-  const showFinancialApprover = remedyRequiresHumanApproval(data);
-
   const showMarkupExplanation =
     data.materialMarkupPolicy === "yes" || data.materialMarkupPolicy === "sometimes";
-
-  const due = data.paymentDuePolicies;
-  const depositComplete =
-    !due.includes("deposit_required") ||
-    (Boolean(data.depositWorkDetail.trim()) && Boolean(data.depositRule.trim()));
-  const progressComplete =
-    !due.includes("progress_payments") ||
-    (Boolean(data.progressPaymentProjectsDetail.trim()) &&
-      Boolean(data.progressPaymentRule.trim()));
-  const invoiceComplete =
-    !due.includes("invoice_after_service") ||
-    (Boolean(data.invoiceCustomersDetail.trim()) && Boolean(data.invoiceTerms.trim()));
-  const dueOtherComplete =
-    !due.includes("other") || Boolean(data.paymentDueOtherRule.trim());
-
-  const financialApproverComplete =
-    showFinancialApprover &&
-    Boolean(data.financialApproverContactId.trim()) &&
-    (() => {
-      const approver = contacts.find((c) => c.id === data.financialApproverContactId);
-      return Boolean(approver && contactHasIdentity(approver) && approverContactIsValid(approver));
-    })();
+  const collection = data.paymentCollectionScope.filter((id) => COLLECTION_IDS.has(id));
 
   return [
     {
@@ -137,7 +108,7 @@ export function getSection5ProgressUnits(
         data.materialMarkupPolicy !== "" &&
         (!showMarkupExplanation || Boolean(data.materialMarkupCustomerExplanation.trim())),
     },
-    // Payment methods and everything after them stay in place for Stage 4B.
+    // Payment methods through financial remedies.
     {
       applicable: true,
       complete:
@@ -147,24 +118,19 @@ export function getSection5ProgressUnits(
     // Q79
     {
       applicable: true,
-      complete:
-        data.paymentDuePolicies.length > 0 &&
-        depositComplete &&
-        progressComplete &&
-        invoiceComplete &&
-        dueOtherComplete,
+      complete: data.paymentDuePolicies.length > 0,
     },
-    // Q80
+    {
+      applicable: true,
+      complete: ASSISTANCE_IDS.has(data.paymentAssistance),
+    },
     {
       applicable: true,
       complete:
-        data.offersFinancing !== "" &&
-        (!showFinancing || Boolean(data.financingProviderTerms.trim())),
+        collection.length > 0 &&
+        (!collection.includes("other") || Boolean(data.paymentCollectionOther.trim())),
     },
-    // Q81
     { applicable: true, complete: remediesComplete(data) },
-    // Q82
-    { applicable: showFinancialApprover, complete: financialApproverComplete },
   ];
 }
 

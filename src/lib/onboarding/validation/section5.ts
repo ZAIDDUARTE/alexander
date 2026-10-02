@@ -1,5 +1,6 @@
 import {
-  FINANCIAL_REMEDY_ROWS,
+  PAYMENT_ASSISTANCE_OPTIONS,
+  PAYMENT_COLLECTION_OPTIONS,
   PAYMENT_DUE_OPTIONS,
   PAYMENT_METHOD_OPTIONS,
   PRICING_MODEL_OPTIONS,
@@ -12,10 +13,6 @@ import {
   additionalFeeSelectionConflict,
   servicePriceRecordErrors,
 } from "../section5Pricing";
-import {
-  approverContactIsValid,
-  validateApproverContact,
-} from "./section3";
 import type {
   Contact,
   FeeRecord,
@@ -26,7 +23,7 @@ import type {
   Section4Data,
   Section5Data,
 } from "../types";
-import { contactHasIdentity, createDefaultSection2, createDefaultSection4 } from "../types";
+import { createDefaultSection2, createDefaultSection4 } from "../types";
 
 export type FieldErrors = Partial<Record<string, string>>;
 
@@ -34,15 +31,8 @@ const PRICING_MODEL_IDS = new Set(PRICING_MODEL_OPTIONS.map((o) => o.id));
 const UNKNOWN_PRICE_IDS = new Set(UNKNOWN_PRICE_OPTIONS.map((o) => o.id));
 const PAYMENT_METHOD_IDS = new Set(PAYMENT_METHOD_OPTIONS.map((o) => o.id));
 const PAYMENT_DUE_IDS = new Set(PAYMENT_DUE_OPTIONS.map((o) => o.id));
-const REMEDY_IDS = new Set(FINANCIAL_REMEDY_ROWS.map((r) => r.id));
-const VALID_REMEDY_AUTHORITIES = new Set(["within_rules", "human_approval", "never"]);
-
-function remedyRequiresHumanApproval(data: Section5Data): boolean {
-  for (const row of FINANCIAL_REMEDY_ROWS) {
-    if (data.remedyAuthority[row.id as RemedyId] === "human_approval") return true;
-  }
-  return false;
-}
+const ASSISTANCE_IDS = new Set(PAYMENT_ASSISTANCE_OPTIONS.map((option) => option.id));
+const COLLECTION_IDS = new Set(PAYMENT_COLLECTION_OPTIONS.map((option) => option.id));
 
 function validateAreaPricingRows(data: Section5Data, errors: FieldErrors): void {
   if (data.areaPricingRows.length === 0) {
@@ -81,6 +71,7 @@ export function validateSection5(
   const errors: FieldErrors = {};
   void fees;
   void section4;
+  void contacts;
 
   // Q65
   const models = data.pricingModels.filter((id) => PRICING_MODEL_IDS.has(id));
@@ -162,80 +153,29 @@ export function validateSection5(
   if (duePolicies.length === 0) {
     errors.paymentDuePolicies = "Select at least one payment-due policy.";
   }
-  if (duePolicies.includes("deposit_required")) {
-    if (!data.depositWorkDetail.trim()) {
-      errors.depositWorkDetail = "Describe which work requires a deposit.";
-    }
-    if (!data.depositRule.trim()) {
-      errors.depositRule = "Describe your deposit rule.";
-    }
-  }
-  if (duePolicies.includes("progress_payments")) {
-    if (!data.progressPaymentProjectsDetail.trim()) {
-      errors.progressPaymentProjectsDetail = "Describe which projects use progress payments.";
-    }
-    if (!data.progressPaymentRule.trim()) {
-      errors.progressPaymentRule = "Describe your progress-payment rule.";
-    }
-  }
-  if (duePolicies.includes("invoice_after_service")) {
-    if (!data.invoiceCustomersDetail.trim()) {
-      errors.invoiceCustomersDetail = "Describe which customers may be invoiced.";
-    }
-    if (!data.invoiceTerms.trim()) {
-      errors.invoiceTerms = "Describe your invoice terms.";
-    }
-  }
-  if (duePolicies.includes("other") && !data.paymentDueOtherRule.trim()) {
-    errors.paymentDueOtherRule = "Describe your other payment-due rule.";
+  if (!ASSISTANCE_IDS.has(data.paymentAssistance)) {
+    errors.paymentAssistance = "Select whether Alexander may help customers make a payment.";
   }
 
-  // Q80
-  if (!data.offersFinancing) {
-    errors.offersFinancing = "Select yes or no.";
-  } else if (data.offersFinancing === "yes") {
-    if (!data.financingProviderTerms.trim()) {
-      errors.financingProviderTerms = "Enter financing provider and terms.";
-    }
+  const scope = data.paymentCollectionScope.filter((id) => COLLECTION_IDS.has(id));
+  if (scope.length === 0) {
+    errors.paymentCollectionScope = "Select at least one type of payment.";
+  }
+  if (scope.includes("other") && !data.paymentCollectionOther.trim()) {
+    errors.paymentCollectionOther = "Describe the other payment Alexander may collect.";
   }
 
-  // Q81
-  let missingRemedyAuthority = false;
-  for (const row of FINANCIAL_REMEDY_ROWS) {
-    const remedyId = row.id as RemedyId;
-    const authority = data.remedyAuthority[remedyId] ?? "";
-    if (!authority) {
-      missingRemedyAuthority = true;
-      continue;
-    }
-    if (!VALID_REMEDY_AUTHORITIES.has(authority) || !REMEDY_IDS.has(remedyId)) {
-      missingRemedyAuthority = true;
-      continue;
-    }
-    if (authority === "within_rules" && !data.remedyRules[remedyId].trim()) {
-      errors[`remedyRules.${remedyId}`] = "Describe the rules or limits for this remedy.";
-    }
-  }
-  if (missingRemedyAuthority) {
-    errors.remedyAuthority = "Select an authority for every financial remedy.";
-  }
-
-  // Q82
-  if (remedyRequiresHumanApproval(data)) {
-    if (!data.financialApproverContactId.trim()) {
-      errors.financialApproverContactId =
-        "Select who Alexander should contact for financial remedy approval.";
-    } else {
-      const approver = contacts.find((c) => c.id === data.financialApproverContactId);
-      if (!approver || !contactHasIdentity(approver)) {
-        errors.financialApproverContactId = "Select a valid contact.";
-      } else if (!approverContactIsValid(approver)) {
-        const approverErrors = validateApproverContact(approver);
-        for (const [key, msg] of Object.entries(approverErrors)) {
-          if (msg && typeof msg === "string") {
-            errors[`financialApproverContact.${key}`] = msg;
-          }
-        }
+  const remedies = data.financialRemedies;
+  const hasNone = remedies.includes("none");
+  const actual = remedies.filter((id): id is RemedyId => id !== "none");
+  if (remedies.length === 0) {
+    errors.financialRemedies = "Select at least one option.";
+  } else if (hasNone && actual.length > 0) {
+    errors.financialRemedies = "“None — human approval is required” cannot be combined with a remedy.";
+  } else if (!hasNone) {
+    for (const remedyId of actual) {
+      if (!data.remedyRules[remedyId]?.trim()) {
+        errors[`remedyRules.${remedyId}`] = "Describe Alexander’s rules or limits for this remedy.";
       }
     }
   }

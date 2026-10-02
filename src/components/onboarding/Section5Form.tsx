@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOnboarding } from "@/lib/onboarding/OnboardingContext";
 import { QuestionCard, ConditionalPanel } from "./ui/Card";
@@ -8,21 +8,29 @@ import { TextField, TextareaField } from "./ui/Fields";
 import { RadioGroup } from "./ui/RadioGroup";
 import { CheckboxGroup } from "./ui/CheckboxGroup";
 import { PrimaryButton, SecondaryButton } from "./ui/Buttons";
-import { FinancialRemedyMatrix } from "./FinancialRemedyMatrix";
 import { PricingCoreFields } from "./PricingCoreFields";
-import { ContactCardEditor, type ContactCardErrors } from "./ContactCardEditor";
-import { ContactPicker } from "./ContactPicker";
 import { addCompletedSection } from "@/lib/onboarding/draft-utils";
-import { PAYMENT_DUE_OPTIONS, PAYMENT_METHOD_OPTIONS } from "@/lib/onboarding/section5Catalog";
 import {
-  contactHasIdentity,
+  FINANCIAL_REMEDY_OPTIONS,
+  FINANCIAL_REMEDY_ROWS,
+  PAYMENT_ASSISTANCE_OPTIONS,
+  PAYMENT_COLLECTION_OPTIONS,
+  PAYMENT_DUE_HELP,
+  PAYMENT_DUE_OPTIONS,
+  PAYMENT_METHOD_OPTIONS,
+  REMEDY_RULE_LABELS,
+  REMEDY_RULE_PLACEHOLDERS,
+} from "@/lib/onboarding/section5Catalog";
+import {
+  type FinancialRemedySelection,
+  type PaymentAssistanceAuthority,
+  type PaymentCollectionScopeId,
   type PaymentDueId,
   type PaymentMethodId,
+  type RemedyId,
   type Section2Data,
 } from "@/lib/onboarding/types";
-import { YES_NO_OPTIONS } from "@/lib/onboarding/validation/section4";
 import { validateSection5, type FieldErrors } from "@/lib/onboarding/validation/section5";
-import { validateApproverContact } from "@/lib/onboarding/validation/section3";
 
 function geographyChoices(section2: Section2Data) {
   const seen = new Set<string>();
@@ -49,19 +57,8 @@ function geographyChoices(section2: Section2Data) {
   return out;
 }
 
-function mapFinancialApproverErrors(errors: FieldErrors): ContactCardErrors | undefined {
-  const out: ContactCardErrors = {};
-  if (errors["financialApproverContact.nameOrRole"]) {
-    out.nameOrRole = errors["financialApproverContact.nameOrRole"];
-  }
-  if (errors["financialApproverContact.phone"]) {
-    out.phone = errors["financialApproverContact.phone"];
-  }
-  return Object.keys(out).length > 0 ? out : undefined;
-}
-
 export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
-  const { draft, updateSection5, addContact, updateContact, saveDraftNow } = useOnboarding();
+  const { draft, updateSection5, saveDraftNow } = useOnboarding();
   const data = draft.section5;
   const contacts = draft.contacts;
   const fees = draft.fees;
@@ -69,18 +66,6 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const readOnly = mode === "review";
-
-  const showFinancialApprover = useMemo(() => {
-    for (const authority of Object.values(data.remedyAuthority)) {
-      if (authority === "human_approval") return true;
-    }
-    return false;
-  }, [data.remedyAuthority]);
-
-  const identityContacts = useMemo(() => contacts.filter((c) => contactHasIdentity(c)), [contacts]);
-  const financialApprover = contacts.find((c) => c.id === data.financialApproverContactId);
-  const financialApproverIsNew =
-    financialApprover && data.financialApproverContactId && !contactHasIdentity(financialApprover);
 
   const handleContinue = async () => {
     const nextErrors = validateSection5(data, draft.section2, contacts, fees, draft.section4);
@@ -113,7 +98,19 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
     value: o.id as PaymentDueId,
     label: o.label,
   }));
-  const due = data.paymentDuePolicies;
+  const paymentAssistanceOptions = PAYMENT_ASSISTANCE_OPTIONS.map((o) => ({
+    value: o.id as PaymentAssistanceAuthority,
+    label: o.label,
+  }));
+  const paymentCollectionOptions = PAYMENT_COLLECTION_OPTIONS.map((o) => ({
+    value: o.id as PaymentCollectionScopeId,
+    label: o.label,
+  }));
+  const financialRemedyOptions = FINANCIAL_REMEDY_OPTIONS.map((o) => ({
+    value: o.id as FinancialRemedySelection,
+    label: o.label,
+  }));
+  const selectedRemedies = data.financialRemedies.filter((id): id is RemedyId => id !== "none");
 
   return (
     <div className="space-y-6">
@@ -168,208 +165,90 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="When is payment normally due?" required>
+      <QuestionCard title="When is payment normally due?" required helpText={PAYMENT_DUE_HELP}>
         <CheckboxGroup
           name="paymentDuePolicies"
           options={paymentDueOptions}
           value={data.paymentDuePolicies}
-          onChange={(v) =>
-            updateSection5(
-              {
-                paymentDuePolicies: v,
-                ...(!v.includes("deposit_required") ? { depositWorkDetail: "", depositRule: "" } : {}),
-                ...(!v.includes("progress_payments")
-                  ? { progressPaymentProjectsDetail: "", progressPaymentRule: "" }
-                  : {}),
-                ...(!v.includes("invoice_after_service")
-                  ? { invoiceCustomersDetail: "", invoiceTerms: "" }
-                  : {}),
-                ...(!v.includes("other") ? { paymentDueOtherRule: "" } : {}),
-              },
-              { immediate: true },
-            )
-          }
+          onChange={(v) => updateSection5({ paymentDuePolicies: v }, { immediate: true })}
           error={submitted ? errors.paymentDuePolicies : undefined}
         />
-        {due.includes("deposit_required") && (
-          <ConditionalPanel>
-            <TextareaField
-              id="depositWorkDetail"
-              label="Which work requires a deposit?"
-              required
-              rows={2}
-              value={data.depositWorkDetail}
-              onChange={(v) => updateSection5({ depositWorkDetail: v })}
-              error={submitted ? errors.depositWorkDetail : undefined}
-            />
-            <TextareaField
-              id="depositRule"
-              label="Deposit rule"
-              required
-              rows={2}
-              value={data.depositRule}
-              onChange={(v) => updateSection5({ depositRule: v })}
-              error={submitted ? errors.depositRule : undefined}
-            />
-          </ConditionalPanel>
-        )}
-        {due.includes("progress_payments") && (
-          <ConditionalPanel>
-            <TextareaField
-              id="progressPaymentProjectsDetail"
-              label="Which projects use progress payments?"
-              required
-              rows={2}
-              value={data.progressPaymentProjectsDetail}
-              onChange={(v) => updateSection5({ progressPaymentProjectsDetail: v })}
-              error={submitted ? errors.progressPaymentProjectsDetail : undefined}
-            />
-            <TextareaField
-              id="progressPaymentRule"
-              label="Progress-payment rule"
-              required
-              rows={2}
-              value={data.progressPaymentRule}
-              onChange={(v) => updateSection5({ progressPaymentRule: v })}
-              error={submitted ? errors.progressPaymentRule : undefined}
-            />
-          </ConditionalPanel>
-        )}
-        {due.includes("invoice_after_service") && (
-          <ConditionalPanel>
-            <TextareaField
-              id="invoiceCustomersDetail"
-              label="Which customers may be invoiced?"
-              required
-              rows={2}
-              value={data.invoiceCustomersDetail}
-              onChange={(v) => updateSection5({ invoiceCustomersDetail: v })}
-              error={submitted ? errors.invoiceCustomersDetail : undefined}
-            />
-            <TextareaField
-              id="invoiceTerms"
-              label="Invoice terms"
-              required
-              rows={2}
-              value={data.invoiceTerms}
-              onChange={(v) => updateSection5({ invoiceTerms: v })}
-              error={submitted ? errors.invoiceTerms : undefined}
-            />
-          </ConditionalPanel>
-        )}
-        {due.includes("other") && (
-          <ConditionalPanel>
-            <TextareaField
-              id="paymentDueOtherRule"
-              label="Other payment-due rule"
-              required
-              rows={2}
-              value={data.paymentDueOtherRule}
-              onChange={(v) => updateSection5({ paymentDueOtherRule: v })}
-              error={submitted ? errors.paymentDueOtherRule : undefined}
-            />
-          </ConditionalPanel>
-        )}
       </QuestionCard>
 
-      <QuestionCard title="Do you offer financing?" required>
+      <QuestionCard title="Can Alexander help customers make a payment?" required>
         <RadioGroup
-          name="offersFinancing"
-          options={YES_NO_OPTIONS}
-          value={data.offersFinancing}
+          name="paymentAssistance"
+          options={paymentAssistanceOptions}
+          value={data.paymentAssistance}
+          onChange={(v) => updateSection5({ paymentAssistance: v }, { immediate: true })}
+          error={submitted ? errors.paymentAssistance : undefined}
+        />
+      </QuestionCard>
+
+      <QuestionCard title="What may Alexander help collect payment for?" required>
+        <CheckboxGroup
+          name="paymentCollectionScope"
+          options={paymentCollectionOptions}
+          value={data.paymentCollectionScope}
           onChange={(v) =>
             updateSection5(
               {
-                offersFinancing: v,
-                ...(v === "no"
-                  ? {
-                      financingProviderTerms: "",
-                      financingPermissions: [],
-                      financingPermissionOtherDetail: "",
-                      financingEligibilityStatement: "",
-                    }
-                  : {}),
+                paymentCollectionScope: v,
+                ...(!v.includes("other") ? { paymentCollectionOther: "" } : {}),
               },
               { immediate: true },
             )
           }
-          error={submitted ? errors.offersFinancing : undefined}
+          error={submitted ? errors.paymentCollectionScope : undefined}
         />
-        {data.offersFinancing === "yes" && (
+        {data.paymentCollectionScope.includes("other") && (
           <ConditionalPanel>
-            <TextareaField
-              id="financingProviderTerms"
-              label="Financing provider and terms"
+            <TextField
+              id="paymentCollectionOther"
+              label="Other payment"
               required
-              rows={2}
-              value={data.financingProviderTerms}
-              onChange={(v) => updateSection5({ financingProviderTerms: v })}
-              error={submitted ? errors.financingProviderTerms : undefined}
+              value={data.paymentCollectionOther}
+              onChange={(v) => updateSection5({ paymentCollectionOther: v })}
+              error={submitted ? errors.paymentCollectionOther : undefined}
             />
           </ConditionalPanel>
         )}
       </QuestionCard>
 
-      <QuestionCard title="What financial remedies may Alexander approve?" required>
-        <FinancialRemedyMatrix
-          remedyAuthority={data.remedyAuthority}
-          remedyRules={data.remedyRules}
-          onAuthorityChange={(remedyId, authority) =>
-            updateSection5(
-              {
-                remedyAuthority: { ...data.remedyAuthority, [remedyId]: authority },
-                ...(authority !== "within_rules"
-                  ? { remedyRules: { ...data.remedyRules, [remedyId]: "" } }
-                  : {}),
-              },
-              { immediate: true },
-            )
-          }
-          onRuleChange={(remedyId, rule) =>
-            updateSection5({ remedyRules: { ...data.remedyRules, [remedyId]: rule } }, { immediate: true })
-          }
-          highlightIncomplete={submitted}
-          errors={submitted ? errors : {}}
+      <QuestionCard
+        title="What financial remedies may Alexander approve without human approval?"
+        required
+      >
+        <CheckboxGroup
+          name="financialRemedies"
+          options={financialRemedyOptions}
+          value={data.financialRemedies}
+          onChange={(v) => {
+            const nextRules = { ...data.remedyRules };
+            for (const row of FINANCIAL_REMEDY_ROWS) {
+              if (!v.includes(row.id as RemedyId)) nextRules[row.id as RemedyId] = "";
+            }
+            updateSection5({ financialRemedies: v, remedyRules: nextRules }, { immediate: true });
+          }}
+          error={submitted ? errors.financialRemedies : undefined}
         />
+        {selectedRemedies.map((remedyId) => (
+          <ConditionalPanel key={remedyId}>
+            <TextareaField
+              id={`remedyRules.${remedyId}`}
+              label={REMEDY_RULE_LABELS[remedyId] ?? "Rules or limits"}
+              required
+              rows={3}
+              placeholder={REMEDY_RULE_PLACEHOLDERS[remedyId]}
+              value={data.remedyRules[remedyId]}
+              onChange={(v) =>
+                updateSection5({ remedyRules: { ...data.remedyRules, [remedyId]: v } })
+              }
+              error={submitted ? errors[`remedyRules.${remedyId}`] : undefined}
+            />
+          </ConditionalPanel>
+        ))}
       </QuestionCard>
-
-      {showFinancialApprover && (
-        <QuestionCard title="Who should Alexander contact when human approval is required?" required>
-          <ContactPicker
-            name="financialApproverContactId"
-            contacts={identityContacts}
-            value={data.financialApproverContactId}
-            onSelect={(id) => updateSection5({ financialApproverContactId: id }, { immediate: true })}
-            onAddNew={() => {
-              const id = addContact();
-              updateSection5({ financialApproverContactId: id }, { immediate: true });
-            }}
-            error={submitted ? errors.financialApproverContactId : undefined}
-          />
-          {financialApproverIsNew && financialApprover && (
-            <ConditionalPanel>
-              <ContactCardEditor
-                idPrefix="financial-approver"
-                contact={financialApprover}
-                profile="approver"
-                onChange={(patch) => updateContact(financialApprover.id, patch, { immediate: true })}
-                errors={
-                  submitted
-                    ? mapFinancialApproverErrors(errors) ??
-                      (() => {
-                        const approverErrors = validateApproverContact(financialApprover);
-                        const out: ContactCardErrors = {};
-                        if (approverErrors.nameOrRole) out.nameOrRole = approverErrors.nameOrRole;
-                        if (approverErrors.phone) out.phone = approverErrors.phone;
-                        return Object.keys(out).length > 0 ? out : undefined;
-                      })()
-                    : undefined
-                }
-              />
-            </ConditionalPanel>
-          )}
-        </QuestionCard>
-      )}
 
       {!readOnly && (
         <div className="flex flex-col gap-3 pt-4 sm:flex-row">

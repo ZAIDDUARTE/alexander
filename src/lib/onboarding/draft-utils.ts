@@ -18,6 +18,7 @@ import {
 import { migrateStage2Answers } from "./stage2Migration";
 import { migrateStage3CallerAuthorization } from "./stage3Migration";
 import { migrateStage4aPricing } from "./stage4aMigration";
+import { migrateStage4bPayments } from "./stage4bMigration";
 import { EXCEPTION_TYPES, CALLER_TYPES, CAPACITY_POLICY_ROWS } from "./section4Catalog";
 import { DEFAULT_FORBIDDEN_STATEMENT_IDS } from "./section5Catalog";
 import { FINANCIAL_REMEDY_ROWS } from "./section5Catalog";
@@ -256,15 +257,17 @@ function section5HasContent(s5: OnboardingDraft["section5"]): boolean {
   if (s5.paymentMethods.length > 0) return true;
   if (s5.paymentMethodOther.trim()) return true;
   if (s5.paymentDuePolicies.length > 0) return true;
-  if (s5.depositWorkDetail.trim() || s5.depositRule.trim()) return true;
-  if (s5.progressPaymentProjectsDetail.trim() || s5.progressPaymentRule.trim()) return true;
-  if (s5.invoiceCustomersDetail.trim() || s5.invoiceTerms.trim()) return true;
-  if (s5.paymentDueOtherRule.trim()) return true;
-  if (s5.offersFinancing) return true;
-  if (s5.financingProviderTerms.trim()) return true;
-  if (s5.financingPermissions.length > 0) return true;
-  if (s5.financingPermissionOtherDetail.trim()) return true;
-  if (s5.financingEligibilityStatement.trim()) return true;
+  if (s5.paymentAssistance && s5.paymentAssistance !== "secure_link") return true;
+  const defaultScope = ["booking_or_service_fees", "deposits", "completed_invoices", "outstanding_balances"]
+    .slice()
+    .sort()
+    .join(",");
+  const currentScope = [...s5.paymentCollectionScope].slice().sort().join(",");
+  if (currentScope !== defaultScope) return true;
+  if (s5.paymentCollectionOther.trim()) return true;
+  const defaultRemedies = "none";
+  const currentRemedies = [...s5.financialRemedies].slice().sort().join(",");
+  if (currentRemedies !== defaultRemedies) return true;
   if (
     FINANCIAL_REMEDY_ROWS.some((r) => (s5.remedyAuthority[r.id as keyof typeof s5.remedyAuthority] ?? "") !== "")
   ) {
@@ -460,8 +463,11 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
     },
     stage2Migration: partial.stage2Migration,
   };
-  return migrateStage4aPricing(
-    migrateStage3CallerAuthorization(migrateStage2Answers(merged).draft).draft,
+  return migrateStage4bPayments(
+    migrateStage4aPricing(
+      migrateStage3CallerAuthorization(migrateStage2Answers(merged).draft).draft,
+      partial.section5,
+    ).draft,
     partial.section5,
   ).draft;
 }

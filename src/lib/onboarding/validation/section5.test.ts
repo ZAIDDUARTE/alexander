@@ -18,7 +18,6 @@ import {
   section2WithEligibleServices,
   setAllVisitTypes,
   setEligibleServicePricingRules,
-  validApproverContact,
   validQ68Fee,
 } from "../section5-test-helpers";
 import {
@@ -233,35 +232,44 @@ describe("validateSection5 — Y/Z/AA/AB: Q78–Q79", () => {
     assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).paymentMethodOther);
   });
 
-  it("requires deposit detail when deposit policy selected", () => {
+  it("keeps a deposit policy valid without the old explain-the-rule fields", () => {
     const data = fullyValidSection5();
-    data.paymentDuePolicies = ["deposit_required"];
+    data.paymentDuePolicies = ["deposit_required", "other"];
     data.depositWorkDetail = "";
-    assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).depositWorkDetail);
-    data.depositWorkDetail = "Large replacements";
-    data.depositRule = "50% upfront";
+    data.paymentDueOtherRule = "";
+    assert.equal(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).depositWorkDetail, undefined);
+    assert.equal(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).paymentDueOtherRule, undefined);
     assert.equal(section5IsValid(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []), true);
   });
 });
 
-describe("validateSection5 — AD/AE: Q81–Q82", () => {
-  it("requires per-remedy rule when Alexander may approve within rules", () => {
+describe("validateSection5 — payment assistance, collection, remedies", () => {
+  it("requires a rule only for each selected remedy", () => {
     const data = fullyValidSection5();
-    data.remedyAuthority.refund = "within_rules";
+    data.financialRemedies = ["refund"];
     data.remedyRules.refund = "";
+    data.remedyRules.fee_waiver = "stale waiver rule";
     assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [])["remedyRules.refund"]);
     data.remedyRules.refund = "Up to $100 without manager.";
     assert.equal(section5IsValid(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []), true);
   });
 
-  it("requires financial approver when any remedy needs human approval", () => {
-    const approver = validApproverContact({ nameOrRole: "Finance lead" });
+  it("accepts None without per-remedy rules", () => {
     const data = fullyValidSection5();
-    data.remedyAuthority.refund = "human_approval";
-    data.financialApproverContactId = "";
-    assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [approver], []).financialApproverContactId);
-    data.financialApproverContactId = approver.id;
-    assert.equal(section5IsValid(data, ELIGIBLE_SECTION2_FOR_PRICING, [approver], []), true);
+    data.financialRemedies = ["none"];
+    data.remedyRules.refund = "stale";
+    assert.equal(section5IsValid(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []), true);
+  });
+
+  it("rejects None combined with a remedy and requires collection Other text", () => {
+    const data = fullyValidSection5();
+    data.financialRemedies = ["none", "refund"];
+    assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).financialRemedies);
+    data.financialRemedies = ["refund"];
+    data.remedyRules.refund = "Duplicate charges up to $50.";
+    data.paymentCollectionScope = ["other"];
+    data.paymentCollectionOther = "";
+    assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).paymentCollectionOther);
   });
 });
 

@@ -20,7 +20,7 @@ import type {
   VisitTypeId,
   YesNo,
 } from "../types";
-import { contactHasIdentity, createDefaultSection2 } from "../types";
+import { createDefaultSection2 } from "../types";
 
 export type NormalizedFeeRecord = {
   id: string;
@@ -136,14 +136,19 @@ export type NormalizedSection5 = {
   paymentMethodOther: string | null;
   paymentDue: {
     policies: Section5Data["paymentDuePolicies"];
-    depositWorkDetail: string | null;
-    depositRule: string | null;
-    progressPaymentProjectsDetail: string | null;
-    progressPaymentRule: string | null;
-    invoiceCustomersDetail: string | null;
-    invoiceTerms: string | null;
-    otherRule: string | null;
+    depositWorkDetail: null;
+    depositRule: null;
+    progressPaymentProjectsDetail: null;
+    progressPaymentRule: null;
+    invoiceCustomersDetail: null;
+    invoiceTerms: null;
+    otherRule: null;
   };
+  paymentAssistance: Section5Data["paymentAssistance"];
+  paymentCollectionScope: Section5Data["paymentCollectionScope"];
+  paymentCollectionOther: string | null;
+  financialRemedies: Section5Data["financialRemedies"];
+  financialRemedyRules: { id: RemedyId; label: string; rule: string }[];
   financing: {
     offersFinancing: YesNo | null;
     providerTerms: string | null;
@@ -200,13 +205,6 @@ function normalizeAreaRows(data: Section5Data): AreaPricingRow[] | null {
   return rows;
 }
 
-function remedyRequiresHumanApproval(data: Section5Data): boolean {
-  for (const row of FINANCIAL_REMEDY_ROWS) {
-    if (data.remedyAuthority[row.id as RemedyId] === "human_approval") return true;
-  }
-  return false;
-}
-
 /**
  * Section 5 ("Pricing and Payments") normalization — Company Truth for Q65–Q82.
  */
@@ -225,41 +223,22 @@ export function normalizeSection5(
     data.materialMarkupPolicy === "yes" || data.materialMarkupPolicy === "sometimes";
 
   const due = data.paymentDuePolicies;
-  const showDeposit = due.includes("deposit_required");
-  const showProgress = due.includes("progress_payments");
-  const showInvoice = due.includes("invoice_after_service");
-  const showDueOther = due.includes("other");
-
-  const showFinancing = data.offersFinancing === "yes";
-
-  let financialApproverContactId: string | null = null;
-  if (remedyRequiresHumanApproval(data) && data.financialApproverContactId.trim()) {
-    const raw = contacts.find((c) => c.id === data.financialApproverContactId);
-    if (raw && contactHasIdentity(raw)) financialApproverContactId = raw.id;
-  }
-
-  const remedies: NormalizedRemedyRow[] = [];
-  for (const row of FINANCIAL_REMEDY_ROWS) {
-    const id = row.id as RemedyId;
-    const authority = data.remedyAuthority[id];
-    if (!authority) continue;
-    remedies.push({
-      id,
-      label: row.label,
-      authority,
-      rule: authority === "within_rules" ? data.remedyRules[id].trim() || null : null,
-    });
-  }
+  const selectedRemedies = data.financialRemedies.includes("none")
+    ? []
+    : data.financialRemedies.filter((id): id is RemedyId => id !== "none");
+  const financialRemedyRules = selectedRemedies.flatMap((id) => {
+    const row = FINANCIAL_REMEDY_ROWS.find((item) => item.id === id);
+    const rule = data.remedyRules[id]?.trim() ?? "";
+    if (!row || !rule) return [];
+    return [{ id, label: row.label, rule }];
+  });
 
   const nonWaivableFeeIds: string[] = [];
-  const feeWaiverAuthority = data.remedyAuthority.fee_waiver || null;
+  const feeWaiverSelected = selectedRemedies.includes("fee_waiver");
   const feeWaiverPrecedence: FeeWaiverPrecedence = {
     nonWaivableFeeIds,
-    feeWaiverRemedyAuthority: feeWaiverAuthority,
-    feeWaiverRemedyRule:
-      feeWaiverAuthority === "within_rules"
-        ? data.remedyRules.fee_waiver.trim() || null
-        : null,
+    feeWaiverRemedyAuthority: null,
+    feeWaiverRemedyRule: feeWaiverSelected ? data.remedyRules.fee_waiver.trim() || null : null,
   };
 
   const offeredIds = new Set(getOfferedPricingServices(section2).map((service) => service.id));
@@ -344,26 +323,31 @@ export function normalizeSection5(
       : null,
     paymentDue: {
       policies: [...due],
-      depositWorkDetail: showDeposit ? data.depositWorkDetail.trim() || null : null,
-      depositRule: showDeposit ? data.depositRule.trim() || null : null,
-      progressPaymentProjectsDetail: showProgress
-        ? data.progressPaymentProjectsDetail.trim() || null
-        : null,
-      progressPaymentRule: showProgress ? data.progressPaymentRule.trim() || null : null,
-      invoiceCustomersDetail: showInvoice ? data.invoiceCustomersDetail.trim() || null : null,
-      invoiceTerms: showInvoice ? data.invoiceTerms.trim() || null : null,
-      otherRule: showDueOther ? data.paymentDueOtherRule.trim() || null : null,
+      depositWorkDetail: null,
+      depositRule: null,
+      progressPaymentProjectsDetail: null,
+      progressPaymentRule: null,
+      invoiceCustomersDetail: null,
+      invoiceTerms: null,
+      otherRule: null,
     },
+    paymentAssistance: data.paymentAssistance,
+    paymentCollectionScope: [...data.paymentCollectionScope],
+    paymentCollectionOther: data.paymentCollectionScope.includes("other")
+      ? data.paymentCollectionOther.trim() || null
+      : null,
+    financialRemedies: data.financialRemedies.includes("none") ? ["none"] : selectedRemedies,
+    financialRemedyRules,
     financing: {
-      offersFinancing: data.offersFinancing || null,
-      providerTerms: showFinancing ? data.financingProviderTerms.trim() || null : null,
+      offersFinancing: null,
+      providerTerms: null,
       permissions: [],
       permissionOtherDetail: null,
       eligibilityStatement: null,
     },
-    remedies,
+    remedies: [],
     feeWaiverPrecedence,
-    financialApproverContactId,
+    financialApproverContactId: null,
     contacts: meaningfulContacts,
   };
 }
