@@ -21,7 +21,7 @@ export default function Section8IntroPage() {
       <SectionIntro
         sectionNumber={8}
         title="Integration Systems and Final Setup"
-        description="This final section connects Alexander’s approved behavior to the systems and people who help your company operate. Tell us about your calendar, CRM or field-service software, dispatch and phone systems, integrations, permissions, and final implementation details. You do not need to provide passwords or ordinary account credentials here. When a secure connection is required, we will guide you through the appropriate setup process."
+        description="This final section connects Alexander's approved behavior to the systems and people that help the company operate."
         estimatedTime="5–10 minutes"
         ctaHref="/onboarding/sections/8/form"
         ctaLabel="Begin Final Setup →"

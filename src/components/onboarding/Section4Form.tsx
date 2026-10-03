@@ -503,7 +503,7 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="When an eligible customer wants service, what may Alexander normally do?"
+        title="What is Alexander normally allowed to do when a customer wants an appointment?"
         required
       >
         <RadioGroup
@@ -728,9 +728,8 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="When may Alexander offer these appointments?"
+        title="When may Alexander offer same-day or holiday appointments?"
         required
-        helpText="When may Alexander offer same-day or holiday appointments?"
       >
         <ul className="space-y-4">
           {CAPACITY_POLICY_ROWS.map((row) => {

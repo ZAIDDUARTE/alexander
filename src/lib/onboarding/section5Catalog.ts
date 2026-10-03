@@ -23,8 +23,8 @@ export const UNKNOWN_PRICE_OPTIONS: readonly CatalogItem[] = [
 ] as const;
 
 export const QUOTE_PERMISSION_OPTIONS: readonly CatalogItem[] = [
-  { id: "allowed", label: "Yes — Alexander may quote the prices we provide below" },
-  { id: "not_allowed", label: "No — Alexander should not quote service prices" },
+  { id: "allowed", label: "Yes - Alexander may quote the prices we provide below" },
+  { id: "not_allowed", label: "No - Alexander should not quote service prices" },
 ] as const;
 
 export const SERVICE_PRICE_MODE_OPTIONS: readonly CatalogItem[] = [
@@ -184,9 +184,9 @@ export const PAYMENT_METHOD_OPTIONS: readonly CatalogItem[] = [
   { id: "debit_card", label: "Debit card" },
   { id: "cash", label: "Cash" },
   { id: "check", label: "Check" },
-  { id: "ach", label: "ACH / bank transfer" },
+  { id: "ach", label: "ACH or bank transfer" },
   { id: "financing", label: "Financing" },
-  { id: "invoice", label: "Invoice / account billing" },
+  { id: "invoice", label: "Invoice or account billing" },
   { id: "other", label: "Other" },
 ] as const;
 
@@ -220,17 +220,17 @@ export const FINANCIAL_REMEDY_ROWS: readonly CatalogItem[] = [
 
 export const FINANCIAL_REMEDY_OPTIONS: readonly CatalogItem[] = [
   ...FINANCIAL_REMEDY_ROWS,
-  { id: "none", label: "None — human approval is required" },
+  { id: "none", label: "None - human approval is required" },
 ] as const;
 
 export const PAYMENT_ASSISTANCE_OPTIONS: readonly CatalogItem[] = [
-  { id: "secure_link", label: "Yes — Alexander may send customers a secure payment link" },
+  { id: "secure_link", label: "Yes - Alexander may send customers a secure payment link" },
   {
     id: "secure_link_and_authorized_method",
     label:
-      "Yes — Alexander may send a secure payment link and use an approved payment method already on file when authorized",
+      "Yes - Alexander may send a secure payment link and use an approved payment method already on file when authorized",
   },
-  { id: "send_to_team", label: "No — Alexander should send payment requests to our team" },
+  { id: "send_to_team", label: "No - Alexander should send payment requests to our team" },
 ] as const;
 
 export const PAYMENT_COLLECTION_OPTIONS: readonly CatalogItem[] = [

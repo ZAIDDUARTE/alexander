@@ -39,7 +39,7 @@ Generated from frozen source + evidence fixtures.
 | Q2 | E-S1-02 | S1 Your Company | What is your legal business name? | `section1.legalName` | Section1Form.tsx | root |
 | Q3 | E-S1-03 | S1 Your Company | What is your main business phone number? | `section1.mainPhone` | Section1Form.tsx | root |
 | Q4 | E-S1-04 | S1 Your Company | What is your website? | `section1.website` | Section1Form.tsx | root |
-| Q5 | E-S1-05 | S1 Your Company | Which of these may Alexander tell customers? | `section1.approvedClaims` | Section1Form.tsx | root |
+| Q5 | E-S1-05 | S1 Your Company | Which of these may Alexander tell customers about your company? | `section1.approvedClaims` | Section1Form.tsx | root |
 | Q6 | E-S1-06 | S1 Your Company | Are there any license numbers or credential details Alexander may give customers? | `section1.licensingDetails` | Section1Form.tsx | root |
 | Q7 | E-S1-07 | S1 Your Company | Is there anything Alexander should never claim about your company? | `section1.forbiddenClaims` | Section1Form.tsx | root |
 | Q8 | E-S1-08 | S1 Your Company | What are your normal office hours? | `section1.officeHours` | Section1Form.tsx | root |
@@ -47,7 +47,7 @@ Generated from frozen source + evidence fixtures.
 | Q10 | E-S1-10 | S1 Your Company | When should Alexander answer your calls? | `section1.answeringMode` | Section1Form.tsx | root |
 | Q11 | E-S1-11 | S1 Your Company | Is there any recurring availability rule Alexander should know? | `section1.recurringAvailabilityNotes` | Section1Form.tsx | root |
 | Q12 | E-S2-01 | S2 Your Services | Which plumbing services does your company provide? | `section2.plumbingServices[serviceId].{policy,condition}` | Section2Form.tsx + ServicePolicy.tsx | root |
-| Q13 | E-S2-02 | S2 Your Services | Which of these services does your company provide? | `section2.diagnosticServices[serviceId].{policy,condition}` | Section2Form.tsx + ServicePolicy.tsx | root |
+| Q13 | E-S2-02 | S2 Your Services | Which diagnostic and drain services does your company provide? | `section2.diagnosticServices[serviceId].{policy,condition}` | Section2Form.tsx + ServicePolicy.tsx | root |
 | Q14 | E-S2-03 | S2 Your Services | Who does your company serve? | `section2.customerPropertyTypes[typeId].{policy,condition}` | Section2Form.tsx + ServicePolicy.tsx | root |
 | Q15 | E-S2-04 | S2 Your Services | Will you install or work with items supplied by the customer? | `section2.customerSuppliedMaterialsPolicy` | Section2Form.tsx | root |
 | Q16 | E-S2-05 | S2 Your Services | Will you repair or finish work another plumber started? | `section2.correctiveWorkPolicy` | Section2Form.tsx | root |
@@ -59,7 +59,7 @@ Generated from frozen source + evidence fixtures.
 | Q22 | E-S3-02 | S3 Emergencies | Are there any emergencies where Alexander must get human approval before arranging emergency dispatch? | `section3.dispatchApproval (+ dispatchApprovalOtherDetail)` | Section3Form.tsx | root |
 | Q23 | E-S3-03 | S3 Emergencies | What should Alexander do with calls that come in after hours? | `section3.afterHoursDisposition.{emergency,urgent_contained,routine}` | AfterHoursDispositionMatrix.tsx | root |
 | Q24 | E-S3-04 | S3 Emergencies | When is after-hours emergency field service available? | `section3.emergencyServiceMode` | Section3Form.tsx | root |
-| Q25 | E-S3-05 | S3 Emergencies | Who should Alexander contact first? | `section3.primaryContactId → contacts[]` | Section3Form.tsx | root |
+| Q25 | E-S3-05 | S3 Emergencies | Who should Alexander contact first when a call requires immediate human attention? | `section3.primaryContactId → contacts[]` | Section3Form.tsx | root |
 | Q26 | E-S3-06 | S3 Emergencies | Is there a backup person Alexander should contact? | `section3.hasBackupContact` | Section3Form.tsx | root |
 | Q27 | E-S3-07 | S3 Emergencies | What should Alexander do if nobody on your team answers? | `section3.nobodyRespondsFallback` | Section3Form.tsx | root |
 | Q28 | E-S3-08 | S3 Emergencies | How should Alexander retry an unanswered contact? | `section3.retryPolicy` | Section3Form.tsx | root |
@@ -71,12 +71,12 @@ Generated from frozen source + evidence fixtures.
 | Q34 | E-S4-05 | S4 Scheduling | What can different types of callers authorize? | `section4.callerPermissions[callerTypeId]` | CallerAuthorizationMatrix.tsx | root |
 | Q35 | E-S4-06 | S4 Scheduling | Are there spending limits for any of these callers? | `section4.hasSpendingLimits` | Section4Form.tsx | root |
 | Q36 | E-S4-07 | S4 Scheduling | Do emergency situations change any of these authorization rules? | `section4.emergencyAuthorizationMode` | Section4Form.tsx | root |
-| Q37 | E-S4-08 | S4 Scheduling | When an eligible customer wants service, what may Alexander normally do? | `section4.defaultBookingMode` | Section4Form.tsx | root |
+| Q37 | E-S4-08 | S4 Scheduling | What is Alexander normally allowed to do when a customer wants an appointment? | `section4.defaultBookingMode` | Section4Form.tsx | root |
 | Q38 | E-S4-09 | S4 Scheduling | How far in advance may Alexander schedule appointments? | `section4 booking-horizon fields` | Section4Form.tsx | root |
 | Q39 | E-S4-10 | S4 Scheduling | What appointment windows do you offer? | `section4.appointmentWindows[]` | AppointmentWindowEditor.tsx | root |
 | Q40 | E-S4-11 | S4 Scheduling | When an appointment is successfully confirmed, what information may Alexander repeat to the customer? | `section4.confirmationInfo[]` | Section4Form.tsx | root |
 | Q41 | E-S4-12 | S4 Scheduling | Do any types of jobs follow different booking rules? | `section4.hasServiceBookingRules` | Section4Form.tsx | root |
-| Q42 | E-S4-13 | S4 Scheduling | When may Alexander offer these appointments? | `section4.capacityPolicies.{same_day,holiday}.{policy,condition}` | Section4Form.tsx | root |
+| Q42 | E-S4-13 | S4 Scheduling | When may Alexander offer same-day or holiday appointments? | `section4.capacityPolicies.{same_day,holiday}.{policy,condition}` | Section4Form.tsx | root |
 | Q43 | E-S4-14 | S4 Scheduling | What may Alexander do when a customer wants to reschedule? | `section4.rescheduleAuthority` | Section4Form.tsx | root |
 | Q44 | E-S4-15 | S4 Scheduling | What may Alexander do when a customer wants to cancel? | `section4.cancellationAuthority` | Section4Form.tsx | root |
 | Q45 | E-S4-16 | S4 Scheduling | Do you charge a late-cancellation fee? | `section4.lateCancellationFeeMode (+ linked fee notice/when; NO amount in Scheduling)` | Section4Form.tsx | root |
@@ -87,7 +87,7 @@ Generated from frozen source + evidence fixtures.
 | Q50 | E-S4-23 | S4 Scheduling | Are there any jobs that require a particular technician? | `section4 technician-requirement fields` | Section4Form.tsx | root |
 | Q51 | E-S4-24 | S4 Scheduling | What should Alexander do if a customer asks for a specific technician? | `section4.specificTechnicianPolicy` | Section4Form.tsx | root |
 | Q52 | E-S4-25 | S4 Scheduling | What should Alexander do when a customer has several plumbing issues? | `section4.multiIssuePolicy` | Section4Form.tsx | root |
-| Q53 | E-S5-01 | S5 Pricing and Payments | How does your company normally determine what a customer pays? | `section5.pricingModels (+ pricingModelOther)` | PricingCoreFields.tsx | root |
+| Q53 | E-S5-01 | S5 Pricing and Payments | How does your company normally price plumbing work? | `section5.pricingModels (+ pricingModelOther)` | PricingCoreFields.tsx | root |
 | Q54 | E-S5-02 | S5 Pricing and Payments | May Alexander quote prices for your services? | `section5.mayQuoteServicePrices` | PricingCoreFields.tsx | root |
 | Q55 | E-S5-04 | S5 Pricing and Payments | What should Alexander do when he doesn't have an approved price? | `section5.unknownPriceBehavior` | PricingCoreFields.tsx | root |
 | Q56 | E-S5-05 | S5 Pricing and Payments | Which additional fees does your company charge? | `section5.additionalFeeSelection + additionalFeeDetails[category]` | PricingCoreFields.tsx | root |
@@ -119,8 +119,8 @@ Generated from frozen source + evidence fixtures.
 | Q82 | E-S7-10 | S7 Voice and Conversation | How formal should Alexander sound? | `section7.formalityPreference` | Section7Form.tsx | root |
 | Q83 | E-S7-11 | S7 Voice and Conversation | Are there any phrases Alexander should use or avoid because of your company’s brand? | `section7.brandPhrasesAndAvoidances` | Section7Form.tsx | root |
 | Q84 | E-S7-12 | S7 Voice and Conversation | Is there anything else about Alexander’s voice or identity that we should review with you? | `section7.additionalReviewNotes` | Section7Form.tsx | root |
-| Q85 | E-S8-01 | S8 Integration Systems and Final Setup | What system does your team primarily use for customer records and service jobs? | `section8.crmFsmProvider` | Section8Form.tsx | root |
-| Q86 | E-S8-02 | S8 Integration Systems and Final Setup | Where does your team look to see when customers can be scheduled? | `section8.schedulingProvider` | Section8Form.tsx | root |
+| Q85 | E-S8-01 | S8 Integration Systems and Final Setup | What software does your company use to manage customers and jobs? | `section8.crmFsmProvider` | Section8Form.tsx | root |
+| Q86 | E-S8-02 | S8 Integration Systems and Final Setup | Where does your company manage appointment availability? | `section8.schedulingProvider` | Section8Form.tsx | root |
 | Q87 | E-S8-03 | S8 Integration Systems and Final Setup | What phone system do you currently use? | `section8.phoneProvider` | Section8Form.tsx | root |
 | Q88 | E-S8-04 | S8 Integration Systems and Final Setup | Do you use any other software Alexander may need to work with? | `section8.additionalSoftwareCategories + additionalSoftwareCards[]` | Section8Form.tsx + AdditionalSoftwareCardEditor.tsx | root |
 | Q89 | E-S8-05 | S8 Integration Systems and Final Setup | Who can authorize Alexander to connect to these systems? | `section8.connectionOwnerMode` | Section8Form.tsx | root |
@@ -134,7 +134,7 @@ Generated from frozen source + evidence fixtures.
 | Q-ID | Parent | Section | Exact question / prompt | Display condition | Raw path |
 | --- | --- | --- | --- | --- | --- |
 | Q5A | Q5 | S1 | What other credential or trust claim may Alexander tell customers? | Q5 includes other | `section1.otherApprovedClaim` |
-| Q10A | Q10 | S1 | What hours should Alexander answer? | Q10 = specific_hours | `section1.answeringSchedule` |
+| Q10A | Q10 | S1 | What hours should Alexander answer your calls? | Q10 = specific_hours | `section1.answeringSchedule` |
 | Q15A | Q15 | S2 | What are the conditions? | Q15 = with_conditions | `section2.customerSuppliedMaterialsCondition` |
 | Q16A | Q16 | S2 | What are the conditions? | Q16 = with_conditions | `section2.correctiveWorkCondition` |
 | Q19A | Q19 | S2 | Conditional territory details | Q19 = yes | `section2.conditionalTerritories[]` |

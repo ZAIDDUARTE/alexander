@@ -43,12 +43,12 @@ export const APPOINTMENT_WINDOW_TEMPLATES: readonly CatalogItem[] = [
 
 /** Q49 confirmation-information options (all six preselected by MD default). */
 export const CONFIRMATION_INFO_OPTIONS: readonly CatalogItem[] = [
-  { id: "appointment_date", label: "Confirm the appointment date" },
-  { id: "appointment_time_or_window", label: "Confirm the appointment time or arrival window" },
-  { id: "requested_service", label: "Confirm the requested service" },
-  { id: "customer_name_and_address", label: "Confirm the customer’s name and service address" },
-  { id: "callback_phone", label: "Confirm the callback phone number" },
-  { id: "email_address", label: "Confirm the email address provided" },
+  { id: "appointment_date", label: "Appointment date" },
+  { id: "appointment_time_or_window", label: "Appointment time or arrival window" },
+  { id: "requested_service", label: "Requested service" },
+  { id: "customer_name_and_address", label: "Customer name and service address" },
+  { id: "callback_phone", label: "Callback phone number" },
+  { id: "email_address", label: "Email address provided" },
 ] as const;
 
 /** Q57 no-availability fallback options (display order is NOT an approved default priority). */

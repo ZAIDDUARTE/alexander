@@ -113,7 +113,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Which of these services does your company provide?"
+        title="Which diagnostic and drain services does your company provide?"
         required
       >
         <ServicePolicyGroup

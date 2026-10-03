@@ -318,9 +318,13 @@ function serializeS5(draft: OnboardingDraft, out: Record<string, QuestionAnswer>
   put(out, "Q61", draft, s.paymentAssistance);
   put(out, "Q62", draft, s.paymentCollectionScope);
   put(out, "Q62A", draft, s.paymentCollectionOther);
+  const selectedRemedies = new Set<string>(s.financialRemedies);
+  selectedRemedies.delete("none");
   put(out, "Q63", draft, {
     remedies: s.financialRemedies,
-    rules: s.remedyRules,
+    rules: Object.fromEntries(
+      Object.entries(s.remedyRules).filter(([id]) => selectedRemedies.has(id)),
+    ),
   });
 }
 
@@ -332,8 +336,12 @@ function serializeS6(
   const s = draft.section6;
   put(out, "Q64", draft, {
     action: s.previousWorkInitialAction,
-    returnVisitEligibilityRule: s.returnVisitEligibilityRule,
-    previousWorkCustomRule: s.previousWorkCustomRule,
+    ...(s.previousWorkInitialAction === "schedule_return_visit"
+      ? { returnVisitEligibilityRule: s.returnVisitEligibilityRule }
+      : {}),
+    ...(s.previousWorkInitialAction === "custom"
+      ? { previousWorkCustomRule: s.previousWorkCustomRule }
+      : {}),
   });
   put(out, "Q65", draft, s.repeatCallbackAction);
   put(out, "Q66", draft, s.escalationTriggers);
@@ -356,13 +364,13 @@ function serializeS6(
   put(out, "Q68", draft, nonServiceItems);
   put(out, "Q69", draft, {
     policy: s.customerHistoryPolicy,
-    customRule: s.customerHistoryCustomRule,
+    ...(s.customerHistoryPolicy === "custom" ? { customRule: s.customerHistoryCustomRule } : {}),
   });
   put(out, "Q70", draft, s.restrictedInformation);
   put(out, "Q70A", draft, s.restrictedInformationOther);
   put(out, "Q71", draft, {
     policy: s.additionalServicePolicy,
-    customRule: s.additionalServiceCustomRule,
+    ...(s.additionalServicePolicy === "custom" ? { customRule: s.additionalServiceCustomRule } : {}),
   });
   put(out, "Q72", draft, s.unusualCallNotes);
 }

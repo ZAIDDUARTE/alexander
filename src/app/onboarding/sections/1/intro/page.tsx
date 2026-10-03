@@ -21,7 +21,7 @@ export default function Section1IntroPage() {
       <SectionIntro
         sectionNumber={1}
         title="Your Company"
-        description="Tell Alexander who your company is, when you are available, and what he is authorized to say about your business. This section helps Alexander introduce your company accurately, follow your operating hours, and avoid making claims you have not approved. You do not need to answer questions that do not apply to your business."
+        description="Tell Alexander who your company is, when you are available, and what he is authorized to say about your business. This section helps Alexander introduce your company accurately, follow your operating hours, and avoid making claims you have not approved."
         estimatedTime="5–10 minutes"
         ctaHref="/onboarding/sections/1/form"
         ctaLabel="Begin Your Company →"

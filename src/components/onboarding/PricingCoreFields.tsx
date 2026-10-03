@@ -101,7 +101,7 @@ export function PricingCoreFields({
 
   return (
     <>
-      <QuestionCard title="How does your company normally determine what a customer pays?" required>
+      <QuestionCard title="How does your company normally price plumbing work?" required>
         <CheckboxGroup
           name="pricingModels"
           options={PRICING_MODEL_OPTIONS.map((option) => ({

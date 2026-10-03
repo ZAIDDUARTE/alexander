@@ -44,9 +44,9 @@ describe("Stage 4B payment methods and timing", () => {
         "Debit card",
         "Cash",
         "Check",
-        "ACH / bank transfer",
+        "ACH or bank transfer",
         "Financing",
-        "Invoice / account billing",
+        "Invoice or account billing",
         "Other",
       ],
     );
@@ -186,7 +186,7 @@ describe("Stage 4B financial remedies", () => {
         "Fee waiver",
         "Discount / goodwill adjustment",
         "Free or reduced-price return visit",
-        "None — human approval is required",
+        "None - human approval is required",
       ],
     );
     assert.match(REMEDY_RULE_PLACEHOLDERS.refund, /duplicate charges/);

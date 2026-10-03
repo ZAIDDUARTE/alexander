@@ -14,7 +14,7 @@ const CLASSIFICATION_ORDER: EmergencyClassification[] = [
 
 export const EMERGENCY_CLASSIFICATION_LABELS: EmergencyClassificationLabels = {
   emergency: "Emergency",
-  urgent: "Urgent, not emergency",
+  urgent: "Urgent, but not an emergency",
   routine: "Routine",
   human_review: "Human review required",
 };

@@ -66,7 +66,7 @@ export function Section8Form({ mode = "form" }: Props) {
   return (
     <div className="space-y-8">
       <QuestionCard
-        title="What system does your team primarily use for customer records and service jobs?"
+        title="What software does your company use to manage customers and jobs?"
         required
       >
         <RadioGroup
@@ -91,7 +91,7 @@ export function Section8Form({ mode = "form" }: Props) {
       </QuestionCard>
 
       <QuestionCard
-        title="Where does your team look to see when customers can be scheduled?"
+        title="Where does your company manage appointment availability?"
         required
       >
         <RadioGroup

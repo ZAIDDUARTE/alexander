@@ -55,7 +55,7 @@
         "other",
         "none"
       ],
-      "debugLabel": "Which of these may Alexander tell customers?"
+      "debugLabel": "Which of these may Alexander tell customers about your company?"
     },
     {
       "questionId": "Q5A",
@@ -127,7 +127,7 @@
       "required": "Required when displayed",
       "parentQuestionId": "Q10",
       "conditionSummary": "Q10 = specific_hours",
-      "debugLabel": "What hours should Alexander answer?"
+      "debugLabel": "What hours should Alexander answer your calls?"
     },
     {
       "questionId": "Q11",
@@ -198,7 +198,7 @@
         "sewer-drain-camera-inspections",
         "hydro-jetting-advanced-drain-cleaning"
       ],
-      "debugLabel": "Which of these services does your company provide?"
+      "debugLabel": "Which diagnostic and drain services does your company provide?"
     },
     {
       "questionId": "Q14",
@@ -407,7 +407,7 @@
       "rawPath": "section3.primaryContactId → contacts[]",
       "answerKind": "contact_reference",
       "required": "Required",
-      "debugLabel": "Who should Alexander contact first?"
+      "debugLabel": "Who should Alexander contact first when a call requires immediate human attention?"
     },
     {
       "questionId": "Q26",
@@ -652,7 +652,7 @@
         "send_to_team"
       ],
       "defaultValue": "book_appointment",
-      "debugLabel": "When an eligible customer wants service, what may Alexander normally do?"
+      "debugLabel": "What is Alexander normally allowed to do when a customer wants an appointment?"
     },
     {
       "questionId": "Q38",
@@ -715,7 +715,7 @@
       "rawPath": "section4.capacityPolicies.{same_day,holiday}.{policy,condition}",
       "answerKind": "matrix_single_select",
       "required": "Required",
-      "debugLabel": "When may Alexander offer these appointments?"
+      "debugLabel": "When may Alexander offer same-day or holiday appointments?"
     },
     {
       "questionId": "Q43",
@@ -914,7 +914,7 @@
         "estimate_required",
         "other"
       ],
-      "debugLabel": "How does your company normally determine what a customer pays?"
+      "debugLabel": "How does your company normally price plumbing work?"
     },
     {
       "questionId": "Q53A",
@@ -1585,7 +1585,7 @@
         "custom",
         "none"
       ],
-      "debugLabel": "What system does your team primarily use for customer records and service jobs?"
+      "debugLabel": "What software does your company use to manage customers and jobs?"
     },
     {
       "questionId": "Q85A",
@@ -1613,7 +1613,7 @@
         "custom",
         "none"
       ],
-      "debugLabel": "Where does your team look to see when customers can be scheduled?"
+      "debugLabel": "Where does your company manage appointment availability?"
     },
     {
       "questionId": "Q86A",

@@ -21,7 +21,7 @@ export default function Section6IntroPage() {
       <SectionIntro
         sectionNumber={6}
         title="Customer Care"
-        description="Tell Alexander how to care for existing customers and handle situations that require context, patience, or follow-up. This section covers previous-work problems, repeat callbacks, complaints, service recovery, privacy, non-service calls, and additional-service boundaries. These policies help Alexander recognize when a caller may already have a relationship with your company and respond appropriately without making unsupported promises."
+        description="Tell Alexander how to support existing customers, repeat problems, unhappy callers, privacy boundaries, and calls that do not fit normal service booking."
         estimatedTime="10–15 minutes"
         ctaHref="/onboarding/sections/6/form"
         ctaLabel="Begin Customer Care →"

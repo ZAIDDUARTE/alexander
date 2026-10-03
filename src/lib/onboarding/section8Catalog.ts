@@ -112,7 +112,7 @@ export const Q111_NOTICE_PARAGRAPHS = [
 export const Q111_NOTICE = Q111_NOTICE_PARAGRAPHS.join(" ");
 
 export const Q112_HELP =
-  "Alexander will never tell a customer that an appointment was booked, changed, canceled, or otherwise completed unless the action was actually confirmed.";
+  "Alexander must never tell a customer that an appointment was booked, changed, canceled, dispatched, paid, or otherwise completed unless the action was actually confirmed.";
 
 export const FAILURE_CUSTOM_PLACEHOLDER = "Tell us how you’d like Alexander to handle it.";
 

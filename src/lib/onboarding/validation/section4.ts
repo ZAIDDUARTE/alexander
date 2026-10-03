@@ -471,7 +471,7 @@ export const EXCEPTION_AUTHORITY_OPTIONS = [
   { value: "dispatcher" as const, label: "Dispatcher" },
   { value: "manager" as const, label: "Manager" },
   { value: "owner" as const, label: "Owner" },
-  { value: "another_person" as const, label: "Another person/role" },
+  { value: "another_person" as const, label: "Another person or role" },
   { value: "never_allowed" as const, label: "Never allowed" },
 ];
 
@@ -483,8 +483,8 @@ export const APPROVER_UNAVAILABLE_OPTIONS = [
 
 
 export const EMERGENCY_AUTH_OPTIONS = [
-  { value: "same_rules" as const, label: "Yes — use the same rules" },
-  { value: "special_rules" as const, label: "No — emergencies have special rules" },
+  { value: "same_rules" as const, label: "Yes - use the same rules" },
+  { value: "special_rules" as const, label: "No - emergencies have special rules" },
   {
     value: "human_review_always" as const,
     label: "Human review is always required when the work is classified as an emergency",
@@ -500,13 +500,13 @@ export const DEFAULT_BOOKING_OPTIONS: {
     value: "book_appointment",
     label: "Book an available appointment",
     description:
-      "Alexander can confirm an available appointment that follows your scheduling rules.",
+      "Alexander may confirm an available appointment that follows the scheduling rules.",
   },
   {
     value: "send_to_team",
     label: "Send the request to our team",
     description:
-      "Alexander collects the customer's details and sends the request to your team for scheduling.",
+      "Alexander collects the customer's details and sends the request to the team for scheduling.",
   },
 ];
 
@@ -518,16 +518,16 @@ export const CAPACITY_OFFER_OPTIONS = [
 ];
 
 export const RESCHEDULE_AUTHORITY_OPTIONS = [
-  { value: "direct" as const, label: "Reschedule the appointment directly" },
+  { value: "direct" as const, label: "Reschedule directly" },
   { value: "conditional" as const, label: "Reschedule only under certain conditions" },
-  { value: "human_approval" as const, label: "Submit the request for human approval" },
+  { value: "human_approval" as const, label: "Submit for human approval" },
   { value: "callback" as const, label: "Arrange a callback" },
 ];
 
 export const CANCELLATION_AUTHORITY_OPTIONS = [
-  { value: "direct" as const, label: "Cancel the appointment directly" },
+  { value: "direct" as const, label: "Cancel directly" },
   { value: "conditional" as const, label: "Cancel only under certain conditions" },
-  { value: "human_approval" as const, label: "Submit the request for human approval" },
+  { value: "human_approval" as const, label: "Submit for human approval" },
   { value: "callback" as const, label: "Arrange a callback" },
 ];
 

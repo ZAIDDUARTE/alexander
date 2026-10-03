@@ -171,7 +171,7 @@ export function validateSection5(
   if (remedies.length === 0) {
     errors.financialRemedies = "Select at least one option.";
   } else if (hasNone && actual.length > 0) {
-    errors.financialRemedies = "“None — human approval is required” cannot be combined with a remedy.";
+    errors.financialRemedies = "“None - human approval is required” cannot be combined with a remedy.";
   } else if (!hasNone) {
     for (const remedyId of actual) {
       if (!data.remedyRules[remedyId]?.trim()) {

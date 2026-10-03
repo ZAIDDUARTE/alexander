@@ -21,7 +21,7 @@ export default function Section7IntroPage() {
       <SectionIntro
         sectionNumber={7}
         title="Voice and Conversation"
-        description="Now choose how Alexander should sound and introduce himself to your customers. We provide the conversational intelligence standard. You choose the voice, identity details, language preferences, and communication style that should feel specific to your company. These choices affect Alexander’s presentation, not his underlying safety rules, reasoning, authority, or business policies."
+        description="Now choose how Alexander should sound and introduce himself to customers."
         estimatedTime="5–10 minutes"
         ctaHref="/onboarding/sections/7/form"
         ctaLabel="Begin Voice and Conversation →"
