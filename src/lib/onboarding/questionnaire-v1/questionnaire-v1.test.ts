@@ -131,6 +131,22 @@ describe("question-registry-v1 option conformance", () => {
   });
 });
 
+describe("phone answer kind", () => {
+  it("keeps Q3 main phone as exact text with scalar_text kind", () => {
+    const q3 = QUESTION_REGISTRY_BY_ID.get("Q3");
+    assert.equal(q3?.answerKind, "scalar_text");
+    assert.equal(q3?.rawPath, "section1.mainPhone");
+    const draft = loadDraft("raw-complete.json");
+    draft.section1.mainPhone = "+14155552671";
+    const answers = serializeQuestionnaireAnswersV1(draft);
+    const phone = answers.sections.S1.answers.Q3;
+    assert.ok(phone);
+    assert.equal(phone.answer_kind, "scalar_text");
+    assert.equal(phone.value, "+14155552671");
+    assert.equal(typeof phone.value, "string");
+  });
+});
+
 describe("serializeQuestionnaireAnswersV1", () => {
   it("serializes raw-complete without UI/navigation/migration leakage", () => {
     const draft = loadDraft("raw-complete.json");

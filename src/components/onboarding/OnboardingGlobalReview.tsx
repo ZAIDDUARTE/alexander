@@ -12,6 +12,7 @@ import { loadLocalDraft, saveLocalDraft } from "@/lib/onboarding/persistence";
 import { postQuestionnaireSubmit } from "@/lib/onboarding/server-api";
 import { Q114_CONFIRMATIONS } from "@/lib/onboarding/section8Catalog";
 import { hasPendingSubmissionChanges } from "@/lib/onboarding/submissionIntegrity";
+import { emergencyCoverageGapWarning } from "@/lib/onboarding/emergencyCoverageWarning";
 import { canSubmitQuestionnaire, validateAllSections } from "@/lib/onboarding/validateOnboarding";
 
 const FINAL_REVIEW_INTRO =
@@ -39,6 +40,7 @@ export function OnboardingGlobalReview() {
 
   const sectionResults = useMemo(() => validateAllSections(draft), [draft]);
   const cards = useMemo(() => buildGlobalReviewCards(), []);
+  const emergencyWarning = useMemo(() => emergencyCoverageGapWarning(draft), [draft]);
   const submitReady = canSubmitQuestionnaire(draft);
   const pendingResubmit = hasPendingSubmissionChanges(draft);
 
@@ -111,6 +113,14 @@ export function OnboardingGlobalReview() {
         <p className="mt-4 text-base leading-relaxed text-[var(--color-alexander-muted)]">
           {FINAL_REVIEW_INTRO}
         </p>
+        {emergencyWarning ? (
+          <p
+            className="mt-4 rounded-lg border border-[var(--color-alexander-warning)]/40 bg-[var(--color-alexander-warning)]/10 px-4 py-3 text-sm text-[var(--color-alexander-navy)]"
+            role="status"
+          >
+            {emergencyWarning}
+          </p>
+        ) : null}
         <h2 className="mt-8 text-lg font-semibold text-[var(--color-alexander-navy)]">
           What happens next
         </h2>

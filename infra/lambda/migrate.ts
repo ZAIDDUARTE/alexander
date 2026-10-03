@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import { Pool } from "pg";
 import { provisionCustomerOnboarding } from "../../src/lib/server/persistence/onboarding-access";
+import { generateToken, hashToken } from "../../src/lib/server/persistence/tokens";
 
 type SecretShape = { username?: string; password?: string };
 
@@ -70,15 +71,20 @@ async function describeOnboarding(onboardingId: string | undefined): Promise<{
   }
 }
 
-async function provisionSynthetic(customerFacingName: string | undefined): Promise<{
+async function provisionCustomer(input: {
+  customerFacingName: string | undefined;
+  dataClassification: string | undefined;
+}): Promise<{
   PhysicalResourceId: string;
   customerId: string;
   customerNumber: string;
   onboardingId: string;
   invitationUrl: string;
 }> {
-  const name = customerFacingName?.trim();
+  const name = input.customerFacingName?.trim();
   if (!name) throw new Error("name_required");
+  const dataClassification =
+    input.dataClassification === "real_customer" ? "real_customer" : "synthetic_test";
   const secrets = new SecretsManagerClient({});
   const master = await readSecret(secrets, requireEnv("MASTER_SECRET_ARN"));
   if (!master.username || !master.password) throw new Error("secret_incomplete");
@@ -94,11 +100,103 @@ async function provisionSynthetic(customerFacingName: string | undefined): Promi
   try {
     const created = await provisionCustomerOnboarding(pool as unknown as Parameters<typeof provisionCustomerOnboarding>[0], {
       customerFacingName: name,
-      dataClassification: "synthetic_test",
+      dataClassification,
       host: "onboard.meetalexander.ai",
     });
     return { PhysicalResourceId: "alexander-schema-001", ...created };
   } finally {
+    await pool.end();
+  }
+}
+
+async function fixCustomerNameAndRotateInvitation(input: {
+  customerId: string | undefined;
+  onboardingId: string | undefined;
+  customerFacingName: string | undefined;
+}): Promise<{
+  PhysicalResourceId: string;
+  customerId: string;
+  customerNumber: string;
+  onboardingId: string;
+  invitationUrl: string;
+  nameUpdated: boolean;
+  invitationsRevoked: number;
+}> {
+  const customerId = input.customerId?.trim() ?? "";
+  const onboardingId = input.onboardingId?.trim() ?? "";
+  const name = input.customerFacingName?.trim() ?? "";
+  if (!/^[0-9a-f-]{36}$/i.test(customerId)) throw new Error("customer_required");
+  if (!/^[0-9a-f-]{36}$/i.test(onboardingId)) throw new Error("onboarding_required");
+  if (!name) throw new Error("name_required");
+
+  const secrets = new SecretsManagerClient({});
+  const master = await readSecret(secrets, requireEnv("MASTER_SECRET_ARN"));
+  if (!master.username || !master.password) throw new Error("secret_incomplete");
+  const pool = new Pool({
+    host: requireEnv("DB_HOST"),
+    port: Number(requireEnv("DB_PORT") || "5432"),
+    database: requireEnv("DB_NAME"),
+    user: master.username,
+    password: master.password,
+    max: 1,
+    ssl: { ca: loadCa(), rejectUnauthorized: true },
+  });
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const linked = await client.query(
+      `SELECT c.id AS customer_id, c.customer_number, o.id AS onboarding_id
+       FROM customers c
+       JOIN customer_onboardings o ON o.customer_id = c.id
+       WHERE c.id = $1
+         AND o.id = $2
+       FOR UPDATE OF c, o`,
+      [customerId, onboardingId],
+    );
+    if (!linked.rows[0]) {
+      await client.query("ROLLBACK");
+      throw new Error("customer_onboarding_mismatch");
+    }
+    const renamed = await client.query(
+      `UPDATE customers
+       SET customer_facing_name = $2
+       WHERE id = $1
+       RETURNING customer_number`,
+      [customerId, name],
+    );
+    const revoked = await client.query(
+      `UPDATE onboarding_invitations
+       SET revoked_at = now()
+       WHERE onboarding_id = $1
+         AND revoked_at IS NULL`,
+      [onboardingId],
+    );
+    const token = generateToken();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    await client.query(
+      `INSERT INTO onboarding_invitations (onboarding_id, token_hash, expires_at)
+       VALUES ($1, $2, $3)`,
+      [onboardingId, hashToken(token), expiresAt],
+    );
+    await client.query("COMMIT");
+    return {
+      PhysicalResourceId: "alexander-schema-001",
+      customerId,
+      customerNumber: String(renamed.rows[0]?.customer_number ?? ""),
+      onboardingId,
+      invitationUrl: `https://onboard.meetalexander.ai/i#${token}`,
+      nameUpdated: true,
+      invitationsRevoked: revoked.rowCount ?? 0,
+    };
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // Surface the original failure.
+    }
+    throw error;
+  } finally {
+    client.release();
     await pool.end();
   }
 }
@@ -108,20 +206,35 @@ export async function handler(event: {
   PhysicalResourceId?: string;
   action?: string;
   customerFacingName?: string;
+  dataClassification?: string;
   onboardingId?: string;
+  customerId?: string;
 }): Promise<{
   PhysicalResourceId: string;
   customerId?: string;
   customerNumber?: string;
   onboardingId?: string;
   invitationUrl?: string;
+  nameUpdated?: boolean;
+  invitationsRevoked?: number;
 }> {
   const physicalId = event.PhysicalResourceId ?? "alexander-schema-001";
   if (event.RequestType === "Delete") {
     return { PhysicalResourceId: physicalId };
   }
-  if (event.action === "provisionSynthetic") {
-    return provisionSynthetic(event.customerFacingName);
+  if (event.action === "provisionSynthetic" || event.action === "provisionCustomer") {
+    return provisionCustomer({
+      customerFacingName: event.customerFacingName,
+      dataClassification:
+        event.action === "provisionSynthetic" ? "synthetic_test" : event.dataClassification,
+    });
+  }
+  if (event.action === "fixCustomerNameAndRotateInvitation") {
+    return fixCustomerNameAndRotateInvitation({
+      customerId: event.customerId,
+      onboardingId: event.onboardingId,
+      customerFacingName: event.customerFacingName,
+    });
   }
   if (event.action === "describeOnboarding") {
     return describeOnboarding(event.onboardingId);

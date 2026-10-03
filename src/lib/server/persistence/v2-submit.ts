@@ -281,21 +281,37 @@ function manifestDocument(
   };
 }
 
+function submissionTimestampFromNormalized(bytes: Buffer | null): string | null {
+  if (!bytes) return null;
+  try {
+    const parsed = JSON.parse(bytes.toString("utf8")) as {
+      submission?: { submitted_at?: unknown; status?: unknown };
+    };
+    return typeof parsed.submission?.submitted_at === "string" ? parsed.submission.submitted_at : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Final archive copy: status submitted with the commit timestamp. Autosave drafts stay draft. */
+export function normalizeSubmittedOnboardingDraft(draft: OnboardingDraft, submittedAt: string) {
+  return normalizeOnboardingDraft({
+    ...draft,
+    submission: {
+      ...draft.submission,
+      status: "submitted",
+      submittedAt,
+    },
+  });
+}
+
 export async function writePersistenceV2Objects(
   objects: ObjectStorePort,
   reserved: Reserved,
   draft: OnboardingDraft,
   answers: unknown,
-  normalized: unknown,
-): Promise<{ submittedAt: string }> {
+): Promise<{ submittedAt: string; normalized: unknown }> {
   const keys = persistenceV2ObjectKeys(reserved.customerId, reserved.onboardingId, reserved.submissionId);
-  const raw = canonicalJsonBytes(draft);
-  const answerBytes = canonicalJsonBytes(answers);
-  const normalizedBytes = canonicalJsonBytes(normalized);
-  await putImmutable(objects, keys.raw, raw);
-  await putImmutable(objects, keys.answers, answerBytes);
-  await putImmutable(objects, keys.normalized, normalizedBytes);
-
   const existingManifest = await objects.getObject(keys.manifest);
   let submittedAt = new Date().toISOString();
   if (existingManifest) {
@@ -314,10 +330,23 @@ export async function writePersistenceV2Objects(
       throw new IntegrityConflict();
     }
     submittedAt = parsed.submitted_at;
+  } else {
+    const fromNormalized = submissionTimestampFromNormalized(await objects.getObject(keys.normalized));
+    if (fromNormalized) submittedAt = fromNormalized;
+    else if (reserved.submittedAt) submittedAt = reserved.submittedAt;
   }
+
+  const normalized = normalizeSubmittedOnboardingDraft(draft, submittedAt);
+  const raw = canonicalJsonBytes(draft);
+  const answerBytes = canonicalJsonBytes(answers);
+  const normalizedBytes = canonicalJsonBytes(normalized);
+  await putImmutable(objects, keys.raw, raw);
+  await putImmutable(objects, keys.answers, answerBytes);
+  await putImmutable(objects, keys.normalized, normalizedBytes);
+
   const manifest = manifestDocument(reserved, draft, { raw, answers: answerBytes, normalized: normalizedBytes }, submittedAt);
   await putImmutable(objects, keys.manifest, canonicalJsonBytes(manifest));
-  return { submittedAt };
+  return { submittedAt, normalized };
 }
 
 export async function finalizePersistenceV2(
@@ -325,6 +354,7 @@ export async function finalizePersistenceV2(
   reserved: Reserved,
   submittedAt: string,
   sessionDraft: unknown,
+  normalized?: unknown,
 ): Promise<V2SubmitResult> {
   const client = await pool.connect();
   try {
@@ -354,15 +384,25 @@ export async function finalizePersistenceV2(
       await client.query("ROLLBACK");
       return { ok: false, reason: "database_failed", submissionId: reserved.submissionId };
     }
+    const normalizedBytes = normalized === undefined ? null : canonicalJsonBytes(normalized);
     const updated = await client.query(
       `UPDATE onboarding_submissions
        SET persistence_state = 'committed',
            submitted_at = $2,
-           persistence_error_code = NULL
+           persistence_error_code = NULL,
+           normalized_config_json = COALESCE($3::jsonb, normalized_config_json),
+           normalized_sha256 = COALESCE($4, normalized_sha256),
+           normalized_size_bytes = COALESCE($5, normalized_size_bytes)
        WHERE id = $1
          AND persistence_state = 'pending'
        RETURNING id`,
-      [reserved.submissionId, submittedAt],
+      [
+        reserved.submissionId,
+        submittedAt,
+        normalizedBytes ? normalizedBytes.toString("utf8") : null,
+        normalizedBytes ? sha256Hex(normalizedBytes) : null,
+        normalizedBytes ? normalizedBytes.byteLength : null,
+      ],
     );
     if (!updated.rows[0]) {
       await client.query("ROLLBACK");
@@ -448,7 +488,8 @@ export async function submitPersistenceV2FromAccess(
 
   const answers = serializeQuestionnaireAnswersV1(input.draft);
   const contentHash = hashQuestionnaireAnswersContentV1(answers);
-  const normalized = normalizeOnboardingDraft(input.draft);
+  // Reservation copy may still be draft-status; the S3 archive is stamped at write time.
+  const reservedNormalized = normalizeOnboardingDraft(input.draft);
   const reserved = await reservePersistenceV2(pool, {
     onboardingId: access.onboardingId,
     sessionId: access.sessionId,
@@ -456,7 +497,7 @@ export async function submitPersistenceV2FromAccess(
     customerNumber,
     draft: input.draft,
     answers,
-    normalized,
+    normalized: reservedNormalized,
     contentHash,
   });
   if (!reserved.ok) return reserved;
@@ -476,15 +517,16 @@ export async function submitPersistenceV2FromAccess(
   }
 
   let submittedAt: string;
+  let normalized: unknown;
   try {
     const written = await writePersistenceV2Objects(
       objects,
       reserved.reserved,
       input.draft,
       answers,
-      normalized,
     );
     submittedAt = written.submittedAt;
+    normalized = written.normalized;
   } catch (error) {
     if (error instanceof IntegrityConflict) {
       await markFailed(pool, reserved.reserved.submissionId);
@@ -509,5 +551,5 @@ export async function submitPersistenceV2FromAccess(
       submittedAt,
     },
   };
-  return finalizePersistenceV2(pool, reserved.reserved, submittedAt, sessionDraft);
+  return finalizePersistenceV2(pool, reserved.reserved, submittedAt, sessionDraft, normalized);
 }

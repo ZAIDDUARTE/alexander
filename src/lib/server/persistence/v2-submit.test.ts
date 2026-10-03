@@ -82,6 +82,12 @@ function run(database: string, args: string[]): void {
   });
 }
 
+function isoRow(value: unknown): string | null {
+  if (value == null) return null;
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
+}
+
 async function openOnboarding(pool: SqlPool): Promise<{ accessHash: string; onboardingId: string; customerNumber: string }> {
   const created = await provisionCustomerOnboarding(pool, {
     customerFacingName: "Acme Plumbing",
@@ -175,6 +181,7 @@ describe("persistence v2 runtime", { skip: psql && pg ? false : "local psql or p
       const manifest = JSON.parse(manifestBytes.toString("utf8")) as {
         content_revision_sha256: string;
         customer_number: string;
+        submitted_at: string;
         objects: Record<string, { key: string; sha256: string; size_bytes: number }>;
       };
       const manifestText = manifestBytes.toString("utf8");
@@ -189,6 +196,24 @@ describe("persistence v2 runtime", { skip: psql && pg ? false : "local psql or p
         assert.equal(stored.byteLength, object.size_bytes);
       }
       assert.deepEqual(Object.keys(manifest.objects).sort(), ["answers", "normalized", "raw"]);
+      const normalizedObj = JSON.parse(
+        store.objects.get(manifest.objects.normalized.key)?.toString("utf8") ?? "{}",
+      ) as { submission?: { status?: string; submitted_at?: string | null } };
+      assert.equal(normalizedObj.submission?.status, "submitted");
+      assert.equal(normalizedObj.submission?.submitted_at, first.submittedAt);
+      assert.equal(manifest.submitted_at, first.submittedAt);
+      const dbSubmitted = await pool.query(
+        `SELECT submitted_at, persistence_state, normalized_config_json
+         FROM onboarding_submissions WHERE id = $1`,
+        [first.submissionId],
+      );
+      assert.equal(dbSubmitted.rows[0]?.persistence_state, "committed");
+      assert.equal(isoRow(dbSubmitted.rows[0]?.submitted_at), first.submittedAt);
+      assert.equal(
+        (dbSubmitted.rows[0]?.normalized_config_json as { submission?: { status?: string } })?.submission
+          ?.status,
+        "submitted",
+      );
 
       const retry = await submitPersistenceV2FromAccess(pool, store, {
         accessTokenHash: opened.accessHash,
@@ -198,7 +223,13 @@ describe("persistence v2 runtime", { skip: psql && pg ? false : "local psql or p
       if (!retry.ok) return;
       assert.equal(retry.duplicate, true);
       assert.equal(retry.submissionId, first.submissionId);
+      assert.equal(retry.submittedAt, first.submittedAt);
       assert.equal(store.writeOrder.length, 4);
+      assert.equal(
+        JSON.parse(store.objects.get(manifest.objects.normalized.key)?.toString("utf8") ?? "{}")
+          .submission.submitted_at,
+        first.submittedAt,
+      );
 
       const changed: OnboardingDraft = structuredClone(draft);
       changed.section1.customerFacingName = "Acme Plumbing North";
