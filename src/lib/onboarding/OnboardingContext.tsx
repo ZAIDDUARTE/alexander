@@ -158,6 +158,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         draftRef.current = next;
         setDraft(next);
       },
+      onInvitedConflictVersion: (version) => {
+        setInvitedDraftVersion(version);
+      },
       onAuthoritativeDraft: (next, version) => {
         setInvitedDraftVersion(version);
         hydratedSnapshotRef.current = draftAutosaveFingerprint(next);
@@ -166,7 +169,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       },
       onResult: (result) => {
         if (result.invited && result.reason === "stale_draft") {
-          setSaveStatus("saved");
+          // Authoritative reload after a failed rebase — not a successful save.
+          setSaveStatus("error");
           return;
         }
         const status = interpretServerSave(result);

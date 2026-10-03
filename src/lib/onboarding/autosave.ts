@@ -74,6 +74,11 @@ export function createDraftAutosaveController(deps: {
   getRoute: () => string;
   onResult: (result: DraftSaveResult) => void;
   onLocalDraftAdjusted: (draft: OnboardingDraft) => void;
+  /**
+   * Invited version lock advanced by a 409. Must not replace local answers —
+   * typing in flight would otherwise be wiped by onAuthoritativeDraft.
+   */
+  onInvitedConflictVersion?: (draftVersion: number) => void;
   onAuthoritativeDraft?: (draft: OnboardingDraft, draftVersion: number | null) => void;
   nowIso?: () => string;
 }): DraftAutosaveController {
@@ -94,9 +99,18 @@ export function createDraftAutosaveController(deps: {
     let result = await deps.save(sent, deps.getRoute(), options);
 
     if (!result.ok && result.reason === "stale_draft" && result.invited) {
-      if (result.draft) deps.onAuthoritativeDraft?.(result.draft, result.draftVersion ?? null);
-      deps.onResult(result);
-      return result;
+      // Same-browser coalesced edits can race the version lock. Rebase onto the
+      // server version and retry newest local answers — never discard keystrokes.
+      if (typeof result.draftVersion === "number") {
+        deps.onInvitedConflictVersion?.(result.draftVersion);
+      }
+      const latest = deps.getLatest();
+      result = await deps.save(latest, deps.getRoute(), options);
+      if (!result.ok && result.reason === "stale_draft" && result.invited) {
+        if (result.draft) deps.onAuthoritativeDraft?.(result.draft, result.draftVersion ?? null);
+        deps.onResult(result);
+        return result;
+      }
     }
 
     if (!result.ok && result.reason === "stale_draft") {

@@ -5,7 +5,6 @@ import { createDefaultDraft } from "@/lib/onboarding/types";
 import { invitationTokenFromHash } from "@/lib/onboarding/invitation-link";
 import {
   createDraftAutosaveController,
-  draftAutosaveFingerprint,
   type DraftSaveResult,
 } from "@/lib/onboarding/autosave";
 import { draftRouteMode, invitationsEnabled } from "@/lib/server/onboarding-invitations";
@@ -147,13 +146,15 @@ describe("null submission readers", () => {
 });
 
 describe("invited autosave conflict", () => {
-  it("does not retry a rejected invited body and does not treat the reload as a new edit", async () => {
-    const calls: string[] = [];
+  it("rebases onto the server version and retries newest local answers without wiping them", async () => {
+    const calls: Array<{ name: string; expectedVersion: number | null }> = [];
     let latest = createDefaultDraft();
     latest.section1.customerFacingName = "Local";
+    latest.section1.mainPhone = "+14155552671";
     const server = createDefaultDraft();
     server.section1.customerFacingName = "Server";
-    let snapshot = draftAutosaveFingerprint(latest);
+    let invitedVersion: number | null = 10;
+    let authoritativeLoads = 0;
 
     const controller = createDraftAutosaveController({
       getLatest: () => latest,
@@ -161,34 +162,94 @@ describe("invited autosave conflict", () => {
       onLocalDraftAdjusted: (draft) => {
         latest = draft;
       },
+      onInvitedConflictVersion: (version) => {
+        invitedVersion = version;
+      },
       onAuthoritativeDraft: (draft) => {
-        snapshot = draftAutosaveFingerprint(draft);
+        authoritativeLoads += 1;
         latest = draft;
       },
       onResult: () => {},
       save: async (draft) => {
-        calls.push(draft.section1.customerFacingName);
-        const result: DraftSaveResult = {
-          ok: false,
-          reason: "stale_draft",
+        calls.push({ name: draft.section1.customerFacingName, expectedVersion: invitedVersion });
+        if (calls.length === 1) {
+          const result: DraftSaveResult = {
+            ok: false,
+            reason: "stale_draft",
+            invited: true,
+            draftVersion: 11,
+            draft: server,
+            redisAvailable: false,
+            savedToRedis: false,
+            savedDurable: false,
+            durableAvailable: true,
+            persistence: "durable",
+          };
+          return result;
+        }
+        return {
+          ok: true,
           invited: true,
-          draftVersion: 11,
-          draft: server,
+          draftVersion: 12,
+          draft: { ...draft, updatedAt: "2026-09-30T12:00:02.000Z" },
           redisAvailable: false,
           savedToRedis: false,
-          savedDurable: false,
+          savedDurable: true,
           durableAvailable: true,
           persistence: "durable",
         };
-        return result;
       },
     });
 
     controller.requestSave();
     await controller.whenIdle();
-    assert.deepEqual(calls, ["Local"]);
+    assert.equal(calls.length, 2);
+    assert.equal(calls[0]?.name, "Local");
+    assert.equal(calls[1]?.name, "Local");
+    assert.equal(calls[1]?.expectedVersion, 11);
+    assert.equal(latest.section1.customerFacingName, "Local");
+    assert.equal(latest.section1.mainPhone, "+14155552671");
+    assert.equal(authoritativeLoads, 0);
+  });
+
+  it("loads the authoritative draft only when the invited rebase retry still conflicts", async () => {
+    const server = createDefaultDraft();
+    server.section1.customerFacingName = "Server";
+    let latest = createDefaultDraft();
+    latest.section1.customerFacingName = "Local";
+    let invitedVersion: number | null = 10;
+
+    const controller = createDraftAutosaveController({
+      getLatest: () => latest,
+      getRoute: () => "/onboarding",
+      onLocalDraftAdjusted: (draft) => {
+        latest = draft;
+      },
+      onInvitedConflictVersion: (version) => {
+        invitedVersion = version;
+      },
+      onAuthoritativeDraft: (draft, version) => {
+        invitedVersion = version;
+        latest = draft;
+      },
+      onResult: () => {},
+      save: async () => ({
+        ok: false,
+        reason: "stale_draft",
+        invited: true,
+        draftVersion: (invitedVersion ?? 10) + 1,
+        draft: server,
+        redisAvailable: false,
+        savedToRedis: false,
+        savedDurable: false,
+        durableAvailable: true,
+        persistence: "durable",
+      }),
+    });
+
+    controller.requestSave();
+    await controller.whenIdle();
     assert.equal(latest.section1.customerFacingName, "Server");
-    assert.equal(snapshot, draftAutosaveFingerprint(server));
   });
 });
 
