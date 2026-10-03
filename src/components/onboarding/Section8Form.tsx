@@ -8,6 +8,7 @@ import { TextField, TextareaField } from "./ui/Fields";
 import { RadioGroup } from "./ui/RadioGroup";
 import { PrimaryButton, SecondaryButton } from "./ui/Buttons";
 import { PhoneField } from "./ui/PhoneField";
+import { scrollToFirstAlert } from "@/lib/onboarding/scrollToFirstAlert";
 import { AdditionalSoftwareCardEditor } from "./AdditionalSoftwareCardEditor";
 import {
   ADDITIONAL_SOFTWARE_CATEGORIES,
@@ -53,7 +54,10 @@ export function Section8Form({ mode = "form" }: Props) {
     const nextErrors = validateSection8(draft.section8, draft.systems);
     setErrors(nextErrors);
     setSubmitted(true);
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length > 0) {
+      scrollToFirstAlert();
+      return;
+    }
     router.push("/onboarding/sections/8/complete");
   };
 

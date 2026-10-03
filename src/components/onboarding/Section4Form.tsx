@@ -53,6 +53,7 @@ import {
   validateSection4,
   type FieldErrors,
 } from "@/lib/onboarding/validation/section4";
+import { scrollToFirstAlert } from "@/lib/onboarding/scrollToFirstAlert";
 
 const CONFIRMATION_HELP_TEXT =
   "Alexander may repeat only information confirmed by the scheduling system or company team. He must not promise a specific technician, exact arrival time, immediate dispatch, or anything that was not confirmed.";
@@ -174,8 +175,7 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
     setErrors(nextErrors);
     setSubmitted(true);
     if (Object.keys(nextErrors).length > 0) {
-      const first = document.querySelector("[role='alert']");
-      first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      scrollToFirstAlert();
       return;
     }
     const finalDraft = {

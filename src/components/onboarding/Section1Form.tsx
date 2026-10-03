@@ -20,6 +20,7 @@ import {
 } from "@/lib/onboarding/validation/section1";
 import type { DayKey } from "@/lib/onboarding/schedule";
 import { DAYS } from "@/lib/onboarding/schedule";
+import { scrollToFirstAlert } from "@/lib/onboarding/scrollToFirstAlert";
 
 function mapScheduleErrors(errors: FieldErrors, prefix: string): Partial<Record<DayKey, string>> {
   const out: Partial<Record<DayKey, string>> = {};
@@ -59,8 +60,7 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
     setErrors(nextErrors);
     setSubmitted(true);
     if (Object.keys(nextErrors).length > 0) {
-      const first = document.querySelector("[role='alert']");
-      first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      scrollToFirstAlert();
       return;
     }
     const finalDraft = {

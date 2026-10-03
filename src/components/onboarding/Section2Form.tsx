@@ -34,6 +34,7 @@ import {
   validateSection2,
   type FieldErrors,
 } from "@/lib/onboarding/validation/section2";
+import { scrollToFirstAlert } from "@/lib/onboarding/scrollToFirstAlert";
 
 export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
   const { draft, updateSection2, saveDraftNow } = useOnboarding();
@@ -61,8 +62,7 @@ export function Section2Form({ mode = "form" }: { mode?: "form" | "review" }) {
     setErrors(nextErrors);
     setSubmitted(true);
     if (Object.keys(nextErrors).length > 0) {
-      const first = document.querySelector("[role='alert']");
-      first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      scrollToFirstAlert();
       return;
     }
     const finalDraft = {

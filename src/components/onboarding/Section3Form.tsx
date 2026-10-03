@@ -31,6 +31,7 @@ import {
   validateSection3,
   type FieldErrors,
 } from "@/lib/onboarding/validation/section3";
+import { scrollToFirstAlert } from "@/lib/onboarding/scrollToFirstAlert";
 
 const NOBODY_RESPONDS_HELP_TEXT =
   "Never tell the customer that someone has been reached, dispatched, or is handling the situation unless that action is confirmed.";
@@ -120,8 +121,7 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
     setErrors(nextErrors);
     setSubmitted(true);
     if (Object.keys(nextErrors).length > 0) {
-      const first = document.querySelector("[role='alert']");
-      first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      scrollToFirstAlert();
       return;
     }
     const finalDraft = {

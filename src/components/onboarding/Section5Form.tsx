@@ -30,6 +30,7 @@ import {
   type Section2Data,
 } from "@/lib/onboarding/types";
 import { validateSection5, type FieldErrors } from "@/lib/onboarding/validation/section5";
+import { scrollToFirstAlert } from "@/lib/onboarding/scrollToFirstAlert";
 
 function geographyChoices(section2: Section2Data) {
   const seen = new Set<string>();
@@ -71,8 +72,7 @@ export function Section5Form({ mode = "form" }: { mode?: "form" | "review" }) {
     setErrors(nextErrors);
     setSubmitted(true);
     if (Object.keys(nextErrors).length > 0) {
-      const first = document.querySelector("[role='alert']");
-      first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      scrollToFirstAlert();
       return;
     }
     const finalDraft = {

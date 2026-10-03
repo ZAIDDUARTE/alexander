@@ -226,12 +226,14 @@ export function validateSection4(
   } else {
     let windowConfigInvalid = false;
     for (const window of enabledWindows) {
+      const label = window.label.trim() || "This window";
       if (!window.start || !window.end) {
         errors[`appointmentWindows.${window.id}.times`] =
-          "Start and end times are required for enabled windows.";
+          `${label}: start and end times are required.`;
         windowConfigInvalid = true;
       } else if (window.start >= window.end) {
-        errors[`appointmentWindows.${window.id}.times`] = "End time must be after start time.";
+        errors[`appointmentWindows.${window.id}.times`] =
+          `${label}: end time must be after start time.`;
         windowConfigInvalid = true;
       }
     }

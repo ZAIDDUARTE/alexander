@@ -29,6 +29,7 @@ import type {
   RestrictedInformationId,
 } from "@/lib/onboarding/types";
 import { validateSection6, type FieldErrors } from "@/lib/onboarding/validation/section6";
+import { scrollToFirstAlert } from "@/lib/onboarding/scrollToFirstAlert";
 
 // Re-export catalog options for radio/checkbox (value/label shape)
 const PREVIOUS_WORK_OPTIONS = PREVIOUS_WORK_INITIAL_ACTION_OPTIONS.map((o) => ({
@@ -74,8 +75,7 @@ export function Section6Form({ mode = "form" }: { mode?: "form" | "review" }) {
     setErrors(nextErrors);
     setSubmitted(true);
     if (Object.keys(nextErrors).length > 0) {
-      const first = document.querySelector("[role='alert']");
-      first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      scrollToFirstAlert();
       return;
     }
     const finalDraft = {
