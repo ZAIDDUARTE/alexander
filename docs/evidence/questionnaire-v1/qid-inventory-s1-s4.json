@@ -55,7 +55,7 @@
       "section": "S1",
       "sectionName": "Your Company",
       "evidence": "E-S1-05",
-      "title": "Which of these may Alexander tell customers?",
+      "title": "Which of these may Alexander tell customers about your company?",
       "raw": "section1.approvedClaims",
       "file": "Section1Form.tsx",
       "type": "Multi-select / checkboxes",
@@ -140,7 +140,7 @@
     {
       "section": "S1",
       "sectionName": "Your Company",
-      "title": "What hours should Alexander answer?",
+      "title": "What hours should Alexander answer your calls?",
       "raw": "section1.answeringSchedule",
       "file": "Section1Form.tsx",
       "type": "Weekly schedule",
@@ -287,7 +287,7 @@
       "section": "S2",
       "sectionName": "Your Services",
       "evidence": "E-S2-02",
-      "title": "Which of these services does your company provide?",
+      "title": "Which diagnostic and drain services does your company provide?",
       "raw": "section2.diagnosticServices[serviceId].{policy,condition}",
       "file": "Section2Form.tsx + ServicePolicy.tsx",
       "type": "Matrix — single select per row",
@@ -580,7 +580,7 @@
         },
         {
           "id": "urgent",
-          "label": "Urgent, not emergency"
+          "label": "Urgent, but not an emergency"
         },
         {
           "id": "routine",
@@ -744,7 +744,7 @@
       "section": "S3",
       "sectionName": "Emergencies",
       "evidence": "E-S3-05",
-      "title": "Who should Alexander contact first?",
+      "title": "Who should Alexander contact first when a call requires immediate human attention?",
       "raw": "section3.primaryContactId → contacts[]",
       "file": "Section3Form.tsx",
       "type": "Contact selector / contact editor",
@@ -1112,7 +1112,7 @@
       "section": "S4",
       "sectionName": "Scheduling",
       "evidence": "E-S4-08",
-      "title": "When an eligible customer wants service, what may Alexander normally do?",
+      "title": "What is Alexander normally allowed to do when a customer wants an appointment?",
       "raw": "section4.defaultBookingMode",
       "file": "Section4Form.tsx",
       "type": "Single select",
@@ -1220,7 +1220,7 @@
       "section": "S4",
       "sectionName": "Scheduling",
       "evidence": "E-S4-13",
-      "title": "When may Alexander offer these appointments?",
+      "title": "When may Alexander offer same-day or holiday appointments?",
       "raw": "section4.capacityPolicies.{same_day,holiday}.{policy,condition}",
       "file": "Section4Form.tsx",
       "type": "Matrix — single select per row",

@@ -124,7 +124,7 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
 ### Q5
 
 - Section: Your Company
-- Exact question: Which of these may Alexander tell customers?
+- Exact question: Which of these may Alexander tell customers about your company?
 - Input type: Multi-select / checkboxes
 - Required/Optional: Required
 - Answer choices:
@@ -246,7 +246,7 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
 ### Q10A
 
 - Section: Your Company
-- Exact question: What hours should Alexander answer?
+- Exact question: What hours should Alexander answer your calls?
 - Input type: Weekly schedule
 - Required/Optional: Required when displayed
 - Answer choices: _(free text / structured composite / see repeated structure)_
@@ -322,7 +322,7 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
 ### Q13
 
 - Section: Your Services
-- Exact question: Which of these services does your company provide?
+- Exact question: Which diagnostic and drain services does your company provide?
 - Input type: Matrix — single select per row
 - Required/Optional: Required
 - Answer choices:
@@ -538,7 +538,7 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
 - Required/Optional: Required
 - Answer choices:
   - Emergency (`emergency`)
-  - Urgent, not emergency (`urgent`)
+  - Urgent, but not an emergency (`urgent`)
   - Routine (`routine`)
   - Human review required (`human_review`)
 - Allows Other/free text: No (unless a child field adds text)
@@ -624,7 +624,7 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
 ### Q25
 
 - Section: Emergencies
-- Exact question: Who should Alexander contact first?
+- Exact question: Who should Alexander contact first when a call requires immediate human attention?
 - Input type: Contact selector / contact editor
 - Required/Optional: Required
 - Answer choices: _(free text / structured composite / see repeated structure)_
@@ -985,7 +985,7 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
 ### Q37
 
 - Section: Scheduling
-- Exact question: When an eligible customer wants service, what may Alexander normally do?
+- Exact question: What is Alexander normally allowed to do when a customer wants an appointment?
 - Input type: Single select
 - Required/Optional: Required
 - Answer choices:
@@ -1089,7 +1089,7 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
 ### Q42
 
 - Section: Scheduling
-- Exact question: When may Alexander offer these appointments?
+- Exact question: When may Alexander offer same-day or holiday appointments?
 - Input type: Matrix — single select per row
 - Required/Optional: Required
 - Answer choices: _(free text / structured composite / see repeated structure)_
@@ -1397,7 +1397,7 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
 ### Q53
 
 - Section: Pricing and Payments
-- Exact question: How does your company normally determine what a customer pays?
+- Exact question: How does your company normally price plumbing work?
 - Input type: Multi-select / checkboxes
 - Required/Optional: Required
 - Answer choices:
@@ -1439,8 +1439,8 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
 - Input type: Single select
 - Required/Optional: Required
 - Answer choices:
-  - Yes — Alexander may quote the prices we provide below (`allowed`)
-  - No — Alexander should not quote service prices (`not_allowed`)
+  - Yes - Alexander may quote the prices we provide below (`allowed`)
+  - No - Alexander should not quote service prices (`not_allowed`)
 - Allows Other/free text: No (unless a child field adds text)
 - Conditional: No
 - Display condition: Always (within its section form)
@@ -1592,9 +1592,9 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
   - Debit card (`debit_card`)
   - Cash (`cash`)
   - Check (`check`)
-  - ACH / bank transfer (`ach`)
+  - ACH or bank transfer (`ach`)
   - Financing (`financing`)
-  - Invoice / account billing (`invoice`)
+  - Invoice or account billing (`invoice`)
   - Other (`other`)
 - Allows Other/free text: Yes where indicated by options or child fields
 - Conditional: No
@@ -1650,9 +1650,9 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
 - Input type: Single select
 - Required/Optional: Required
 - Answer choices:
-  - Yes — Alexander may send customers a secure payment link (`secure_link`)
-  - Yes — Alexander may send a secure payment link and use an approved payment method already on file when authorized (`secure_link_and_authorized_method`)
-  - No — Alexander should send payment requests to our team (`send_to_team`)
+  - Yes - Alexander may send customers a secure payment link (`secure_link`)
+  - Yes - Alexander may send a secure payment link and use an approved payment method already on file when authorized (`secure_link_and_authorized_method`)
+  - No - Alexander should send payment requests to our team (`send_to_team`)
 - Allows Other/free text: Yes where indicated by options or child fields
 - Conditional: No
 - Display condition: Always (within its section form)
@@ -1714,7 +1714,7 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
   - Fee waiver (`fee_waiver`)
   - Discount / goodwill adjustment (`discount_goodwill`)
   - Free or reduced-price return visit (`return_visit`)
-  - None — human approval is required (`none`)
+  - None - human approval is required (`none`)
 - Allows Other/free text: Yes where indicated by options or child fields
 - Conditional: No
 - Display condition: Always (within its section form)
@@ -2316,7 +2316,7 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
 ### Q85
 
 - Section: Integration Systems and Final Setup
-- Exact question: What system does your team primarily use for customer records and service jobs?
+- Exact question: What software does your company use to manage customers and jobs?
 - Input type: Single select
 - Required/Optional: Required
 - Answer choices:
@@ -2356,7 +2356,7 @@ Engineering evidence fields (`Raw storage path`, `Stored option IDs`, `Repeated/
 ### Q86
 
 - Section: Integration Systems and Final Setup
-- Exact question: Where does your team look to see when customers can be scheduled?
+- Exact question: Where does your company manage appointment availability?
 - Input type: Single select
 - Required/Optional: Required
 - Answer choices:

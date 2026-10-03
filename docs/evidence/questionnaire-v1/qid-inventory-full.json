@@ -61,7 +61,7 @@
       "section": "S1",
       "sectionName": "Your Company",
       "evidence": "E-S1-05",
-      "title": "Which of these may Alexander tell customers?",
+      "title": "Which of these may Alexander tell customers about your company?",
       "raw": "section1.approvedClaims",
       "file": "Section1Form.tsx",
       "type": "Multi-select / checkboxes",
@@ -190,7 +190,7 @@
     {
       "section": "S1",
       "sectionName": "Your Company",
-      "title": "What hours should Alexander answer?",
+      "title": "What hours should Alexander answer your calls?",
       "raw": "section1.answeringSchedule",
       "file": "Section1Form.tsx",
       "type": "Weekly schedule",
@@ -337,7 +337,7 @@
       "section": "S2",
       "sectionName": "Your Services",
       "evidence": "E-S2-02",
-      "title": "Which of these services does your company provide?",
+      "title": "Which diagnostic and drain services does your company provide?",
       "raw": "section2.diagnosticServices[serviceId].{policy,condition}",
       "file": "Section2Form.tsx + ServicePolicy.tsx",
       "type": "Matrix — single select per row",
@@ -630,7 +630,7 @@
         },
         {
           "id": "urgent",
-          "label": "Urgent, not emergency"
+          "label": "Urgent, but not an emergency"
         },
         {
           "id": "routine",
@@ -794,7 +794,7 @@
       "section": "S3",
       "sectionName": "Emergencies",
       "evidence": "E-S3-05",
-      "title": "Who should Alexander contact first?",
+      "title": "Who should Alexander contact first when a call requires immediate human attention?",
       "raw": "section3.primaryContactId → contacts[]",
       "file": "Section3Form.tsx",
       "type": "Contact selector / contact editor",
@@ -1162,7 +1162,7 @@
       "section": "S4",
       "sectionName": "Scheduling",
       "evidence": "E-S4-08",
-      "title": "When an eligible customer wants service, what may Alexander normally do?",
+      "title": "What is Alexander normally allowed to do when a customer wants an appointment?",
       "raw": "section4.defaultBookingMode",
       "file": "Section4Form.tsx",
       "type": "Single select",
@@ -1270,7 +1270,7 @@
       "section": "S4",
       "sectionName": "Scheduling",
       "evidence": "E-S4-13",
-      "title": "When may Alexander offer these appointments?",
+      "title": "When may Alexander offer same-day or holiday appointments?",
       "raw": "section4.capacityPolicies.{same_day,holiday}.{policy,condition}",
       "file": "Section4Form.tsx",
       "type": "Matrix — single select per row",
@@ -1519,7 +1519,7 @@
       "section": "S5",
       "sectionName": "Pricing and Payments",
       "evidence": "E-S5-01",
-      "title": "How does your company normally determine what a customer pays?",
+      "title": "How does your company normally price plumbing work?",
       "raw": "section5.pricingModels (+ pricingModelOther)",
       "file": "PricingCoreFields.tsx",
       "type": "Multi-select / checkboxes",
@@ -1578,11 +1578,11 @@
       "options": [
         {
           "id": "allowed",
-          "label": "Yes — Alexander may quote the prices we provide below"
+          "label": "Yes - Alexander may quote the prices we provide below"
         },
         {
           "id": "not_allowed",
-          "label": "No — Alexander should not quote service prices"
+          "label": "No - Alexander should not quote service prices"
         }
       ],
       "defaultValue": "not_allowed",
@@ -1782,7 +1782,7 @@
         },
         {
           "id": "ach",
-          "label": "ACH / bank transfer"
+          "label": "ACH or bank transfer"
         },
         {
           "id": "financing",
@@ -1790,7 +1790,7 @@
         },
         {
           "id": "invoice",
-          "label": "Invoice / account billing"
+          "label": "Invoice or account billing"
         },
         {
           "id": "other",
@@ -1864,15 +1864,15 @@
       "options": [
         {
           "id": "secure_link",
-          "label": "Yes — Alexander may send customers a secure payment link"
+          "label": "Yes - Alexander may send customers a secure payment link"
         },
         {
           "id": "secure_link_and_authorized_method",
-          "label": "Yes — Alexander may send a secure payment link and use an approved payment method already on file when authorized"
+          "label": "Yes - Alexander may send a secure payment link and use an approved payment method already on file when authorized"
         },
         {
           "id": "send_to_team",
-          "label": "No — Alexander should send payment requests to our team"
+          "label": "No - Alexander should send payment requests to our team"
         }
       ],
       "defaultValue": "secure_link",
@@ -1963,7 +1963,7 @@
         },
         {
           "id": "none",
-          "label": "None — human approval is required"
+          "label": "None - human approval is required"
         }
       ],
       "defaultValue": "none",
@@ -2749,7 +2749,7 @@
       "section": "S8",
       "sectionName": "Integration Systems and Final Setup",
       "evidence": "E-S8-01",
-      "title": "What system does your team primarily use for customer records and service jobs?",
+      "title": "What software does your company use to manage customers and jobs?",
       "raw": "section8.crmFsmProvider",
       "file": "Section8Form.tsx",
       "type": "Single select",
@@ -2808,7 +2808,7 @@
       "section": "S8",
       "sectionName": "Integration Systems and Final Setup",
       "evidence": "E-S8-02",
-      "title": "Where does your team look to see when customers can be scheduled?",
+      "title": "Where does your company manage appointment availability?",
       "raw": "section8.schedulingProvider",
       "file": "Section8Form.tsx",
       "type": "Single select",

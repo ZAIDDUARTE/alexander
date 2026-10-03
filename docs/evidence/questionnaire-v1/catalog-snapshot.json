@@ -351,11 +351,11 @@
     "QUOTE_PERMISSION_OPTIONS": [
       {
         "id": "allowed",
-        "label": "Yes — Alexander may quote the prices we provide below"
+        "label": "Yes - Alexander may quote the prices we provide below"
       },
       {
         "id": "not_allowed",
-        "label": "No — Alexander should not quote service prices"
+        "label": "No - Alexander should not quote service prices"
       }
     ],
     "SERVICE_PRICE_MODE_OPTIONS": [
@@ -447,7 +447,7 @@
       },
       {
         "id": "ach",
-        "label": "ACH / bank transfer"
+        "label": "ACH or bank transfer"
       },
       {
         "id": "financing",
@@ -455,7 +455,7 @@
       },
       {
         "id": "invoice",
-        "label": "Invoice / account billing"
+        "label": "Invoice or account billing"
       },
       {
         "id": "other",
@@ -491,15 +491,15 @@
     "PAYMENT_ASSISTANCE_OPTIONS": [
       {
         "id": "secure_link",
-        "label": "Yes — Alexander may send customers a secure payment link"
+        "label": "Yes - Alexander may send customers a secure payment link"
       },
       {
         "id": "secure_link_and_authorized_method",
-        "label": "Yes — Alexander may send a secure payment link and use an approved payment method already on file when authorized"
+        "label": "Yes - Alexander may send a secure payment link and use an approved payment method already on file when authorized"
       },
       {
         "id": "send_to_team",
-        "label": "No — Alexander should send payment requests to our team"
+        "label": "No - Alexander should send payment requests to our team"
       }
     ],
     "PAYMENT_COLLECTION_OPTIONS": [
@@ -557,7 +557,7 @@
       },
       {
         "id": "none",
-        "label": "None — human approval is required"
+        "label": "None - human approval is required"
       }
     ]
   },
