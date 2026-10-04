@@ -6,9 +6,20 @@
  * Preserves dormant raw values in the draft untouched.
  */
 
-import { contactHasIdentity, type Contact, type FeeRecord, type OnboardingDraft, type SoftwareRecord } from "../types";
+import {
+  contactHasIdentity,
+  type AdditionalFeeCategory,
+  type AdditionalFeeDetail,
+  type AdditionalFeeSelection,
+  type Contact,
+  type FeeRecord,
+  type OnboardingDraft,
+  type ServicePriceRecord,
+  type SoftwareRecord,
+} from "../types";
 import { PLUMBING_SERVICES, DIAGNOSTIC_SERVICES, CUSTOMER_PROPERTY_TYPES } from "../section2Catalog";
 import { EMERGENCY_SCENARIOS } from "../section3Catalog";
+import { CAPACITY_POLICY_ROWS } from "../section4Catalog";
 import { NON_SERVICE_CALL_TYPE_ROWS } from "../section6Catalog";
 import { isQuestionActive } from "./conditions";
 import { QUESTION_REGISTRY_BY_ID, SECTION_IDS } from "./registry";
@@ -75,6 +86,49 @@ function collectSystem(ref: string | null | undefined, buckets: EntityBuckets) {
   if (ref) buckets.systems.add(ref);
 }
 
+/** Active additional-fee branches only. `none` drops every dormant per-fee detail. */
+function cleanAdditionalFeeAnswer(
+  selection: AdditionalFeeSelection[],
+  details: Record<AdditionalFeeCategory, AdditionalFeeDetail>,
+): {
+  selection: AdditionalFeeSelection[];
+  details: Record<string, { amount: string; applicability: string; credit: string; creditWhen?: string }>;
+} {
+  if (selection.includes("none")) {
+    return { selection: ["none"], details: {} };
+  }
+  const active: Record<
+    string,
+    { amount: string; applicability: string; credit: string; creditWhen?: string }
+  > = {};
+  for (const category of selection) {
+    if (category === "none") continue;
+    const detail = details[category];
+    if (!detail) continue;
+    active[category] = {
+      amount: detail.amount,
+      applicability: detail.applicability,
+      credit: detail.credit,
+      ...(detail.credit === "sometimes" ? { creditWhen: detail.creditWhen } : {}),
+    };
+  }
+  return { selection, details: active };
+}
+
+function cleanServicePriceFields(row: ServicePriceRecord): Record<string, unknown> {
+  const fields: Record<string, unknown> = {
+    mode: row.mode,
+    conditions: row.conditions,
+  };
+  if (row.mode === "exact") fields.exactAmount = row.exactAmount;
+  else if (row.mode === "starting_at") fields.startingAmount = row.startingAmount;
+  else if (row.mode === "range") {
+    fields.rangeMin = row.rangeMin;
+    fields.rangeMax = row.rangeMax;
+  } else if (row.mode === "hourly") fields.hourlyAmount = row.hourlyAmount;
+  return fields;
+}
+
 function put(
   target: Record<string, QuestionAnswer>,
   questionId: string,
@@ -137,9 +191,12 @@ function serializeS2(draft: OnboardingDraft, out: Record<string, QuestionAnswer>
       s.afterHoursAreaMode === "smaller"
         ? {
             definitionMode: s.afterHoursDefinitionMode,
-            zipCodes: s.afterHoursZipCodes,
-            cities: s.afterHoursCities,
-            distance: s.afterHoursDistance,
+            zipCodes: s.afterHoursDefinitionMode === "zip_codes" ? s.afterHoursZipCodes : undefined,
+            cities: s.afterHoursDefinitionMode === "cities" ? s.afterHoursCities : undefined,
+            distance:
+              s.afterHoursDefinitionMode === "distance"
+                ? { address: s.afterHoursDistance.address, radiusMiles: s.afterHoursDistance.radiusMiles }
+                : undefined,
           }
         : undefined,
   });
@@ -234,7 +291,17 @@ function serializeS4(
       fields: { ...row },
     })),
   );
-  put(out, "Q42", draft, s.capacityPolicies);
+  const capacityItems: Record<string, MatrixItemAnswer> = {};
+  for (const row of CAPACITY_POLICY_ROWS) {
+    const entry = s.capacityPolicies[row.id] ?? { policy: "", condition: "" };
+    const fields: Record<string, unknown> = {};
+    if (entry.policy === "with_conditions") fields.condition = entry.condition;
+    capacityItems[row.id] = {
+      value: entry.policy,
+      ...(Object.keys(fields).length ? { fields } : {}),
+    };
+  }
+  put(out, "Q42", draft, capacityItems);
   put(out, "Q43", draft, s.rescheduleAuthority);
   put(out, "Q43A", draft, s.rescheduleCondition);
   put(out, "Q44", draft, s.cancellationAuthority);
@@ -272,7 +339,7 @@ function serializeS4(
   put(out, "Q52A", draft, {
     separateIssueServiceIds: s.separateIssueServiceIds,
     separateIssueOther: s.separateIssueOther,
-    separateIssueOtherDetail: s.separateIssueOtherDetail,
+    ...(s.separateIssueOther ? { separateIssueOtherDetail: s.separateIssueOtherDetail } : {}),
   });
 }
 
@@ -287,14 +354,11 @@ function serializeS5(draft: OnboardingDraft, out: Record<string, QuestionAnswer>
     draft,
     s.servicePrices.map((row) => ({
       id: row.serviceId,
-      fields: { ...row },
+      fields: cleanServicePriceFields(row),
     })),
   );
   put(out, "Q55", draft, s.unknownPriceBehavior);
-  put(out, "Q56", draft, {
-    selection: s.additionalFeeSelection,
-    details: s.additionalFeeDetails,
-  });
+  put(out, "Q56", draft, cleanAdditionalFeeAnswer(s.additionalFeeSelection, s.additionalFeeDetails));
   put(out, "Q57", draft, s.hasAreaTravelOrMinimum);
   put(
     out,
@@ -305,8 +369,6 @@ function serializeS5(draft: OnboardingDraft, out: Record<string, QuestionAnswer>
       fields: {
         area: row.area,
         feeOrMinimum: row.feeOrMinimum,
-        travelFee: row.travelFee,
-        minimumCharge: row.minimumCharge,
       },
     })),
   );
@@ -443,8 +505,9 @@ function serializeS8(
                 softwareId: c.softwareId,
                 systemName: c.systemName,
                 desiredAccess: c.desiredAccess,
-                otherCategoryLabel: c.otherCategoryLabel,
-                otherDetails: c.otherDetails,
+                ...(c.categoryId === "other"
+                  ? { otherCategoryLabel: c.otherCategoryLabel, otherDetails: c.otherDetails }
+                  : {}),
               },
             };
           });
