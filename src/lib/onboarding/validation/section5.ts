@@ -13,6 +13,7 @@ import {
   additionalFeeSelectionConflict,
   servicePriceRecordErrors,
 } from "../section5Pricing";
+import { section4AdditionalFeeConsistencyError } from "../section4FeeLinks";
 import type {
   Contact,
   FeeRecord,
@@ -70,7 +71,6 @@ export function validateSection5(
 ): FieldErrors {
   const errors: FieldErrors = {};
   void fees;
-  void section4;
   void contacts;
 
   // Q65
@@ -123,13 +123,24 @@ export function validateSection5(
     errors.additionalFeeSelection = "Select at least one option.";
   } else if (additionalFeeSelectionConflict(data.additionalFeeSelection)) {
     errors.additionalFeeSelection = "“We don’t charge additional fees” cannot be combined with a fee.";
-  } else if (!data.additionalFeeSelection.includes("none")) {
-    for (const category of data.additionalFeeSelection) {
-      if (category === "none") continue;
-      Object.assign(
-        errors,
-        additionalFeeDetailErrors(category as AdditionalFeeCategory, data.additionalFeeDetails[category as AdditionalFeeCategory]),
-      );
+  } else {
+    const schedulingFeeConflict = section4AdditionalFeeConsistencyError(
+      section4,
+      data.additionalFeeSelection,
+    );
+    if (schedulingFeeConflict) {
+      errors.additionalFeeSelection = schedulingFeeConflict;
+    } else if (!data.additionalFeeSelection.includes("none")) {
+      for (const category of data.additionalFeeSelection) {
+        if (category === "none") continue;
+        Object.assign(
+          errors,
+          additionalFeeDetailErrors(
+            category as AdditionalFeeCategory,
+            data.additionalFeeDetails[category as AdditionalFeeCategory],
+          ),
+        );
+      }
     }
   }
 
