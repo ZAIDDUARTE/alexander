@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { invokePersistenceLambda } from "@/lib/server/aws-persistence";
+import {
+  getAlexanderLifecycleHmacSecret,
+  getAlexanderStripeTestSecretKey,
+} from "@/lib/server/aws-secrets";
 import { verifyLifecycleSignature } from "@/lib/server/lifecycle-hmac";
 import { verifyPaidCheckoutSessionServer } from "@/lib/server/stripe-verify-server";
 
@@ -8,17 +12,12 @@ export const dynamic = "force-dynamic";
 
 const PATH = "/api/internal/customer-lifecycle/stripe-handoff";
 
-function hmacSecret(): string {
-  return (process.env.ALEXANDER_LIFECYCLE_HMAC_SECRET || "").trim();
-}
-
-function stripeSecret(): string {
-  return (process.env.ALEXANDER_STRIPE_SECRET_KEY || "").trim();
-}
-
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const secret = hmacSecret();
-  if (!secret) {
+  let secret: string;
+  try {
+    // Prefer AWS Secrets Manager via Vercel OIDC (no secret value in Vercel env).
+    secret = await getAlexanderLifecycleHmacSecret();
+  } catch {
     return NextResponse.json({ ok: false, reason: "hmac_not_configured" }, { status: 503 });
   }
 
@@ -53,8 +52,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, reason: "invalid_session" }, { status: 400 });
   }
 
-  const sk = stripeSecret();
-  if (!sk.startsWith("sk_test_")) {
+  let sk: string;
+  try {
+    sk = await getAlexanderStripeTestSecretKey();
+  } catch {
     return NextResponse.json({ ok: false, reason: "stripe_secret_not_configured" }, { status: 503 });
   }
 

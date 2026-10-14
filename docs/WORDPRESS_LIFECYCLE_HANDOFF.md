@@ -32,8 +32,8 @@ Body:
 
 ## Secrets (Staging only)
 
-- WordPress: `ALEXANDER_LIFECYCLE_HMAC_SECRET`
-- Vercel Staging: `ALEXANDER_LIFECYCLE_HMAC_SECRET`, `ALEXANDER_STRIPE_SECRET_KEY` (Test)
+- WordPress Staging: `ALEXANDER_LIFECYCLE_HMAC_SECRET`, `ALEXANDER_LIFECYCLE_HANDOFF_URL` (server-side only)
+- Vercel Staging/Preview: prefer AWS Secrets Manager via OIDC (`alexander/staging/lifecycle-hmac`, `alexander/staging/stripe`) — store ARN/name + region only, not secret values
 
 Never commit secrets. Never put HMAC secret in the browser.
 
