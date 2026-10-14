@@ -374,6 +374,224 @@ function stringField(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+/**
+ * Idempotent paid-customer provisioning after authoritative Stripe verification.
+ * Exactly one customer / initial onboarding / invitation / questionnaire email job.
+ */
+export async function provisionFromVerifiedStripe(
+  pool: SqlPool,
+  input: {
+    stripe: {
+      checkoutSessionId: string;
+      customerId: string;
+      subscriptionId: string;
+      priceId: string;
+      productId: string;
+      email: string | null;
+      name: string | null;
+      phone: string | null;
+    };
+    host: string;
+    correlationKey?: string | null;
+  },
+): Promise<{
+  ok: true;
+  created: boolean;
+  customerId: string;
+  customerNumber: string;
+  onboardingId: string;
+  invitationUrl: string | null;
+  emailJobId: string | null;
+}> {
+  const stripe = input.stripe;
+  const correlation =
+    (input.correlationKey && input.correlationKey.trim()) ||
+    `stripe_checkout:${stripe.checkoutSessionId}`;
+
+  return withTransaction(pool, async (client) => {
+    const existing = await client.query(
+      `SELECT id, customer_number, stripe_checkout_session_id
+       FROM customers
+       WHERE stripe_subscription_id = $1
+          OR stripe_customer_id = $2
+          OR stripe_checkout_session_id = $3
+       ORDER BY created_at ASC
+       LIMIT 1
+       FOR UPDATE`,
+      [stripe.subscriptionId, stripe.customerId, stripe.checkoutSessionId],
+    );
+
+    let customerId = "";
+    let customerNumber = "";
+    let created = false;
+
+    if (existing.rows[0]) {
+      customerId = String(existing.rows[0].id);
+      customerNumber = String(existing.rows[0].customer_number ?? "");
+      await client.query(
+        `UPDATE customers SET
+           stripe_customer_id = COALESCE(stripe_customer_id, $2),
+           stripe_subscription_id = COALESCE(stripe_subscription_id, $3),
+           stripe_checkout_session_id = COALESCE(stripe_checkout_session_id, $4),
+           stripe_price_id = COALESCE(stripe_price_id, $5),
+           stripe_product_id = COALESCE(stripe_product_id, $6),
+           payment_verified_at = COALESCE(payment_verified_at, now()),
+           primary_email = COALESCE(primary_email, $7),
+           primary_phone = COALESCE(primary_phone, $8),
+           customer_facing_name = COALESCE(customer_facing_name, $9),
+           data_classification = 'synthetic_test',
+           updated_at = now()
+         WHERE id = $1`,
+        [
+          customerId,
+          stripe.customerId,
+          stripe.subscriptionId,
+          stripe.checkoutSessionId,
+          stripe.priceId,
+          stripe.productId,
+          stripe.email,
+          stripe.phone,
+          stripe.name,
+        ],
+      );
+    } else {
+      const inserted = await client.query(
+        `INSERT INTO customers (
+           customer_facing_name, primary_email, primary_phone,
+           stripe_customer_id, stripe_subscription_id, stripe_checkout_session_id,
+           stripe_price_id, stripe_product_id, payment_verified_at, data_classification
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,now(),'synthetic_test')
+         RETURNING id, customer_number`,
+        [
+          stripe.name,
+          stripe.email,
+          stripe.phone,
+          stripe.customerId,
+          stripe.subscriptionId,
+          stripe.checkoutSessionId,
+          stripe.priceId,
+          stripe.productId,
+        ],
+      );
+      customerId = String(inserted.rows[0]?.id ?? "");
+      customerNumber = String(inserted.rows[0]?.customer_number ?? "");
+      created = true;
+    }
+
+    if (!customerId) throw new Error("customer_missing");
+
+    await client.query(
+      `INSERT INTO customer_lifecycle_events (customer_id, event_type, correlation_key, payload_json)
+       VALUES ($1, 'stripe_checkout_verified', $2, $3::jsonb)
+       ON CONFLICT (event_type, correlation_key) WHERE correlation_key IS NOT NULL DO NOTHING`,
+      [
+        customerId,
+        correlation,
+        JSON.stringify({
+          checkoutSessionId: stripe.checkoutSessionId,
+          subscriptionId: stripe.subscriptionId,
+        }),
+      ],
+    );
+
+    let onboardingId = "";
+    const onboardings = await client.query(
+      `SELECT id
+       FROM customer_onboardings
+       WHERE customer_id = $1
+       ORDER BY created_at ASC
+       LIMIT 1
+       FOR UPDATE`,
+      [customerId],
+    );
+    if (onboardings.rows[0]) {
+      onboardingId = String(onboardings.rows[0].id);
+    } else {
+      const onboarding = await client.query(
+        `INSERT INTO customer_onboardings (customer_id) VALUES ($1) RETURNING id`,
+        [customerId],
+      );
+      onboardingId = String(onboarding.rows[0]?.id ?? "");
+      created = true;
+    }
+    if (!onboardingId) throw new Error("onboarding_missing");
+
+    await ensureDraftSession(client, onboardingId);
+
+    let issuedInvitationUrl: string | null = null;
+    const activeInvite = await client.query(
+      `SELECT id
+       FROM onboarding_invitations
+       WHERE onboarding_id = $1
+         AND revoked_at IS NULL
+         AND (expires_at IS NULL OR expires_at > now())
+       LIMIT 1`,
+      [onboardingId],
+    );
+
+    if (!activeInvite.rows[0]) {
+      const token = generateToken();
+      const tokenHash = hashToken(token);
+      const expiresAt = new Date(Date.now() + INVITATION_TTL_MS).toISOString();
+      await client.query(
+        `INSERT INTO onboarding_invitations (onboarding_id, token_hash, expires_at)
+         VALUES ($1, $2, $3)`,
+        [onboardingId, tokenHash, expiresAt],
+      );
+      issuedInvitationUrl = invitationUrl(input.host, token);
+      created = true;
+    }
+
+    const dedupeKey = `questionnaire_invitation:${onboardingId}:v1`;
+    let emailJobId: string | null = null;
+    const existingJob = await client.query(
+      `SELECT id FROM email_outbox WHERE dedupe_key = $1 LIMIT 1`,
+      [dedupeKey],
+    );
+    if (existingJob.rows[0]) {
+      emailJobId = String(existingJob.rows[0].id);
+    } else {
+      const firstName =
+        (stripe.name || "").trim().split(/\s+/)[0] || "there";
+      const job = await client.query(
+        `INSERT INTO email_outbox (
+           customer_id, onboarding_id, template_type, recipient, dedupe_key, payload_json, status
+         ) VALUES ($1,$2,'questionnaire_invitation',$3,$4,$5::jsonb,'queued')
+         RETURNING id`,
+        [
+          customerId,
+          onboardingId,
+          stripe.email || "test-recipient-required@invalid.local",
+          dedupeKey,
+          JSON.stringify({
+            first_name: firstName,
+            invitation_url: issuedInvitationUrl,
+            checkout_session_id: stripe.checkoutSessionId,
+          }),
+        ],
+      );
+      emailJobId = String(job.rows[0]?.id ?? "");
+    }
+
+    await client.query(
+      `INSERT INTO customer_trillet_workspaces (customer_id, status)
+       VALUES ($1, 'not_required')
+       ON CONFLICT (customer_id) DO NOTHING`,
+      [customerId],
+    );
+
+    return {
+      ok: true as const,
+      created,
+      customerId,
+      customerNumber,
+      onboardingId,
+      invitationUrl: issuedInvitationUrl,
+      emailJobId,
+    };
+  });
+}
+
 export async function handleOnboardingAccessOperation(
   event: Record<string, unknown>,
   pool: SqlPool,

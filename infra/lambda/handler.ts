@@ -11,7 +11,15 @@ import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-sec
 import { Pool, type QueryResultRow } from "pg";
 import { sha256Hex } from "../../src/lib/server/persistence/canonical";
 import { handlePersistenceOperation } from "../../src/lib/server/persistence/engine";
-import { handleOnboardingAccessOperation, type SqlPool } from "../../src/lib/server/persistence/onboarding-access";
+import {
+  handleOnboardingAccessOperation,
+  provisionFromVerifiedStripe,
+  type SqlPool,
+} from "../../src/lib/server/persistence/onboarding-access";
+import {
+  loadStripeSecretKey,
+  verifyPaidCheckoutSession,
+} from "../../src/lib/server/persistence/stripe-verify";
 import { submitPersistenceV2FromAccess } from "../../src/lib/server/persistence/v2-submit";
 import type { OnboardingDraft } from "../../src/lib/onboarding/types";
 import {
@@ -339,6 +347,79 @@ export async function handler(event: unknown): Promise<unknown> {
     event && typeof event === "object" && "operation" in event
       ? String((event as { operation?: unknown }).operation ?? "")
       : "";
+  if (operation === "provisionFromStripeSession" || operation === "provisionFromVerifiedStripe") {
+    const body = event as {
+      checkoutSessionId?: unknown;
+      correlationKey?: unknown;
+      host?: unknown;
+      verified?: Record<string, unknown>;
+    };
+    const host =
+      typeof body.host === "string" && body.host.trim()
+        ? body.host.trim()
+        : "alexander1stg.wpenginepowered.com";
+    const correlationKey =
+      typeof body.correlationKey === "string" ? body.correlationKey : null;
+
+    // Isolated VPC Lambda cannot reach Stripe (no NAT). Preferred path:
+    // Vercel verifies Stripe over the internet, then IAM-invokes with verified payload.
+    if (operation === "provisionFromVerifiedStripe" || body.verified) {
+      const v = (body.verified || {}) as Record<string, unknown>;
+      const stripe = {
+        checkoutSessionId: typeof v.checkoutSessionId === "string" ? v.checkoutSessionId : "",
+        customerId: typeof v.customerId === "string" ? v.customerId : "",
+        subscriptionId: typeof v.subscriptionId === "string" ? v.subscriptionId : "",
+        priceId: typeof v.priceId === "string" ? v.priceId : "",
+        productId: typeof v.productId === "string" ? v.productId : "",
+        email: typeof v.email === "string" ? v.email : null,
+        name: typeof v.name === "string" ? v.name : null,
+        phone: typeof v.phone === "string" ? v.phone : null,
+      };
+      if (
+        !stripe.checkoutSessionId.startsWith("cs_test_") ||
+        !stripe.customerId.startsWith("cus_") ||
+        !stripe.subscriptionId.startsWith("sub_")
+      ) {
+        return { ok: false, reason: "invalid_verified_payload" };
+      }
+      const pool = await getPool();
+      return provisionFromVerifiedStripe(pool as unknown as SqlPool, {
+        stripe,
+        host,
+        correlationKey,
+      });
+    }
+
+    const checkoutSessionId =
+      typeof body.checkoutSessionId === "string" ? body.checkoutSessionId.trim() : "";
+    if (!checkoutSessionId) return { ok: false, reason: "invalid_payload" };
+
+    const secretArn = process.env.STRIPE_SECRET_ARN || "";
+    if (!secretArn) return { ok: false, reason: "stripe_secret_not_configured" };
+
+    let secretKey: string;
+    try {
+      secretKey = await loadStripeSecretKey(secretArn);
+    } catch {
+      return { ok: false, reason: "stripe_secret_unavailable" };
+    }
+
+    const verified = await verifyPaidCheckoutSession(checkoutSessionId, secretKey);
+    if (!verified.ok) {
+      return {
+        ok: false,
+        reason: verified.reason,
+        retryable: verified.retryable,
+      };
+    }
+
+    const pool = await getPool();
+    return provisionFromVerifiedStripe(pool as unknown as SqlPool, {
+      stripe: verified.session,
+      host,
+      correlationKey,
+    });
+  }
   if (
     operation === "lookupInvitation" ||
     operation === "redeemInvitation" ||
