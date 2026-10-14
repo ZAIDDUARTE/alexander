@@ -220,12 +220,19 @@ export class AlexanderPersistenceStack extends Stack {
     const schema = new CustomResource(this, "SchemaMigration", {
       serviceToken: migration.serviceToken,
       properties: {
-        migrationVersion: "005",
+        migrationVersion: "009",
         databaseAddress: database.dbInstanceEndpointAddress,
       },
       resourceType: "Custom::AlexanderSchema",
     });
     schema.node.addDependency(database);
+
+    // Staging Test Stripe secret (value managed outside CDK; ARN only).
+    const stripeSecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      "StripeTestSecret",
+      "alexander/staging/stripe",
+    );
 
     const proxy = new rds.DatabaseProxy(this, "Proxy", {
       dbProxyName: "alexander-onboarding-proxy",
@@ -256,9 +263,12 @@ export class AlexanderPersistenceStack extends Stack {
         APP_SECRET_ARN: appSecret.secretArn,
         SNAPSHOT_BUCKET: bucket.bucketName,
         SNAPSHOT_KMS_KEY_ARN: key.keyArn,
+        STRIPE_SECRET_ARN: stripeSecret.secretArn,
+        EMAIL_DELIVERY_MODE: "test",
       },
     });
     appSecret.grantRead(persistenceFn);
+    stripeSecret.grantRead(persistenceFn);
     key.grantEncryptDecrypt(persistenceFn);
     bucket.grantPut(persistenceFn, "onboarding/*");
     bucket.grantRead(persistenceFn, "onboarding/*");
