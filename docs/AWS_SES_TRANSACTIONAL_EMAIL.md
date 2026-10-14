@@ -24,7 +24,11 @@
 
 ## Configuration set
 
-`alexander-transactional-staging` (created). Delivery feedback destinations not fully wired yet.
+`alexander-transactional-staging`
+
+Event destination `alexander-sns-feedback` → SNS `alexander-ses-feedback-staging` → Lambda `alexander-email-feedback` (idempotent by `event_id`).
+
+Worker: persistence operation `processEmailOutbox` (EventBridge `alexander-email-outbox-staging`, every 5 minutes). Staging guard loads `ALLOWED_TEST_RECIPIENT` from Secrets Manager `alexander/staging/email-guard` when set.
 
 ## Outbox
 

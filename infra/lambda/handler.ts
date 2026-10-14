@@ -17,6 +17,17 @@ import {
   type SqlPool,
 } from "../../src/lib/server/persistence/onboarding-access";
 import {
+  claimEmailJobs,
+  markEmailBlocked,
+  markEmailRetry,
+  markEmailSent,
+  stagingEmailAllowed,
+} from "../../src/lib/server/persistence/email-outbox";
+import {
+  renderDashboardReadyEmail,
+  renderQuestionnaireInvitationEmail,
+} from "../../src/lib/server/persistence/email-templates";
+import {
   loadStripeSecretKey,
   verifyPaidCheckoutSession,
 } from "../../src/lib/server/persistence/stripe-verify";
@@ -28,6 +39,7 @@ import {
 } from "../../src/lib/server/persistence/submission-row";
 import { isSafeSubmissionKey } from "../../src/lib/server/persistence/keys";
 import { createLineLogger } from "../../src/lib/server/persistence/logger";
+import { handleRequestOperation } from "../../src/lib/server/requests/store";
 import type {
   DatabasePort,
   ObjectStorePort,
@@ -347,6 +359,199 @@ export async function handler(event: unknown): Promise<unknown> {
     event && typeof event === "object" && "operation" in event
       ? String((event as { operation?: unknown }).operation ?? "")
       : "";
+  if (["resolveRequestInstallation", "persistVerifiedCall", "listServiceRequests"].includes(operation)) {
+    if (process.env.ALEXANDER_REQUEST_PIPELINE_ENABLED !== "true") return { ok: false, reason: "disabled" };
+    return handleRequestOperation(event as Record<string, unknown>, await getPool() as unknown as SqlPool);
+  }
+  if (operation === "processEmailOutbox") {
+    const pool = await getPool();
+    // Load staging delivery guard from Secrets Manager when env is empty.
+    let allow = (process.env.ALLOWED_TEST_RECIPIENT || "").trim();
+    const guardArn = (process.env.EMAIL_GUARD_SECRET_ARN || "").trim();
+    if (!allow && guardArn) {
+      try {
+        const secrets = new SecretsManagerClient({});
+        const guard = await secrets.send(new GetSecretValueCommand({ SecretId: guardArn }));
+        if (guard.SecretString) {
+          const parsed = JSON.parse(guard.SecretString) as {
+            ALLOWED_TEST_RECIPIENT?: string;
+            EMAIL_DELIVERY_MODE?: string;
+          };
+          allow = (parsed.ALLOWED_TEST_RECIPIENT || "").trim();
+          if (parsed.EMAIL_DELIVERY_MODE) {
+            process.env.EMAIL_DELIVERY_MODE = parsed.EMAIL_DELIVERY_MODE;
+          }
+        }
+      } catch {
+        return { ok: false, reason: "email_guard_secret_unavailable" };
+      }
+    }
+    if (!allow) {
+      return { ok: false, reason: "TEST_RECIPIENT_REQUIRED" };
+    }
+    // Ensure staging guard env is visible to helper.
+    process.env.EMAIL_DELIVERY_MODE = process.env.EMAIL_DELIVERY_MODE || "test";
+    process.env.ALLOWED_TEST_RECIPIENT = allow;
+
+    const jobs = await claimEmailJobs(pool as unknown as SqlPool, 5);
+    const results: Array<Record<string, unknown>> = [];
+    const { SESv2Client, SendEmailCommand } = await import("@aws-sdk/client-sesv2");
+    const ses = new SESv2Client({});
+    const from = process.env.ALEXANDER_SES_FROM || "Alexander <support@beyondintelligence.ai>";
+    const configSet = process.env.ALEXANDER_SES_CONFIGURATION_SET || "alexander-transactional-staging";
+
+    for (const job of jobs) {
+      const guard = stagingEmailAllowed(allow);
+      if (!guard.ok) {
+        await markEmailBlocked(pool as unknown as SqlPool, job.id, guard.reason);
+        results.push({ id: job.id, status: "blocked_test_guard", reason: guard.reason });
+        continue;
+      }
+      // Always send to allowlisted test recipient in staging.
+      const to = allow;
+      const firstName = String(job.payload.first_name || "there");
+      let rendered =
+        job.templateType === "dashboard_ready"
+          ? renderDashboardReadyEmail({
+              firstName,
+              dashboardUrl: String(job.payload.dashboard_url || job.payload.invitation_url || ""),
+            })
+          : renderQuestionnaireInvitationEmail({
+              firstName,
+              invitationUrl: String(job.payload.invitation_url || ""),
+            });
+      if (job.templateType === "questionnaire_invitation" && !job.payload.invitation_url) {
+        await markEmailRetry(pool as unknown as SqlPool, job.id, "missing_invitation_url");
+        results.push({ id: job.id, status: "retry_pending", reason: "missing_invitation_url" });
+        continue;
+      }
+      try {
+        const sent = await ses.send(
+          new SendEmailCommand({
+            FromEmailAddress: from,
+            Destination: { ToAddresses: [to] },
+            Content: {
+              Simple: {
+                Subject: { Data: rendered.subject, Charset: "UTF-8" },
+                Body: {
+                  Text: { Data: rendered.text, Charset: "UTF-8" },
+                  Html: { Data: rendered.html, Charset: "UTF-8" },
+                },
+              },
+            },
+            ConfigurationSetName: configSet,
+          }),
+        );
+        const messageId = sent.MessageId || "";
+        await markEmailSent(pool as unknown as SqlPool, job.id, messageId);
+        results.push({ id: job.id, status: "sent", messageId: Boolean(messageId) });
+      } catch {
+        await markEmailRetry(pool as unknown as SqlPool, job.id, "ses_send_failed");
+        results.push({ id: job.id, status: "retry_pending", reason: "ses_send_failed" });
+      }
+    }
+    return { ok: true, processed: results.length, results };
+  }
+
+  if (operation === "markTrilletWorkspaceReady") {
+    const body = event as {
+      customerId?: unknown;
+      workspaceId?: unknown;
+      agentId?: unknown;
+      invitationUrl?: unknown;
+      operatorRef?: unknown;
+    };
+    const customerId = typeof body.customerId === "string" ? body.customerId : "";
+    const workspaceId = typeof body.workspaceId === "string" ? body.workspaceId.trim() : "";
+    const invitationUrl = typeof body.invitationUrl === "string" ? body.invitationUrl.trim() : "";
+    if (!/^[0-9a-f-]{36}$/i.test(customerId) || !workspaceId || !invitationUrl) {
+      return { ok: false, reason: "invalid_payload" };
+    }
+    const pool = await getPool();
+    const client = await (pool as unknown as SqlPool).connect();
+    try {
+      await client.query("BEGIN");
+      const submitted = await client.query(
+        `SELECT o.id
+         FROM customer_onboardings o
+         WHERE o.customer_id = $1 AND o.status = 'submitted'
+         ORDER BY created_at DESC LIMIT 1`,
+        [customerId],
+      );
+      if (!submitted.rows[0]) {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "questionnaire_not_submitted" };
+      }
+      const clash = await client.query(
+        `SELECT customer_id FROM customer_trillet_workspaces
+         WHERE workspace_id = $1 AND customer_id <> $2 LIMIT 1`,
+        [workspaceId, customerId],
+      );
+      if (clash.rows[0]) {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "workspace_already_assigned" };
+      }
+      await client.query(
+        `INSERT INTO customer_trillet_workspaces (
+           customer_id, workspace_id, agent_id, invitation_url, status,
+           workspace_ready_at, invitation_created_at, operator_ref, updated_at
+         ) VALUES ($1,$2,$3,$4,'ready',now(),now(),$5,now())
+         ON CONFLICT (customer_id) DO UPDATE SET
+           workspace_id = EXCLUDED.workspace_id,
+           agent_id = EXCLUDED.agent_id,
+           invitation_url = EXCLUDED.invitation_url,
+           status = 'ready',
+           workspace_ready_at = COALESCE(customer_trillet_workspaces.workspace_ready_at, now()),
+           invitation_created_at = COALESCE(customer_trillet_workspaces.invitation_created_at, now()),
+           operator_ref = EXCLUDED.operator_ref,
+           updated_at = now()`,
+        [
+          customerId,
+          workspaceId,
+          typeof body.agentId === "string" ? body.agentId : null,
+          invitationUrl,
+          typeof body.operatorRef === "string" ? body.operatorRef : null,
+        ],
+      );
+      const dedupe = `dashboard_ready:${customerId}:${workspaceId}`;
+      const email = await client.query(
+        `SELECT primary_email, customer_facing_name FROM customers WHERE id = $1`,
+        [customerId],
+      );
+      const recipient = String(email.rows[0]?.primary_email || "test-recipient-required@invalid.local");
+      const first = String(email.rows[0]?.customer_facing_name || "there").split(/\s+/)[0] || "there";
+      const job = await client.query(
+        `INSERT INTO email_outbox (
+           customer_id, template_type, recipient, dedupe_key, payload_json, status
+         ) VALUES ($1,'dashboard_ready',$2,$3,$4::jsonb,'queued')
+         ON CONFLICT (dedupe_key) DO UPDATE SET updated_at = now()
+         RETURNING id`,
+        [
+          customerId,
+          recipient,
+          dedupe,
+          JSON.stringify({ first_name: first, dashboard_url: invitationUrl }),
+        ],
+      );
+      await client.query("COMMIT");
+      return {
+        ok: true,
+        customerId,
+        workspaceId,
+        emailJobId: String(job.rows[0]?.id || ""),
+      };
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // ignore
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   if (operation === "provisionFromStripeSession" || operation === "provisionFromVerifiedStripe") {
     const body = event as {
       checkoutSessionId?: unknown;
