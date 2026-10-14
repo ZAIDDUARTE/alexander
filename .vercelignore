@@ -11,12 +11,15 @@ output
 output-final*
 transcripts
 website-images
-docs/FInal-docs
-docs/alexander-readiness
-docs/evidence
+docs
 *.docx
 *.pdf
 *.zip
 .venv*
-infra/node_modules
-node_modules
+infra
+/Alexander-Final-Questionnaire-Specification-v1.0.md
+/Alexander_Onboarding_Final_Implementation_Specification(1).docx
+/For Zaid.docx
+/Landing Page V2 (2).png
+/changes-1oct.md
+/scripts/render-trillet-demo.ts
