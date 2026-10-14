@@ -7,3 +7,16 @@ zoom
 .env
 .env.local
 .env*.local
+output
+output-final*
+transcripts
+website-images
+docs/FInal-docs
+docs/alexander-readiness
+docs/evidence
+*.docx
+*.pdf
+*.zip
+.venv*
+infra/node_modules
+node_modules
