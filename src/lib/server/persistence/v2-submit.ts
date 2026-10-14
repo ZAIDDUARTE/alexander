@@ -551,5 +551,24 @@ export async function submitPersistenceV2FromAccess(
       submittedAt,
     },
   };
-  return finalizePersistenceV2(pool, reserved.reserved, submittedAt, sessionDraft, normalized);
+  const finalized = await finalizePersistenceV2(
+    pool,
+    reserved.reserved,
+    submittedAt,
+    sessionDraft,
+    normalized,
+  );
+  if (finalized.ok) {
+    try {
+      const { projectSubmissionToBusinessProfile } = await import("./profile-projector");
+      await projectSubmissionToBusinessProfile(pool, {
+        customerId,
+        submissionId: reserved.reserved.submissionId,
+        answers: answers as unknown as Record<string, unknown>,
+      });
+    } catch {
+      // Submission remains committed even if projection fails; operator can retry.
+    }
+  }
+  return finalized;
 }
