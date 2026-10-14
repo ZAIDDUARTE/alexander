@@ -161,6 +161,62 @@ export async function provisionCustomerOnboarding(
   };
 }
 
+/** New blank onboarding + invitation for an existing customer. Preserves history. */
+export async function provisionOnboardingForExistingCustomer(
+  pool: SqlPool,
+  input: {
+    customerId: string;
+    invitationTtlDays?: number;
+    host: string;
+  },
+): Promise<{
+  customerId: string;
+  customerNumber: string;
+  onboardingId: string;
+  invitationUrl: string;
+  draftVersion: number;
+  schemaVersion: number;
+}> {
+  const customerId = input.customerId.trim();
+  if (!/^[0-9a-f-]{36}$/i.test(customerId)) throw new Error("customer_required");
+  const token = generateToken();
+  const tokenHash = hashToken(token);
+  const ttlDays = input.invitationTtlDays ?? 30;
+  const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000).toISOString();
+
+  const created = await withTransaction(pool, async (client) => {
+    const customer = await client.query(
+      `SELECT id, customer_number
+       FROM customers
+       WHERE id = $1
+       FOR UPDATE`,
+      [customerId],
+    );
+    if (!customer.rows[0]) throw new Error("customer_not_found");
+    const customerNumber = String(customer.rows[0].customer_number ?? "");
+    const onboarding = await client.query(
+      `INSERT INTO customer_onboardings (customer_id) VALUES ($1) RETURNING id`,
+      [customerId],
+    );
+    const onboardingId = String(onboarding.rows[0]?.id ?? "");
+    const draft = await ensureDraftSession(client, onboardingId);
+    await client.query(
+      `INSERT INTO onboarding_invitations (onboarding_id, token_hash, expires_at)
+       VALUES ($1, $2, $3)`,
+      [onboardingId, tokenHash, expiresAt],
+    );
+    void draft;
+    return { customerId, customerNumber, onboardingId };
+  });
+
+  return {
+    ...created,
+    invitationUrl: invitationUrl(input.host, token),
+    draftVersion: 1,
+    schemaVersion: 10,
+  };
+}
+
 export async function lookupInvitation(
   pool: SqlPool,
   invitationTokenHash: string,

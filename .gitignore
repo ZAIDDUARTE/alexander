@@ -30,6 +30,9 @@ yarn-error.log*
 # env — keep .env.example tracked; ignore all real env files
 .env
 .env.local
+
+# Google OAuth client secrets (never commit)
+client_secret_*.json
 .env.development.local
 .env.test.local
 .env.production.local

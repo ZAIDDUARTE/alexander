@@ -2,7 +2,10 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import { Pool } from "pg";
-import { provisionCustomerOnboarding } from "../../src/lib/server/persistence/onboarding-access";
+import {
+  provisionCustomerOnboarding,
+  provisionOnboardingForExistingCustomer,
+} from "../../src/lib/server/persistence/onboarding-access";
 import { generateToken, hashToken } from "../../src/lib/server/persistence/tokens";
 
 type SecretShape = { username?: string; password?: string };
@@ -66,6 +69,148 @@ async function describeOnboarding(onboardingId: string | undefined): Promise<{
       [onboardingId],
     );
     return { PhysicalResourceId: "alexander-schema-001", rows: result.rows };
+  } finally {
+    await pool.end();
+  }
+}
+
+async function describeOnboardingDraft(onboardingId: string | undefined): Promise<{
+  PhysicalResourceId: string;
+  customerId: string;
+  customerNumber: string;
+  onboardingId: string;
+  onboardingStatus: string;
+  latestSubmissionId: string | null;
+  submissionCount: number;
+  historicalSubmissionCountForCustomer: number;
+  schemaVersion: number | null;
+  completedSections: unknown;
+  draftVersion: number | null;
+  draftBlank: boolean;
+  answersPresent: boolean;
+  invitationActiveCount: number;
+  invitationRedeemedCount: number;
+}> {
+  if (!onboardingId || !/^[0-9a-f-]{36}$/i.test(onboardingId)) throw new Error("onboarding_required");
+  const secrets = new SecretsManagerClient({});
+  const master = await readSecret(secrets, requireEnv("MASTER_SECRET_ARN"));
+  if (!master.username || !master.password) throw new Error("secret_incomplete");
+  const pool = new Pool({
+    host: requireEnv("DB_HOST"),
+    port: Number(requireEnv("DB_PORT") || "5432"),
+    database: requireEnv("DB_NAME"),
+    user: master.username,
+    password: master.password,
+    max: 1,
+    ssl: { ca: loadCa(), rejectUnauthorized: true },
+  });
+  try {
+    const base = await pool.query(
+      `SELECT o.id AS onboarding_id, o.customer_id, o.status AS onboarding_status,
+              o.latest_submission_id, c.customer_number,
+              (SELECT COUNT(*)::int FROM onboarding_submissions s WHERE s.onboarding_id = o.id) AS submission_count,
+              (SELECT COUNT(*)::int
+                 FROM onboarding_submissions s2
+                 JOIN customer_onboardings o2 ON o2.id = s2.onboarding_id
+                WHERE o2.customer_id = o.customer_id) AS customer_submission_count,
+              sess.questionnaire_schema_version, sess.version AS draft_version, sess.draft_json,
+              (SELECT COUNT(*)::int FROM onboarding_invitations i
+                WHERE i.onboarding_id = o.id AND i.revoked_at IS NULL
+                  AND (i.expires_at IS NULL OR i.expires_at > now())) AS invitation_active_count,
+              (SELECT COUNT(*)::int FROM onboarding_access_sessions a
+                WHERE a.onboarding_id = o.id) AS invitation_redeemed_count
+       FROM customer_onboardings o
+       JOIN customers c ON c.id = o.customer_id
+       LEFT JOIN onboarding_sessions sess ON sess.onboarding_id = o.id
+       WHERE o.id = $1`,
+      [onboardingId],
+    );
+    const row = base.rows[0];
+    if (!row) throw new Error("onboarding_not_found");
+    const draft = (row.draft_json ?? null) as Record<string, unknown> | null;
+    const completed = Array.isArray(draft?.completedSections)
+      ? draft?.completedSections
+      : Array.isArray((draft?.data as { navigation?: { completedSections?: unknown } } | undefined)?.navigation?.completedSections)
+        ? (draft?.data as { navigation: { completedSections: unknown[] } }).navigation.completedSections
+        : [];
+    const name =
+      typeof (draft?.data as { section1?: { customerFacingName?: unknown } } | undefined)?.section1
+        ?.customerFacingName === "string"
+        ? String(
+            (draft?.data as { section1: { customerFacingName: string } }).section1.customerFacingName,
+          ).trim()
+        : "";
+    const section1Keys = Object.keys(
+      ((draft?.data as { section1?: Record<string, unknown> } | undefined)?.section1 ?? {}) as object,
+    );
+    const draftBlank =
+      draft != null &&
+      Number(row.questionnaire_schema_version ?? draft.schemaVersion) === 10 &&
+      Array.isArray(completed) &&
+      completed.length === 0 &&
+      name === "" &&
+      section1Keys.every((k) => {
+        const v = (draft?.data as { section1: Record<string, unknown> }).section1[k];
+        return v == null || v === "" || (Array.isArray(v) && v.length === 0);
+      });
+    return {
+      PhysicalResourceId: "alexander-schema-001",
+      customerId: String(row.customer_id),
+      customerNumber: String(row.customer_number),
+      onboardingId: String(row.onboarding_id),
+      onboardingStatus: String(row.onboarding_status),
+      latestSubmissionId: row.latest_submission_id == null ? null : String(row.latest_submission_id),
+      submissionCount: Number(row.submission_count ?? 0),
+      historicalSubmissionCountForCustomer: Number(row.customer_submission_count ?? 0),
+      schemaVersion:
+        row.questionnaire_schema_version == null
+          ? draft && typeof draft.schemaVersion === "number"
+            ? draft.schemaVersion
+            : null
+          : Number(row.questionnaire_schema_version),
+      completedSections: completed,
+      draftVersion: row.draft_version == null ? null : Number(row.draft_version),
+      draftBlank,
+      answersPresent: false,
+      invitationActiveCount: Number(row.invitation_active_count ?? 0),
+      invitationRedeemedCount: Number(row.invitation_redeemed_count ?? 0),
+    };
+  } finally {
+    await pool.end();
+  }
+}
+
+async function createOnboardingForCustomer(input: {
+  customerId: string | undefined;
+}): Promise<{
+  PhysicalResourceId: string;
+  customerId: string;
+  customerNumber: string;
+  onboardingId: string;
+  invitationUrl: string;
+  draftVersion: number;
+  schemaVersion: number;
+}> {
+  const customerId = input.customerId?.trim() ?? "";
+  if (!/^[0-9a-f-]{36}$/i.test(customerId)) throw new Error("customer_required");
+  const secrets = new SecretsManagerClient({});
+  const master = await readSecret(secrets, requireEnv("MASTER_SECRET_ARN"));
+  if (!master.username || !master.password) throw new Error("secret_incomplete");
+  const pool = new Pool({
+    host: requireEnv("DB_HOST"),
+    port: Number(requireEnv("DB_PORT") || "5432"),
+    database: requireEnv("DB_NAME"),
+    user: master.username,
+    password: master.password,
+    max: 1,
+    ssl: { ca: loadCa(), rejectUnauthorized: true },
+  });
+  try {
+    const created = await provisionOnboardingForExistingCustomer(
+      pool as unknown as Parameters<typeof provisionOnboardingForExistingCustomer>[0],
+      { customerId, host: "onboard.meetalexander.ai" },
+    );
+    return { PhysicalResourceId: "alexander-schema-001", ...created };
   } finally {
     await pool.end();
   }
@@ -238,6 +383,12 @@ export async function handler(event: {
   }
   if (event.action === "describeOnboarding") {
     return describeOnboarding(event.onboardingId);
+  }
+  if (event.action === "describeOnboardingDraft") {
+    return describeOnboardingDraft(event.onboardingId);
+  }
+  if (event.action === "createOnboardingForCustomer") {
+    return createOnboardingForCustomer({ customerId: event.customerId });
   }
 
   const secrets = new SecretsManagerClient({});
