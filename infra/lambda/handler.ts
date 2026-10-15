@@ -36,6 +36,7 @@ import {
   loadStripeSecretKey,
   verifyPaidCheckoutSession,
 } from "../../src/lib/server/persistence/stripe-verify";
+import { QUESTION_REGISTRY_BY_ID } from "../../src/lib/onboarding/questionnaire-v1/registry";
 import {
   flattenQuestionnaireAnswerFields,
   projectSubmissionToBusinessProfile,
@@ -901,6 +902,80 @@ if (operation === "diagnoseCustomerSubmissionState") {
     return { ok: true, ...report, executed: true, projection: projected };
   }
 
+  if (operation === "inspectTrilletOperatorChecklist") {
+    const body = event as { customerNumber?: unknown };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    if (!/^ALX-C\d{6}$/.test(customerNumber)) {
+      return { ok: false, reason: "invalid_customer_number" };
+    }
+    const pool = await getPool();
+    const meta = await pool.query(
+      `SELECT c.data_classification, p.profile_data->'fields' AS fields,
+              t.status AS trillet_status
+       FROM customers c
+       LEFT JOIN customer_business_profiles p ON p.customer_id = c.id
+       LEFT JOIN customer_trillet_workspaces t ON t.customer_id = c.id
+       WHERE c.customer_number = $1`,
+      [customerNumber],
+    );
+    if (!meta.rows[0]?.fields) {
+      return { ok: false, reason: "profile_not_found" };
+    }
+    const fields =
+      meta.rows[0].fields && typeof meta.rows[0].fields === "object"
+        ? (meta.rows[0].fields as Record<string, unknown>)
+        : {};
+    const sectionCounts: Record<string, number> = {};
+    let unknownSectionKeys = 0;
+    const operational = {
+      businessIdentity: 0,
+      hoursAndSchedule: 0,
+      services: 0,
+      serviceArea: 0,
+      callHandling: 0,
+      emergencies: 0,
+      scheduling: 0,
+      escalation: 0,
+      policiesAndFaqs: 0,
+      submissionAcknowledgements: 0,
+    };
+    for (const key of Object.keys(fields)) {
+      if (key === "_entities") continue;
+      const reg = QUESTION_REGISTRY_BY_ID.get(key);
+      const section = reg?.sectionId || "unknown";
+      if (section === "unknown") unknownSectionKeys += 1;
+      else sectionCounts[section] = (sectionCounts[section] || 0) + 1;
+      const label = `${key} ${reg?.debugLabel || ""}`.toLowerCase();
+      if (/business|company|brand|name|legal/i.test(label)) operational.businessIdentity += 1;
+      if (/hour|schedule|open|close|timezone|after.?hours/i.test(label)) operational.hoursAndSchedule += 1;
+      if (/service|offering|job type|trade/i.test(label)) operational.services += 1;
+      if (/area|zip|radius|territory|dispatch|location/i.test(label)) operational.serviceArea += 1;
+      if (/call|phone|greeting|answer|voicemail/i.test(label)) operational.callHandling += 1;
+      if (/emergenc/i.test(label)) operational.emergencies += 1;
+      if (/appoint|book|schedul|slot|calendar/i.test(label)) operational.scheduling += 1;
+      if (/escalat|notify|owner|manager|contact/i.test(label)) operational.escalation += 1;
+      if (/policy|faq|warranty|guarantee|payment/i.test(label)) operational.policiesAndFaqs += 1;
+      if (section === "SUBMISSION") operational.submissionAcknowledgements += 1;
+    }
+    const entityBuckets =
+      fields._entities && typeof fields._entities === "object"
+        ? Object.keys(fields._entities as Record<string, unknown>)
+        : [];
+    return {
+      ok: true,
+      customerNumber,
+      dataClassification: String(meta.rows[0].data_classification || "real_customer"),
+      trilletStatus: meta.rows[0].trillet_status || null,
+      profileFieldKeyCount: Object.keys(fields).filter((k) => k !== "_entities").length,
+      sectionAnswerCounts: sectionCounts,
+      unknownSectionKeys,
+      entityBucketsPresent: entityBuckets,
+      operationalCategoryCounts: operational,
+      note: "Counts only — no answer values or contact details returned.",
+    };
+  }
+
   if (operation === "projectExistingSubmission") {
     const body = event as { customerNumber?: unknown };
     const customerNumber =
@@ -1123,6 +1198,15 @@ if (operation === "diagnoseCustomerSubmissionState") {
       if (!profileReady.rows[0]) {
         await client.query("ROLLBACK");
         return { ok: false, reason: "canonical_profile_not_ready" };
+      }
+      const trilletRow = await client.query(
+        `SELECT status FROM customer_trillet_workspaces WHERE customer_id = $1 LIMIT 1`,
+        [customerId],
+      );
+      const trilletStatus = String(trilletRow.rows[0]?.status || "");
+      if (trilletStatus !== "awaiting_internal_setup") {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "trillet_status_not_awaiting_setup", status: trilletStatus || null };
       }
       const clash = await client.query(
         `SELECT customer_id FROM customer_trillet_workspaces
