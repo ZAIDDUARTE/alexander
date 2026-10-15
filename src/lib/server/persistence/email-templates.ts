@@ -38,6 +38,37 @@ A product of Beyond Intelligence, Inc.
   return { subject, text, html };
 }
 
+export function renderQuestionnaireInvitationCorrectionEmail(vars: {
+  firstName: string;
+  invitationUrl: string;
+}): EmailRender {
+  const first = vars.firstName.trim() || "there";
+  const subject = "Your Alexander setup link";
+  const text = `Hi ${first},
+
+Your Alexander subscription is confirmed.
+
+Please use the secure link below to complete your business setup questionnaire so we can configure Alexander for your company.
+
+Complete My Alexander Setup:
+${vars.invitationUrl}
+
+Once submitted, we'll use your answers to configure and verify your Alexander phone agent.
+
+Alexander
+A product of Beyond Intelligence, Inc.
+`;
+  const html = `<!DOCTYPE html><html><body style="font-family:Inter,system-ui,sans-serif;color:#211f1f;line-height:1.5">
+<p>Hi ${escapeHtml(first)},</p>
+<p>Your Alexander subscription is confirmed.</p>
+<p>Please use the secure link below to complete your business setup questionnaire so we can configure Alexander for your company.</p>
+<p><a href="${escapeAttr(vars.invitationUrl)}" style="display:inline-block;background:#c8ff00;color:#06152b;padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:700">Complete My Alexander Setup</a></p>
+<p>Once submitted, we'll use your answers to configure and verify your Alexander phone agent.</p>
+<p>Alexander<br/>A product of Beyond Intelligence, Inc.</p>
+</body></html>`;
+  return { subject, text, html };
+}
+
 export function renderDashboardReadyEmail(vars: {
   firstName: string;
   dashboardUrl: string;

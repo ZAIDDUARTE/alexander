@@ -14,8 +14,11 @@ import { handlePersistenceOperation } from "../../src/lib/server/persistence/eng
 import {
   handleOnboardingAccessOperation,
   provisionFromVerifiedStripe,
+  relocateInvitationUrlToCanonicalHost,
+  resolveOnboardingInvitationHost,
   type SqlPool,
 } from "../../src/lib/server/persistence/onboarding-access";
+import { hashToken } from "../../src/lib/server/persistence/tokens";
 import {
   claimEmailJobs,
   markEmailBlocked,
@@ -25,6 +28,7 @@ import {
 } from "../../src/lib/server/persistence/email-outbox";
 import {
   renderDashboardReadyEmail,
+  renderQuestionnaireInvitationCorrectionEmail,
   renderQuestionnaireInvitationEmail,
 } from "../../src/lib/server/persistence/email-templates";
 import {
@@ -363,6 +367,475 @@ export async function handler(event: unknown): Promise<unknown> {
     if (process.env.ALEXANDER_REQUEST_PIPELINE_ENABLED !== "true") return { ok: false, reason: "disabled" };
     return handleRequestOperation(event as Record<string, unknown>, await getPool() as unknown as SqlPool);
   }
+  if (operation === "inspectEmailOutbox") {
+    const body = event as { customerNumber?: unknown };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    if (!/^ALX-C\d{6}$/.test(customerNumber)) {
+      return { ok: false, reason: "invalid_customer_number" };
+    }
+    const pool = await getPool();
+    const jobs = await pool.query(
+      `SELECT e.id, e.template_type, e.status, e.attempt_count,
+              (e.provider_message_id IS NOT NULL AND length(e.provider_message_id) > 0) AS has_message_id,
+              (e.sent_at IS NOT NULL) AS has_sent_at,
+              (e.delivered_at IS NOT NULL) AS has_delivered_at,
+              (e.payload_json ? 'invitation_url'
+                 AND length(coalesce(e.payload_json->>'invitation_url','')) > 0) AS has_invitation_url,
+              left(e.dedupe_key, 32) AS dedupe_prefix,
+              e.last_error_code
+       FROM email_outbox e
+       JOIN customers c ON c.id = e.customer_id
+       WHERE c.customer_number = $1
+         AND e.template_type = 'questionnaire_invitation'
+       ORDER BY e.created_at ASC`,
+      [customerNumber],
+    );
+    const customers = await pool.query(
+      `SELECT count(*)::int AS n FROM customers WHERE customer_number = $1`,
+      [customerNumber],
+    );
+    const feedback = await pool.query(
+      `SELECT count(*)::int AS n
+       FROM email_feedback_events f
+       JOIN email_outbox e ON e.provider_message_id = f.provider_message_id
+       JOIN customers c ON c.id = e.customer_id
+       WHERE c.customer_number = $1
+         AND e.template_type = 'questionnaire_invitation'`,
+      [customerNumber],
+    ).catch(() => ({ rows: [{ n: 0 }] }));
+    return {
+      ok: true,
+      customerCount: customers.rows[0]?.n ?? 0,
+      jobCount: jobs.rows.length,
+      jobs: jobs.rows.map((row) => ({
+        idPrefix: String(row.id).slice(0, 8),
+        templateType: row.template_type,
+        status: row.status,
+        attemptCount: Number(row.attempt_count || 0),
+        hasMessageId: Boolean(row.has_message_id),
+        hasSentAt: Boolean(row.has_sent_at),
+        hasDeliveredAt: Boolean(row.has_delivered_at),
+        hasInvitationUrl: Boolean(row.has_invitation_url),
+        dedupePrefix: row.dedupe_prefix,
+        lastErrorCode: row.last_error_code || null,
+      })),
+      feedbackEventCount: Number(feedback.rows[0]?.n || 0),
+    };
+  }
+
+  if (operation === "diagnoseCustomerSubmissionState") {
+    const body = event as { customerNumber?: unknown };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    if (!/^ALX-C\d{6}$/.test(customerNumber)) {
+      return { ok: false, reason: "invalid_customer_number" };
+    }
+    const pool = await getPool();
+    const customer = await pool.query(
+      `SELECT id FROM customers WHERE customer_number = $1`,
+      [customerNumber],
+    );
+    if (!customer.rows[0]) return { ok: false, reason: "customer_not_found" };
+    const customerId = String(customer.rows[0].id);
+    const onboardings = await pool.query(
+      `SELECT id, status, latest_submission_id, created_at
+       FROM customer_onboardings WHERE customer_id = $1 ORDER BY created_at`,
+      [customerId],
+    );
+    const submissions = await pool.query(
+      `SELECT s.id, s.onboarding_id, s.revision_number, s.persistence_state,
+              s.submitted_at IS NOT NULL AS has_submitted_at,
+              s.questionnaire_answers_json IS NOT NULL AS has_answers,
+              s.normalized_config_json IS NOT NULL AS has_normalized,
+              s.content_revision_sha256 IS NOT NULL AS has_hash,
+              left(coalesce(s.content_revision_sha256,''), 12) AS hash_prefix,
+              s.created_at
+       FROM onboarding_submissions s
+       JOIN customer_onboardings o ON o.id = s.onboarding_id
+       WHERE o.customer_id = $1
+       ORDER BY s.created_at`,
+      [customerId],
+    );
+    const sessions = await pool.query(
+      `SELECT s.session_id, s.onboarding_id, s.submission_status,
+              s.submitted_at IS NOT NULL AS has_submitted_at,
+              s.last_submitted_content_revision IS NOT NULL AS has_last_submitted_rev,
+              s.version, s.updated_at,
+              pg_column_size(s.draft_json) AS draft_bytes,
+              coalesce(jsonb_typeof(s.draft_json->'answers'), 'null') AS answers_type,
+              CASE
+                WHEN jsonb_typeof(s.draft_json->'answers') = 'object'
+                THEN (SELECT count(*)::int FROM jsonb_object_keys(s.draft_json->'answers'))
+                ELSE 0
+              END AS answer_key_count,
+              coalesce(s.draft_json->'submission'->>'status','') AS draft_submission_status,
+              (s.draft_json->'submission'->>'submittedAt') IS NOT NULL
+                AND length(coalesce(s.draft_json->'submission'->>'submittedAt','')) > 0
+                AS draft_has_submitted_at
+       FROM onboarding_sessions s
+       JOIN customer_onboardings o ON o.id = s.onboarding_id
+       WHERE o.customer_id = $1
+       ORDER BY s.updated_at DESC NULLS LAST`,
+      [customerId],
+    );
+    const access = await pool.query(
+      `SELECT count(*)::int AS n
+       FROM onboarding_access_sessions a
+       JOIN customer_onboardings o ON o.id = a.onboarding_id
+       WHERE o.customer_id = $1`,
+      [customerId],
+    );
+    const invitations = await pool.query(
+      `SELECT i.id, i.revoked_at IS NOT NULL AS revoked,
+              i.expires_at, i.created_at
+       FROM onboarding_invitations i
+       JOIN customer_onboardings o ON o.id = i.onboarding_id
+       WHERE o.customer_id = $1
+       ORDER BY i.created_at`,
+      [customerId],
+    );
+    const emailInviteHost = await pool.query(
+      `SELECT
+         CASE
+           WHEN e.payload_json->>'invitation_url' IS NULL OR e.payload_json->>'invitation_url' = ''
+             THEN 'missing'
+           ELSE substring(e.payload_json->>'invitation_url' from 'https?://([^/]+)')
+         END AS invite_host,
+         length(coalesce(e.payload_json->>'invitation_url','')) AS invite_url_len,
+         (position('/onboarding' in coalesce(e.payload_json->>'invitation_url','')) > 0
+           OR position('/i/' in coalesce(e.payload_json->>'invitation_url','')) > 0
+           OR position('token=' in coalesce(e.payload_json->>'invitation_url','')) > 0) AS looks_like_invite_path
+       FROM email_outbox e
+       WHERE e.customer_id = $1
+         AND e.template_type = 'questionnaire_invitation'
+       ORDER BY e.created_at
+       LIMIT 1`,
+      [customerId],
+    );
+    return {
+      ok: true,
+      customerIdPrefix: customerId.slice(0, 8),
+      onboardings: onboardings.rows.map((r) => ({
+        idPrefix: String(r.id).slice(0, 8),
+        id: String(r.id),
+        status: r.status,
+        latestSubmissionPrefix: r.latest_submission_id
+          ? String(r.latest_submission_id).slice(0, 8)
+          : null,
+      })),
+      submissions: submissions.rows.map((r) => ({
+        idPrefix: String(r.id).slice(0, 8),
+        id: String(r.id),
+        onboardingIdPrefix: String(r.onboarding_id).slice(0, 8),
+        revisionNumber: Number(r.revision_number),
+        persistenceState: r.persistence_state,
+        hasSubmittedAt: Boolean(r.has_submitted_at),
+        hasAnswers: Boolean(r.has_answers),
+        hasNormalized: Boolean(r.has_normalized),
+        hasHash: Boolean(r.has_hash),
+        hashPrefix: r.hash_prefix || null,
+      })),
+      sessions: sessions.rows.map((r) => ({
+        sessionIdPrefix: String(r.session_id).slice(0, 8),
+        onboardingIdPrefix: r.onboarding_id ? String(r.onboarding_id).slice(0, 8) : null,
+        submissionStatus: r.submission_status,
+        hasSubmittedAt: Boolean(r.has_submitted_at),
+        hasLastSubmittedRev: Boolean(r.has_last_submitted_rev),
+        version: Number(r.version || 0),
+        draftBytes: Number(r.draft_bytes || 0),
+        answerKeyCount: Number(r.answer_key_count || 0),
+        draftSubmissionStatus: r.draft_submission_status || null,
+        draftHasSubmittedAt: Boolean(r.draft_has_submitted_at),
+        updatedAt: r.updated_at ? String(r.updated_at) : null,
+      })),
+      accessSessionCount: Number(access.rows[0]?.n || 0),
+      invitations: invitations.rows.map((r) => ({
+        idPrefix: String(r.id).slice(0, 8),
+        revoked: Boolean(r.revoked),
+      })),
+      invitationUrlHost: emailInviteHost.rows[0]?.invite_host || null,
+      invitationUrlLen: Number(emailInviteHost.rows[0]?.invite_url_len || 0),
+      invitationLooksLikePath: Boolean(emailInviteHost.rows[0]?.looks_like_invite_path),
+    };
+  }
+
+  if (operation === "inspectPostSubmissionLifecycle") {
+    const body = event as { customerNumber?: unknown };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    if (!/^ALX-C\d{6}$/.test(customerNumber)) {
+      return { ok: false, reason: "invalid_customer_number" };
+    }
+    const pool = await getPool();
+    const customer = await pool.query(
+      `SELECT id, customer_number FROM customers WHERE customer_number = $1`,
+      [customerNumber],
+    );
+    if (!customer.rows[0]) return { ok: false, reason: "customer_not_found" };
+    const customerId = String(customer.rows[0].id);
+    const counts = await pool.query(
+      `SELECT
+         (SELECT count(*)::int FROM customers WHERE customer_number = $1) AS customers,
+         (SELECT count(*)::int FROM customer_onboardings WHERE customer_id = $2) AS onboardings,
+         (SELECT count(*)::int FROM onboarding_invitations i
+            JOIN customer_onboardings o ON o.id = i.onboarding_id
+           WHERE o.customer_id = $2) AS invitations,
+         (SELECT count(*)::int FROM email_outbox
+           WHERE customer_id = $2 AND template_type = 'questionnaire_invitation') AS email1,
+         (SELECT count(*)::int FROM email_outbox
+           WHERE customer_id = $2 AND template_type = 'dashboard_ready') AS email2,
+         (SELECT count(*)::int FROM customer_business_profiles WHERE customer_id = $2) AS profiles,
+         (SELECT count(*)::int FROM customer_profile_revisions
+           WHERE customer_id = $2 AND revision_number = 1) AS revision1,
+         (SELECT count(*)::int FROM customer_profile_revisions WHERE customer_id = $2) AS revisions,
+         (SELECT count(*)::int FROM customer_trillet_workspaces WHERE customer_id = $2) AS trillet_rows`,
+      [customerNumber, customerId],
+    );
+    const onboarding = await pool.query(
+      `SELECT id, status, latest_submission_id
+       FROM customer_onboardings
+       WHERE customer_id = $1
+       ORDER BY created_at ASC`,
+      [customerId],
+    );
+    const submissions = await pool.query(
+      `SELECT s.id, s.revision_number, s.persistence_state, s.submitted_at,
+              s.content_revision_sha256, s.content_hash_algorithm,
+              s.questionnaire_answers_schema_version,
+              (s.questionnaire_answers_json IS NOT NULL) AS has_answers,
+              (s.normalized_config_json IS NOT NULL) AS has_normalized,
+              s.s3_manifest_key IS NOT NULL AS has_manifest,
+              o.id AS onboarding_id, o.status AS onboarding_status
+       FROM onboarding_submissions s
+       JOIN customer_onboardings o ON o.id = s.onboarding_id
+       WHERE o.customer_id = $1
+         AND s.persistence_state = 'committed'
+         AND s.submitted_at IS NOT NULL
+       ORDER BY s.submitted_at ASC`,
+      [customerId],
+    );
+    const profile = await pool.query(
+      `SELECT current_revision, profile_schema_version, source_submission_id, status,
+              jsonb_typeof(profile_data) AS profile_data_type,
+              coalesce(jsonb_array_length(
+                CASE WHEN jsonb_typeof(profile_data->'fields') = 'array'
+                     THEN profile_data->'fields' ELSE '[]'::jsonb END
+              ), 0) AS fields_array_len,
+              CASE WHEN jsonb_typeof(profile_data->'fields') = 'object'
+                   THEN (SELECT count(*)::int FROM jsonb_object_keys(profile_data->'fields'))
+                   ELSE 0 END AS field_key_count,
+              profile_data->>'schema' AS profile_schema_name,
+              created_at, updated_at
+       FROM customer_business_profiles
+       WHERE customer_id = $1`,
+      [customerId],
+    );
+    const revisions = await pool.query(
+      `SELECT revision_number, change_source, source_submission_id, profile_schema_version,
+              actor_type, status, created_at,
+              CASE WHEN jsonb_typeof(profile_data->'fields') = 'object'
+                   THEN (SELECT count(*)::int FROM jsonb_object_keys(profile_data->'fields'))
+                   ELSE 0 END AS field_key_count
+       FROM customer_profile_revisions
+       WHERE customer_id = $1
+       ORDER BY revision_number ASC`,
+      [customerId],
+    );
+    const trillet = await pool.query(
+      `SELECT status,
+              (workspace_id IS NOT NULL AND length(workspace_id) > 0) AS has_workspace,
+              (invitation_url IS NOT NULL AND length(invitation_url) > 0) AS has_invitation_url,
+              workspace_ready_at IS NOT NULL AS has_ready_at
+       FROM customer_trillet_workspaces
+       WHERE customer_id = $1`,
+      [customerId],
+    );
+    // Field mapping: compare answer keys present vs profile field keys (counts + overlap only).
+    let fieldMapping: Record<string, unknown> = { ok: false, reason: "no_submission" };
+    if (submissions.rows[0]) {
+      const ans = await pool.query(
+        `SELECT questionnaire_answers_json FROM onboarding_submissions WHERE id = $1`,
+        [submissions.rows[0].id],
+      );
+      const answers = (ans.rows[0]?.questionnaire_answers_json || {}) as Record<string, unknown>;
+      const answerKeys = Object.keys(answers).filter((k) => {
+        const v = answers[k];
+        return v !== null && v !== undefined && v !== "";
+      });
+      const prof = profile.rows[0]
+        ? await pool.query(
+            `SELECT profile_data->'fields' AS fields FROM customer_business_profiles WHERE customer_id = $1`,
+            [customerId],
+          )
+        : { rows: [] as Array<{ fields?: unknown }> };
+      const fields =
+        prof.rows[0]?.fields && typeof prof.rows[0].fields === "object"
+          ? (prof.rows[0].fields as Record<string, unknown>)
+          : {};
+      const profileKeys = Object.keys(fields);
+      const missingInProfile = answerKeys.filter((k) => !(k in fields));
+      const extraInProfile = profileKeys.filter((k) => !(k in answers) || answers[k] === "" || answers[k] == null);
+      // Representative category presence by key substring heuristics (no values).
+      const categories = {
+        businessIdentity: answerKeys.some((k) => /business|company|name|brand/i.test(k)),
+        businessHours: answerKeys.some((k) => /hour|schedule|open|close|timezone/i.test(k)),
+        services: answerKeys.some((k) => /service|offering|job/i.test(k)),
+        serviceArea: answerKeys.some((k) => /area|zip|radius|territory|location/i.test(k)),
+        callHandling: answerKeys.some((k) => /call|phone|answer|greeting/i.test(k)),
+        emergency: answerKeys.some((k) => /emergenc/i.test(k)),
+        scheduling: answerKeys.some((k) => /appoint|book|schedul|slot/i.test(k)),
+        escalation: answerKeys.some((k) => /escalat|contact|notify|owner/i.test(k)),
+      };
+      fieldMapping = {
+        ok: missingInProfile.length === 0,
+        answerKeyCount: answerKeys.length,
+        profileKeyCount: profileKeys.length,
+        missingInProfileCount: missingInProfile.length,
+        extraInProfileCount: extraInProfile.length,
+        categoriesPresentInAnswers: categories,
+      };
+    }
+    return {
+      ok: true,
+      customerIdPrefix: customerId.slice(0, 8),
+      counts: counts.rows[0],
+      onboardings: onboarding.rows.map((r) => ({
+        idPrefix: String(r.id).slice(0, 8),
+        status: r.status,
+        latestSubmissionPrefix: r.latest_submission_id
+          ? String(r.latest_submission_id).slice(0, 8)
+          : null,
+      })),
+      submissions: submissions.rows.map((r) => ({
+        idPrefix: String(r.id).slice(0, 8),
+        id: String(r.id),
+        revisionNumber: Number(r.revision_number),
+        persistenceState: r.persistence_state,
+        hasSubmittedAt: Boolean(r.submitted_at),
+        submittedAt: r.submitted_at ? String(r.submitted_at) : null,
+        contentHashPrefix: r.content_revision_sha256
+          ? String(r.content_revision_sha256).slice(0, 12)
+          : null,
+        contentHashAlgorithm: r.content_hash_algorithm || null,
+        answersSchemaVersion: r.questionnaire_answers_schema_version,
+        hasAnswers: Boolean(r.has_answers),
+        hasNormalized: Boolean(r.has_normalized),
+        hasManifest: Boolean(r.has_manifest),
+        onboardingIdPrefix: String(r.onboarding_id).slice(0, 8),
+        onboardingStatus: r.onboarding_status,
+      })),
+      profile: profile.rows[0]
+        ? {
+            currentRevision: Number(profile.rows[0].current_revision),
+            schemaVersion: Number(profile.rows[0].profile_schema_version),
+            schemaName: profile.rows[0].profile_schema_name || null,
+            sourceSubmissionPrefix: profile.rows[0].source_submission_id
+              ? String(profile.rows[0].source_submission_id).slice(0, 8)
+              : null,
+            status: profile.rows[0].status,
+            fieldKeyCount: Number(profile.rows[0].field_key_count || 0),
+            hasCreatedAt: Boolean(profile.rows[0].created_at),
+            hasUpdatedAt: Boolean(profile.rows[0].updated_at),
+          }
+        : null,
+      revisions: revisions.rows.map((r) => ({
+        revisionNumber: Number(r.revision_number),
+        changeSource: r.change_source,
+        sourceSubmissionPrefix: r.source_submission_id
+          ? String(r.source_submission_id).slice(0, 8)
+          : null,
+        schemaVersion: Number(r.profile_schema_version),
+        actorType: r.actor_type,
+        status: r.status,
+        hasCreatedAt: Boolean(r.created_at),
+        fieldKeyCount: Number(r.field_key_count || 0),
+      })),
+      trillet: trillet.rows[0] || null,
+      fieldMapping,
+    };
+  }
+
+  if (operation === "projectExistingSubmission") {
+    const body = event as { customerNumber?: unknown };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    if (!/^ALX-C\d{6}$/.test(customerNumber)) {
+      return { ok: false, reason: "invalid_customer_number" };
+    }
+    const pool = await getPool();
+    const row = await pool.query(
+      `SELECT c.id AS customer_id, s.id AS submission_id, s.questionnaire_answers_json,
+              s.content_revision_sha256, s.submitted_at, s.persistence_state
+       FROM customers c
+       JOIN customer_onboardings o ON o.customer_id = c.id
+       JOIN onboarding_submissions s ON s.onboarding_id = o.id
+       WHERE c.customer_number = $1
+         AND s.persistence_state = 'committed'
+         AND s.submitted_at IS NOT NULL
+       ORDER BY s.submitted_at DESC
+       LIMIT 1`,
+      [customerNumber],
+    );
+    if (!row.rows[0]) return { ok: false, reason: "no_committed_submission" };
+    const before = await pool.query(
+      `SELECT content_revision_sha256, submitted_at, questionnaire_answers_json
+       FROM onboarding_submissions WHERE id = $1`,
+      [row.rows[0].submission_id],
+    );
+    const { projectSubmissionToBusinessProfile } = await import(
+      "../../src/lib/server/persistence/profile-projector"
+    );
+    const projected = await projectSubmissionToBusinessProfile(pool as unknown as SqlPool, {
+      customerId: String(row.rows[0].customer_id),
+      submissionId: String(row.rows[0].submission_id),
+      answers: (row.rows[0].questionnaire_answers_json || {}) as Record<string, unknown>,
+    });
+    const after = await pool.query(
+      `SELECT content_revision_sha256, submitted_at,
+              (questionnaire_answers_json = $2::jsonb) AS answers_unchanged
+       FROM onboarding_submissions WHERE id = $1`,
+      [row.rows[0].submission_id, JSON.stringify(before.rows[0]?.questionnaire_answers_json ?? {})],
+    );
+    return {
+      ok: true,
+      submissionIdPrefix: String(row.rows[0].submission_id).slice(0, 8),
+      revisionNumber: projected.revisionNumber,
+      profileUpdated: projected.profileUpdated,
+      submissionImmutable: {
+        hashUnchanged:
+          String(before.rows[0]?.content_revision_sha256 || "") ===
+          String(after.rows[0]?.content_revision_sha256 || ""),
+        submittedAtUnchanged:
+          String(before.rows[0]?.submitted_at || "") === String(after.rows[0]?.submitted_at || ""),
+        answersUnchanged: Boolean(after.rows[0]?.answers_unchanged),
+      },
+    };
+  }
+
+  if (operation === "recoverBlockedQuestionnaireInvitation") {
+    const body = event as { customerNumber?: unknown };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    if (!/^ALX-C\d{6}$/.test(customerNumber)) {
+      return { ok: false, reason: "invalid_customer_number" };
+    }
+    const pool = await getPool();
+    const updated = await pool.query(
+      `UPDATE email_outbox e
+       SET status = 'queued', next_attempt_at = now(), updated_at = now()
+       FROM customers c
+       WHERE e.customer_id = c.id
+         AND c.customer_number = $1
+         AND e.template_type = 'questionnaire_invitation'
+         AND e.status IN ('blocked_test_guard', 'processing')
+         AND e.provider_message_id IS NULL
+       RETURNING e.id, e.status`,
+      [customerNumber],
+    );
+    return { ok: true, recovered: updated.rows.length };
+  }
+
   if (operation === "processEmailOutbox") {
     const pool = await getPool();
     // Load staging delivery guard from Secrets Manager when env is empty.
@@ -410,17 +883,27 @@ export async function handler(event: unknown): Promise<unknown> {
       // Always send to allowlisted test recipient in staging.
       const to = allow;
       const firstName = String(job.payload.first_name || "there");
+      const invitationUrl = String(job.payload.invitation_url || "");
       let rendered =
         job.templateType === "dashboard_ready"
           ? renderDashboardReadyEmail({
               firstName,
-              dashboardUrl: String(job.payload.dashboard_url || job.payload.invitation_url || ""),
+              dashboardUrl: String(job.payload.dashboard_url || invitationUrl),
             })
-          : renderQuestionnaireInvitationEmail({
-              firstName,
-              invitationUrl: String(job.payload.invitation_url || ""),
-            });
-      if (job.templateType === "questionnaire_invitation" && !job.payload.invitation_url) {
+          : job.templateType === "questionnaire_invitation_correction"
+            ? renderQuestionnaireInvitationCorrectionEmail({
+                firstName,
+                invitationUrl,
+              })
+            : renderQuestionnaireInvitationEmail({
+                firstName,
+                invitationUrl,
+              });
+      if (
+        (job.templateType === "questionnaire_invitation" ||
+          job.templateType === "questionnaire_invitation_correction") &&
+        !invitationUrl
+      ) {
         await markEmailRetry(pool as unknown as SqlPool, job.id, "missing_invitation_url");
         results.push({ id: job.id, status: "retry_pending", reason: "missing_invitation_url" });
         continue;
@@ -552,6 +1035,157 @@ export async function handler(event: unknown): Promise<unknown> {
     }
   }
 
+  if (operation === "enqueueInvitationHostCorrection") {
+    const body = event as { customerNumber?: unknown };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    if (!/^ALX-C\d{6}$/.test(customerNumber)) {
+      return { ok: false, reason: "invalid_customer_number" };
+    }
+    let canonicalHost: string;
+    try {
+      canonicalHost = resolveOnboardingInvitationHost();
+    } catch {
+      return { ok: false, reason: "onboarding_host_not_configured" };
+    }
+    const pool = await getPool();
+    const client = await (pool as unknown as SqlPool).connect();
+    try {
+      await client.query("BEGIN");
+      const customer = await client.query(
+        `SELECT id, customer_facing_name, primary_email
+         FROM customers WHERE customer_number = $1 FOR UPDATE`,
+        [customerNumber],
+      );
+      if (!customer.rows[0]) {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "customer_not_found" };
+      }
+      const customerId = String(customer.rows[0].id);
+      const onboarding = await client.query(
+        `SELECT id FROM customer_onboardings
+         WHERE customer_id = $1 ORDER BY created_at ASC LIMIT 1 FOR UPDATE`,
+        [customerId],
+      );
+      if (!onboarding.rows[0]) {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "onboarding_not_found" };
+      }
+      const onboardingId = String(onboarding.rows[0].id);
+      const invite = await client.query(
+        `SELECT id, token_hash, expires_at, revoked_at
+         FROM onboarding_invitations
+         WHERE onboarding_id = $1
+         ORDER BY created_at ASC`,
+        [onboardingId],
+      );
+      if (invite.rows.length !== 1) {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "invitation_count_unexpected", invitationCount: invite.rows.length };
+      }
+      if (invite.rows[0].revoked_at) {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "invitation_revoked" };
+      }
+      if (invite.rows[0].expires_at && new Date(String(invite.rows[0].expires_at)).getTime() <= Date.now()) {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "invitation_expired" };
+      }
+      const original = await client.query(
+        `SELECT id, payload_json
+         FROM email_outbox
+         WHERE customer_id = $1
+           AND template_type = 'questionnaire_invitation'
+         ORDER BY created_at ASC
+         LIMIT 1
+         FOR UPDATE`,
+        [customerId],
+      );
+      if (!original.rows[0]) {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "original_email_missing" };
+      }
+      const payload = (original.rows[0].payload_json || {}) as Record<string, unknown>;
+      const priorUrl = typeof payload.invitation_url === "string" ? payload.invitation_url : "";
+      if (!priorUrl) {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "original_invitation_url_missing" };
+      }
+      let correctedUrl: string;
+      try {
+        correctedUrl = relocateInvitationUrlToCanonicalHost(priorUrl);
+      } catch {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "invitation_token_unrecoverable" };
+      }
+      const token = correctedUrl.split("/i#")[1] || "";
+      if (!token || hashToken(token) !== String(invite.rows[0].token_hash)) {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "invitation_token_mismatch" };
+      }
+      if (!correctedUrl.startsWith(`https://${canonicalHost}/i#`)) {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "corrected_host_mismatch" };
+      }
+      // Keep original outbox payload aligned to the canonical host (no resend of original job).
+      await client.query(
+        `UPDATE email_outbox
+         SET payload_json = jsonb_set(payload_json, '{invitation_url}', to_jsonb($2::text), true),
+             updated_at = now()
+         WHERE id = $1`,
+        [original.rows[0].id, correctedUrl],
+      );
+      const firstName =
+        String(payload.first_name || "") ||
+        String(customer.rows[0].customer_facing_name || "there").split(/\s+/)[0] ||
+        "there";
+      const dedupe = `questionnaire_invitation_correction:${onboardingId}:host-fix-v1`;
+      const recipient = String(customer.rows[0].primary_email || "test-recipient-required@invalid.local");
+      const job = await client.query(
+        `INSERT INTO email_outbox (
+           customer_id, onboarding_id, template_type, recipient, dedupe_key, payload_json, status
+         ) VALUES ($1,$2,'questionnaire_invitation_correction',$3,$4,$5::jsonb,'queued')
+         ON CONFLICT (dedupe_key) DO UPDATE SET updated_at = now()
+         RETURNING id, status,
+           (provider_message_id IS NOT NULL AND length(provider_message_id) > 0) AS has_message_id`,
+        [
+          customerId,
+          onboardingId,
+          recipient,
+          dedupe,
+          JSON.stringify({
+            first_name: firstName,
+            invitation_url: correctedUrl,
+            correction_reason: "invitation_host_fix",
+            canonical_host: canonicalHost,
+          }),
+        ],
+      );
+      await client.query("COMMIT");
+      return {
+        ok: true,
+        customerNumber,
+        onboardingIdPrefix: onboardingId.slice(0, 8),
+        invitationCount: 1,
+        invitationActive: true,
+        correctedHost: canonicalHost,
+        correctionJobIdPrefix: String(job.rows[0]?.id || "").slice(0, 8),
+        correctionStatus: job.rows[0]?.status || null,
+        alreadySent: Boolean(job.rows[0]?.has_message_id),
+        newInvitationCreated: false,
+      };
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // ignore
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   if (operation === "provisionFromStripeSession" || operation === "provisionFromVerifiedStripe") {
     const body = event as {
       checkoutSessionId?: unknown;
@@ -559,10 +1193,16 @@ export async function handler(event: unknown): Promise<unknown> {
       host?: unknown;
       verified?: Record<string, unknown>;
     };
-    const host =
-      typeof body.host === "string" && body.host.trim()
-        ? body.host.trim()
-        : "alexander1stg.wpenginepowered.com";
+    // Invitation host comes only from ONBOARDING_HOST / ALEXANDER_ONBOARDING_BASE_URL.
+    // WordPress / Stripe callback hosts must never control questionnaire URLs.
+    let host: string;
+    try {
+      host = resolveOnboardingInvitationHost(
+        typeof body.host === "string" ? body.host : null,
+      );
+    } catch {
+      return { ok: false, reason: "onboarding_host_not_configured" };
+    }
     const correlationKey =
       typeof body.correlationKey === "string" ? body.correlationKey : null;
 
