@@ -13,6 +13,7 @@ import { sha256Hex } from "../../src/lib/server/persistence/canonical";
 import { handlePersistenceOperation } from "../../src/lib/server/persistence/engine";
 import {
   handleOnboardingAccessOperation,
+  lookupInvitation,
   provisionFromVerifiedStripe,
   relocateInvitationUrlToCanonicalHost,
   resolveOnboardingInvitationHost,
@@ -35,6 +36,10 @@ import {
   loadStripeSecretKey,
   verifyPaidCheckoutSession,
 } from "../../src/lib/server/persistence/stripe-verify";
+import {
+  flattenQuestionnaireAnswerFields,
+  projectSubmissionToBusinessProfile,
+} from "../../src/lib/server/persistence/profile-projector";
 import { submitPersistenceV2FromAccess } from "../../src/lib/server/persistence/v2-submit";
 import type { OnboardingDraft } from "../../src/lib/onboarding/types";
 import {
@@ -44,6 +49,7 @@ import {
 import { isSafeSubmissionKey } from "../../src/lib/server/persistence/keys";
 import { createLineLogger } from "../../src/lib/server/persistence/logger";
 import { handleRequestOperation } from "../../src/lib/server/requests/store";
+import { handleJobberOAuthOperation } from "../../src/lib/server/requests/jobber-store";
 import type {
   DatabasePort,
   ObjectStorePort,
@@ -367,6 +373,10 @@ export async function handler(event: unknown): Promise<unknown> {
     if (process.env.ALEXANDER_REQUEST_PIPELINE_ENABLED !== "true") return { ok: false, reason: "disabled" };
     return handleRequestOperation(event as Record<string, unknown>, await getPool() as unknown as SqlPool);
   }
+  if (operation === "persistVerifiedJobberConnection") {
+    // Independent of ALEXANDER_REQUEST_PIPELINE_ENABLED so staging OAuth can land without enabling write pipeline.
+    return handleJobberOAuthOperation(event as Record<string, unknown>, await getPool() as unknown as SqlPool);
+  }
   if (operation === "inspectEmailOutbox") {
     const body = event as { customerNumber?: unknown };
     const customerNumber =
@@ -424,7 +434,77 @@ export async function handler(event: unknown): Promise<unknown> {
     };
   }
 
-  if (operation === "diagnoseCustomerSubmissionState") {
+  
+  if (operation === "inspectRecentSubmissionActivity") {
+    const pool = await getPool();
+    const recentSubs = await pool.query(
+      `SELECT s.id, s.persistence_state, s.submitted_at IS NOT NULL AS has_submitted_at,
+              s.revision_number, o.status AS onboarding_status,
+              c.customer_number,
+              left(s.id::text, 8) AS id_prefix,
+              left(o.id::text, 8) AS onboarding_prefix
+       FROM onboarding_submissions s
+       LEFT JOIN customer_onboardings o ON o.id = s.onboarding_id
+       LEFT JOIN customers c ON c.id = o.customer_id
+       ORDER BY s.created_at DESC NULLS LAST
+       LIMIT 20`
+    );
+    const recentSessions = await pool.query(
+      `SELECT left(s.session_id::text, 8) AS session_prefix,
+              left(coalesce(s.onboarding_id::text,''), 8) AS onboarding_prefix,
+              s.submission_status,
+              s.submitted_at IS NOT NULL AS has_submitted_at,
+              s.version,
+              pg_column_size(s.draft_json) AS draft_bytes,
+              c.customer_number,
+              s.updated_at
+       FROM onboarding_sessions s
+       LEFT JOIN customer_onboardings o ON o.id = s.onboarding_id
+       LEFT JOIN customers c ON c.id = o.customer_id
+       WHERE s.updated_at > now() - interval '14 days'
+          OR s.submitted_at IS NOT NULL
+       ORDER BY s.updated_at DESC NULLS LAST
+       LIMIT 20`
+    );
+    const recentAccess = await pool.query(
+      `SELECT left(a.id::text, 8) AS access_prefix,
+              left(a.onboarding_id::text, 8) AS onboarding_prefix,
+              c.customer_number,
+              a.created_at,
+              a.revoked_at IS NOT NULL AS revoked
+       FROM onboarding_access_sessions a
+       JOIN customer_onboardings o ON o.id = a.onboarding_id
+       JOIN customers c ON c.id = o.customer_id
+       WHERE a.created_at > now() - interval '14 days'
+       ORDER BY a.created_at DESC
+       LIMIT 20`
+    );
+    const schema = await pool.query(`SELECT version FROM schema_migrations ORDER BY version`);
+    return {
+      ok: true,
+      schemaVersions: schema.rows.map((r) => r.version),
+      recentSubmissions: recentSubs.rows,
+      recentSessions: recentSessions.rows.map((r) => ({
+        sessionPrefix: r.session_prefix,
+        onboardingPrefix: r.onboarding_prefix || null,
+        submissionStatus: r.submission_status,
+        hasSubmittedAt: Boolean(r.has_submitted_at),
+        version: Number(r.version || 0),
+        draftBytes: Number(r.draft_bytes || 0),
+        customerNumber: r.customer_number || null,
+        updatedAt: r.updated_at ? String(r.updated_at) : null,
+      })),
+      recentAccess: recentAccess.rows.map((r) => ({
+        accessPrefix: r.access_prefix,
+        onboardingPrefix: r.onboarding_prefix,
+        customerNumber: r.customer_number,
+        revoked: Boolean(r.revoked),
+        createdAt: r.created_at ? String(r.created_at) : null,
+      })),
+    };
+  }
+
+if (operation === "diagnoseCustomerSubmissionState") {
     const body = event as { customerNumber?: unknown };
     const customerNumber =
       typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
@@ -515,6 +595,7 @@ export async function handler(event: unknown): Promise<unknown> {
     );
     return {
       ok: true,
+      customerId,
       customerIdPrefix: customerId.slice(0, 8),
       onboardings: onboardings.rows.map((r) => ({
         idPrefix: String(r.id).slice(0, 8),
@@ -569,11 +650,12 @@ export async function handler(event: unknown): Promise<unknown> {
     }
     const pool = await getPool();
     const customer = await pool.query(
-      `SELECT id, customer_number FROM customers WHERE customer_number = $1`,
+      `SELECT id, customer_number, data_classification FROM customers WHERE customer_number = $1`,
       [customerNumber],
     );
     if (!customer.rows[0]) return { ok: false, reason: "customer_not_found" };
     const customerId = String(customer.rows[0].id);
+    const dataClassification = String(customer.rows[0].data_classification || "real_customer");
     const counts = await pool.query(
       `SELECT
          (SELECT count(*)::int FROM customers WHERE customer_number = $1) AS customers,
@@ -659,8 +741,10 @@ export async function handler(event: unknown): Promise<unknown> {
         [submissions.rows[0].id],
       );
       const answers = (ans.rows[0]?.questionnaire_answers_json || {}) as Record<string, unknown>;
-      const answerKeys = Object.keys(answers).filter((k) => {
-        const v = answers[k];
+      const flatFields = flattenQuestionnaireAnswerFields(answers);
+      const answerKeys = Object.keys(flatFields).filter((k) => {
+        if (k === "_entities") return false;
+        const v = flatFields[k];
         return v !== null && v !== undefined && v !== "";
       });
       const prof = profile.rows[0]
@@ -675,7 +759,9 @@ export async function handler(event: unknown): Promise<unknown> {
           : {};
       const profileKeys = Object.keys(fields);
       const missingInProfile = answerKeys.filter((k) => !(k in fields));
-      const extraInProfile = profileKeys.filter((k) => !(k in answers) || answers[k] === "" || answers[k] == null);
+      const extraInProfile = profileKeys.filter(
+        (k) => !(k in flatFields) || flatFields[k] === "" || flatFields[k] == null,
+      );
       // Representative category presence by key substring heuristics (no values).
       const categories = {
         businessIdentity: answerKeys.some((k) => /business|company|name|brand/i.test(k)),
@@ -699,6 +785,7 @@ export async function handler(event: unknown): Promise<unknown> {
     return {
       ok: true,
       customerIdPrefix: customerId.slice(0, 8),
+      dataClassification,
       counts: counts.rows[0],
       onboardings: onboarding.rows.map((r) => ({
         idPrefix: String(r.id).slice(0, 8),
@@ -756,6 +843,64 @@ export async function handler(event: unknown): Promise<unknown> {
     };
   }
 
+  if (operation === "projectSubmittedCustomerProfile") {
+    const body = event as { customerNumber?: unknown; dryRun?: unknown };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    const dryRun = body.dryRun === true || body.dryRun === "true";
+    if (!/^ALX-C\d{6}$/.test(customerNumber)) {
+      return { ok: false, reason: "invalid_customer_number" };
+    }
+    const pool = await getPool();
+    const meta = await pool.query(
+      `SELECT c.id AS customer_id, c.data_classification,
+              o.status AS onboarding_status,
+              s.id AS submission_id,
+              (SELECT count(*)::int FROM customer_business_profiles p WHERE p.customer_id = c.id) AS profiles,
+              (SELECT count(*)::int FROM customer_profile_revisions r
+                 WHERE r.customer_id = c.id AND r.revision_number = 1) AS revision1
+       FROM customers c
+       JOIN customer_onboardings o ON o.customer_id = c.id
+       JOIN onboarding_submissions s ON s.onboarding_id = o.id
+       WHERE c.customer_number = $1
+         AND s.persistence_state = 'committed'
+         AND s.submitted_at IS NOT NULL
+       ORDER BY s.submitted_at DESC
+       LIMIT 1`,
+      [customerNumber],
+    );
+    if (!meta.rows[0]) {
+      return { ok: false, reason: "no_committed_submission", dryRun };
+    }
+    const row = meta.rows[0];
+    const profiles = Number(row.profiles || 0);
+    const revision1 = Number(row.revision1 || 0);
+    const report = {
+      customerNumber,
+      dataClassification: String(row.data_classification || "real_customer"),
+      onboardingStatus: String(row.onboarding_status || ""),
+      submissionIdPrefix: String(row.submission_id).slice(0, 8),
+      existingProfiles: profiles,
+      existingRevision1: revision1,
+      wouldProject: profiles === 0 || revision1 === 0,
+      dryRun,
+    };
+    if (dryRun) return { ok: true, ...report, executed: false };
+    if (profiles >= 1 && revision1 >= 1) {
+      return { ok: true, ...report, executed: false, reason: "profile_already_present" };
+    }
+    const answersRow = await pool.query(
+      `SELECT questionnaire_answers_json FROM onboarding_submissions WHERE id = $1`,
+      [row.submission_id],
+    );
+    const projected = await projectSubmissionToBusinessProfile(pool as unknown as SqlPool, {
+      customerId: String(row.customer_id),
+      submissionId: String(row.submission_id),
+      answers: (answersRow.rows[0]?.questionnaire_answers_json || {}) as Record<string, unknown>,
+    });
+    return { ok: true, ...report, executed: true, projection: projected };
+  }
+
   if (operation === "projectExistingSubmission") {
     const body = event as { customerNumber?: unknown };
     const customerNumber =
@@ -782,9 +927,6 @@ export async function handler(event: unknown): Promise<unknown> {
       `SELECT content_revision_sha256, submitted_at, questionnaire_answers_json
        FROM onboarding_submissions WHERE id = $1`,
       [row.rows[0].submission_id],
-    );
-    const { projectSubmissionToBusinessProfile } = await import(
-      "../../src/lib/server/persistence/profile-projector"
     );
     const projected = await projectSubmissionToBusinessProfile(pool as unknown as SqlPool, {
       customerId: String(row.rows[0].customer_id),
@@ -965,6 +1107,23 @@ export async function handler(event: unknown): Promise<unknown> {
         await client.query("ROLLBACK");
         return { ok: false, reason: "questionnaire_not_submitted" };
       }
+      const profileReady = await client.query(
+        `SELECT p.customer_id
+         FROM customer_business_profiles p
+         JOIN customer_profile_revisions r
+           ON r.customer_id = p.customer_id
+          AND r.revision_number = 1
+          AND r.change_source = 'initial_questionnaire'
+          AND r.status = 'active'
+         WHERE p.customer_id = $1
+           AND p.current_revision >= 1
+         LIMIT 1`,
+        [customerId],
+      );
+      if (!profileReady.rows[0]) {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "canonical_profile_not_ready" };
+      }
       const clash = await client.query(
         `SELECT customer_id FROM customer_trillet_workspaces
          WHERE workspace_id = $1 AND customer_id <> $2 LIMIT 1`,
@@ -1033,6 +1192,89 @@ export async function handler(event: unknown): Promise<unknown> {
     } finally {
       client.release();
     }
+  }
+
+  if (operation === "inspectInvitationRedeemability") {
+    const body = event as { customerNumber?: unknown };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    if (!/^ALX-C\d{6}$/.test(customerNumber)) {
+      return { ok: false, reason: "invalid_customer_number" };
+    }
+    const pool = await getPool();
+    const customer = await pool.query(
+      `SELECT id FROM customers WHERE customer_number = $1`,
+      [customerNumber],
+    );
+    if (!customer.rows[0]) return { ok: false, reason: "customer_not_found" };
+    const customerId = String(customer.rows[0].id);
+    const invites = await pool.query(
+      `SELECT i.id, i.revoked_at IS NOT NULL AS revoked,
+              i.expires_at IS NOT NULL AND i.expires_at <= now() AS expired,
+              i.expires_at IS NULL OR i.expires_at > now() AS unexpired
+       FROM onboarding_invitations i
+       JOIN customer_onboardings o ON o.id = i.onboarding_id
+       WHERE o.customer_id = $1
+       ORDER BY i.created_at`,
+      [customerId],
+    );
+    const access = await pool.query(
+      `SELECT left(a.id::text, 8) AS access_prefix,
+              a.revoked_at IS NOT NULL AS revoked,
+              a.expires_at IS NULL OR a.expires_at > now() AS unexpired,
+              a.created_at
+       FROM onboarding_access_sessions a
+       JOIN customer_onboardings o ON o.id = a.onboarding_id
+       WHERE o.customer_id = $1
+       ORDER BY a.created_at`,
+      [customerId],
+    );
+    const email = await pool.query(
+      `SELECT payload_json->>'invitation_url' AS invitation_url
+       FROM email_outbox
+       WHERE customer_id = $1
+         AND template_type IN ('questionnaire_invitation','questionnaire_invitation_correction')
+         AND coalesce(payload_json->>'invitation_url','') <> ''
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [customerId],
+    );
+    const invitationUrl = String(email.rows[0]?.invitation_url || "");
+    const token = invitationUrl.includes("/i#") ? invitationUrl.split("/i#")[1] || "" : "";
+    let lookupOk = false;
+    let lookupOnboardingPrefix: string | null = null;
+    if (token.length >= 32) {
+      const looked = await lookupInvitation(pool as unknown as SqlPool, hashToken(token));
+      lookupOk = Boolean(looked.ok);
+      if (looked.ok) lookupOnboardingPrefix = looked.onboardingId.slice(0, 8);
+    }
+    const activeUnrevoked = invites.rows.filter((row) => !row.revoked && row.unexpired);
+    return {
+      ok: true,
+      invitationCount: invites.rows.length,
+      active: activeUnrevoked.length === 1,
+      expired: invites.rows.some((row) => Boolean(row.expired)),
+      revoked: invites.rows.some((row) => Boolean(row.revoked)),
+      consumedFlagExists: false,
+      redeemCountColumnExists: false,
+      browserRedeemable: lookupOk && activeUnrevoked.length === 1,
+      lookupOnboardingPrefix,
+      invitationHost: (() => {
+        try {
+          return invitationUrl ? new URL(invitationUrl).host : null;
+        } catch {
+          return null;
+        }
+      })(),
+      accessSessionCount: access.rows.length,
+      accessSessions: access.rows.map((row) => ({
+        accessPrefix: row.access_prefix,
+        revoked: Boolean(row.revoked),
+        unexpired: Boolean(row.unexpired),
+        createdAt: row.created_at ? String(row.created_at) : null,
+      })),
+      redeemed: false,
+    };
   }
 
   if (operation === "enqueueInvitationHostCorrection") {
