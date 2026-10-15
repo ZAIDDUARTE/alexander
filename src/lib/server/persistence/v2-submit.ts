@@ -11,6 +11,7 @@ import { canonicalJsonBytes, sha256Hex } from "./canonical";
 import { persistenceV2ObjectKeys } from "./keys";
 import { resolveOnboardingAccess, type SqlPool } from "./onboarding-access";
 import type { ObjectStorePort } from "./types";
+import { ensureBusinessProfileProjectedAfterSubmit } from "./profile-projector";
 
 const ALGORITHM = "questionnaire_answers_v1";
 
@@ -502,6 +503,15 @@ export async function submitPersistenceV2FromAccess(
   });
   if (!reserved.ok) return reserved;
   if (reserved.reserved.state === "committed" && reserved.reserved.submittedAt) {
+    try {
+      await ensureBusinessProfileProjectedAfterSubmit(pool, {
+        customerId,
+        submissionId: reserved.reserved.submissionId,
+        answers: answers as unknown as Record<string, unknown>,
+      });
+    } catch {
+      // Submission already committed; operator/backfill can retry projection.
+    }
     return {
       ok: true,
       duplicate: true,
@@ -560,8 +570,7 @@ export async function submitPersistenceV2FromAccess(
   );
   if (finalized.ok) {
     try {
-      const { projectSubmissionToBusinessProfile } = await import("./profile-projector");
-      await projectSubmissionToBusinessProfile(pool, {
+      await ensureBusinessProfileProjectedAfterSubmit(pool, {
         customerId,
         submissionId: reserved.reserved.submissionId,
         answers: answers as unknown as Record<string, unknown>,
