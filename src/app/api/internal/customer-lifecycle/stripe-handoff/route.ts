@@ -66,6 +66,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, reason: stripeCheck.reason }, { status });
   }
 
+  // Do not forward WordPress/payment Host headers for invitation URLs.
+  // Persistence uses ALEXANDER_ONBOARDING_BASE_URL / ONBOARDING_HOST only.
   const result = await invokePersistenceLambda({
     operation: "provisionFromVerifiedStripe",
     verified: stripeCheck.session,
@@ -73,7 +75,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       typeof body.correlationKey === "string" && body.correlationKey
         ? body.correlationKey
         : idempotencyKey,
-    host: typeof body.host === "string" ? body.host : undefined,
   });
 
   if (!result.ok) {

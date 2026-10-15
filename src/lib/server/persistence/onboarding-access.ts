@@ -52,9 +52,65 @@ function asNumber(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function invitationUrl(host: string, token: string): string {
-  const bare = host.replace(/^[a-z]+:\/\//i, "").replace(/\/.*$/, "").replace(/\.$/, "");
+const FORBIDDEN_QUESTIONNAIRE_HOST_RE =
+  /(^|\.)wpenginepowered\.com$|(^|\.)wpengine\.com$|^alexander1stg(\.|$)|^www\.meetalexander\.ai$/i;
+
+/** Strip scheme/path; invitation links always use https://{host}/i#{token}. */
+export function normalizeOnboardingHost(host: string): string {
+  return host
+    .trim()
+    .replace(/^[a-z]+:\/\//i, "")
+    .replace(/\/.*$/, "")
+    .replace(/\.$/, "")
+    .toLowerCase();
+}
+
+export function isForbiddenQuestionnaireHost(host: string): boolean {
+  const bare = normalizeOnboardingHost(host);
+  if (!bare) return true;
+  return FORBIDDEN_QUESTIONNAIRE_HOST_RE.test(bare);
+}
+
+/**
+ * Canonical questionnaire invitation host.
+ * Never use WordPress / payment callback Host headers for invitation URLs.
+ * Prefer ALEXANDER_ONBOARDING_BASE_URL or ONBOARDING_HOST from environment.
+ */
+export function resolveOnboardingInvitationHost(requestedHost?: string | null): string {
+  const fromEnv = (
+    process.env.ALEXANDER_ONBOARDING_BASE_URL ||
+    process.env.ONBOARDING_HOST ||
+    ""
+  ).trim();
+  if (fromEnv) {
+    const bare = normalizeOnboardingHost(fromEnv);
+    if (!bare || isForbiddenQuestionnaireHost(bare)) {
+      throw new Error("onboarding_host_misconfigured");
+    }
+    return bare;
+  }
+  const requested = (requestedHost || "").trim();
+  if (!requested) throw new Error("onboarding_host_required");
+  const bare = normalizeOnboardingHost(requested);
+  if (!bare || isForbiddenQuestionnaireHost(bare)) {
+    throw new Error("onboarding_host_forbidden");
+  }
+  return bare;
+}
+
+export function invitationUrl(host: string, token: string): string {
+  const bare = resolveOnboardingInvitationHost(host);
   return `https://${bare}/i#${token}`;
+}
+
+/** Rebuild an invitation URL onto the canonical host without changing the token. */
+export function relocateInvitationUrlToCanonicalHost(
+  existingUrl: string,
+  requestedHost?: string | null,
+): string {
+  const match = existingUrl.trim().match(/\/i#([^?\s#]+)$/);
+  if (!match?.[1]) throw new Error("invitation_token_missing");
+  return invitationUrl(requestedHost || "", match[1]);
 }
 
 async function withTransaction<T>(pool: SqlPool, run: (client: SqlClient) => Promise<T>): Promise<T> {
