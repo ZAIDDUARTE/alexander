@@ -12,6 +12,7 @@ import {
   type ServiceCatalogItem,
 } from "./section2Catalog";
 import { createDefaultEmergencyClassifications } from "./section3Defaults";
+import type { Stage2MigrationNote } from "./stage2Migration";
 import {
   APPOINTMENT_WINDOW_TEMPLATES,
   CALLER_TYPES,
@@ -25,6 +26,7 @@ import {
   DEFAULT_ESCALATION_TRIGGER_IDS,
   DEFAULT_FORBIDDEN_UNHAPPY_PROMISE_IDS,
   DEFAULT_RESTRICTED_INFORMATION_IDS,
+  DEFAULT_NON_SERVICE_DISPOSITIONS,
   NON_SERVICE_CALL_TYPE_ROWS,
   type NonServiceCallTypeId,
 } from "./section6Catalog";
@@ -39,7 +41,6 @@ import type {
   PhoneProvider,
   SchedulingProvider,
 } from "./section8Catalog";
-import { ALL_INTEGRATION_CAPABILITY_IDS } from "./section8Catalog";
 /**
  * Schema history:
  *  v1 -> v2: ServiceDaySchedule moved from two independent booleans
@@ -247,19 +248,12 @@ export function createDefaultSection2(): Section2Data {
 // ---------------------------------------------------------------------------
 
 /**
- * Q26 classification states. Deliberately has no "not sure" option —
- * every scenario resolves to exactly one of these five distinct
- * Company Truth facts. "recommended_default" is itself an explicit,
- * selectable state (not a hidden fallback) per the MD.
+ * Q26 classification. Four customer choices. Legacy `recommended_default`
+ * is translated to the scenario default when a draft is loaded.
  */
-export type EmergencyClassification =
-  | "emergency"
-  | "urgent"
-  | "routine"
-  | "human_review"
-  | "recommended_default";
+export type EmergencyClassification = "emergency" | "urgent" | "routine" | "human_review";
 
-/** "" = legacy/uninitialized row (migrated to recommended_default on load). */
+/** "" = unanswered row. Load-time migration fills the scenario default. */
 export type EmergencyClassificationState = EmergencyClassification | "";
 
 export { createDefaultEmergencyClassifications } from "./section3Defaults";
@@ -267,19 +261,16 @@ export { createDefaultEmergencyClassifications } from "./section3Defaults";
 /** Q28 — the three after-hours call classes, each with its own dropdown. */
 export type AfterHoursCallClass = "emergency" | "urgent_contained" | "routine";
 
-export type AfterHoursDispositionOption =
-  | "attempt_contact"
-  | "confirm_or_book"
-  | "submit_for_review"
-  | "schedule_next_available"
-  | "arrange_callback"
-  | "info_only"
-  | "no_service";
+export type AfterHoursDispositionOption = "contact_on_call" | "schedule_service" | "take_message";
 
 export type AfterHoursDisposition = Record<AfterHoursCallClass, AfterHoursDispositionOption | "">;
 
 export function createDefaultAfterHoursDisposition(): AfterHoursDisposition {
-  return { emergency: "", urgent_contained: "", routine: "" };
+  return {
+    emergency: "contact_on_call",
+    urgent_contained: "schedule_service",
+    routine: "schedule_service",
+  };
 }
 
 /** Q29 — when the company can actually send someone out after hours. */
@@ -543,13 +534,22 @@ export type ExceptionAuthorityState = ExceptionAuthority | "";
 
 export type ApproverUnavailablePolicy = "callback" | "follow_normal_rule" | "other";
 
-export type CallerPermission =
-  | "schedule_service"
-  | "approve_diagnostic_fee"
-  | "authorize_repair"
-  | "agree_to_pay"
-  | "human_approval_required"
-  | "not_allowed";
+/** One authority level per caller. Legacy checkbox arrays are translated on load. */
+export type CallerAuthority =
+  | "schedule_only"
+  | "schedule_diagnostic"
+  | "full_authorization"
+  | "human_approval_required";
+
+export const CALLER_AUTHORITY_DEFAULTS: Record<string, CallerAuthority> = {
+  homeowner: "full_authorization",
+  tenant: "schedule_only",
+  landlord_property_manager: "full_authorization",
+  spouse_family: "full_authorization",
+  remote_family: "full_authorization",
+  realtor_buyer_seller: "schedule_only",
+  other_third_party: "human_approval_required",
+};
 
 export type SpendingLimitRow = {
   id: string;
@@ -559,7 +559,7 @@ export type SpendingLimitRow = {
 
 export type EmergencyAuthMode = "same_rules" | "special_rules" | "human_review_always";
 
-export type DefaultBookingMode = "confirm_immediately" | "submit_for_approval" | "arrange_callback";
+export type DefaultBookingMode = "book_appointment" | "send_to_team";
 
 export type AppointmentWindow = {
   id: string;
@@ -648,9 +648,9 @@ export function createDefaultExceptionAuthority(): Record<string, ExceptionAutho
   return map;
 }
 
-export function createDefaultCallerPermissions(): Record<string, CallerPermission[]> {
-  const map: Record<string, CallerPermission[]> = {};
-  for (const row of CALLER_TYPES) map[row.id] = [];
+export function createDefaultCallerPermissions(): Record<string, CallerAuthority> {
+  const map: Record<string, CallerAuthority> = {};
+  for (const row of CALLER_TYPES) map[row.id] = CALLER_AUTHORITY_DEFAULTS[row.id];
   return map;
 }
 
@@ -696,7 +696,7 @@ export type Section4Data = {
   approverUnavailablePolicy: ApproverUnavailablePolicy | "";
   approverUnavailableCustomRule: string;
   // Q43
-  callerPermissions: Record<string, CallerPermission[]>;
+  callerPermissions: Record<string, CallerAuthority | "">;
   // Q44
   hasSpendingLimits: YesNo | "";
   spendingLimits: SpendingLimitRow[];
@@ -835,13 +835,107 @@ export type RemedyId =
   | "discount_goodwill"
   | "return_visit";
 
+export type FinancialRemedySelection = RemedyId | "none";
+
+export type PaymentAssistanceAuthority =
+  | "secure_link"
+  | "secure_link_and_authorized_method"
+  | "send_to_team";
+
+export type PaymentCollectionScopeId =
+  | "booking_or_service_fees"
+  | "deposits"
+  | "completed_invoices"
+  | "outstanding_balances"
+  | "progress_payments"
+  | "other";
+
 export type RemedyAuthority = "within_rules" | "human_approval" | "never";
+
+export type QuotePermission = "allowed" | "not_allowed";
+
+export type ServicePriceMode = "exact" | "starting_at" | "range" | "hourly" | "estimate";
+
+export type ServicePriceRecord = {
+  serviceId: string;
+  mode: ServicePriceMode | "";
+  exactAmount: string;
+  startingAmount: string;
+  rangeMin: string;
+  rangeMax: string;
+  hourlyAmount: string;
+  conditions: string;
+};
+
+export type AdditionalFeeCategory =
+  | "service_diagnostic"
+  | "after_hours"
+  | "travel"
+  | "cancellation"
+  | "no_show"
+  | "minimum_service"
+  | "estimate_consultation"
+  | "other";
+
+export type AdditionalFeeSelection = AdditionalFeeCategory | "none";
+
+export type AdditionalFeeCredit = "always" | "sometimes" | "never";
+
+export type AdditionalFeeDetail = {
+  amount: string;
+  applicability: string;
+  credit: AdditionalFeeCredit | "";
+  creditWhen: string;
+};
+
+export const ADDITIONAL_FEE_CATEGORIES: readonly AdditionalFeeCategory[] = [
+  "service_diagnostic",
+  "after_hours",
+  "travel",
+  "cancellation",
+  "no_show",
+  "minimum_service",
+  "estimate_consultation",
+  "other",
+];
+
+export function createEmptyAdditionalFeeDetail(): AdditionalFeeDetail {
+  return { amount: "", applicability: "", credit: "", creditWhen: "" };
+}
+
+export function createDefaultAdditionalFeeDetails(): Record<AdditionalFeeCategory, AdditionalFeeDetail> {
+  return {
+    service_diagnostic: createEmptyAdditionalFeeDetail(),
+    after_hours: createEmptyAdditionalFeeDetail(),
+    travel: createEmptyAdditionalFeeDetail(),
+    cancellation: createEmptyAdditionalFeeDetail(),
+    no_show: createEmptyAdditionalFeeDetail(),
+    minimum_service: createEmptyAdditionalFeeDetail(),
+    estimate_consultation: createEmptyAdditionalFeeDetail(),
+    other: createEmptyAdditionalFeeDetail(),
+  };
+}
+
+export function createEmptyServicePrice(serviceId: string): ServicePriceRecord {
+  return {
+    serviceId,
+    mode: "",
+    exactAmount: "",
+    startingAmount: "",
+    rangeMin: "",
+    rangeMax: "",
+    hourlyAmount: "",
+    conditions: "",
+  };
+}
 
 export type AreaPricingRow = {
   id: string;
   area: string;
+  /** Legacy numeric fields. Current answers use feeOrMinimum. */
   travelFee: string;
   minimumCharge: string;
+  feeOrMinimum: string;
 };
 
 export type ServicePricingRule = {
@@ -887,10 +981,15 @@ export function createDefaultForbiddenStatements(): ForbiddenStatementId[] {
 export type Section5Data = {
   pricingModels: PricingModelId[];
   pricingModelOther: string;
+  /** May Alexander quote service prices? Default is not_allowed. */
+  mayQuoteServicePrices: QuotePermission;
+  servicePrices: ServicePriceRecord[];
   materialMarkupPolicy: MaterialMarkupPolicy | "";
   materialMarkupCustomerExplanation: string;
   unknownPriceBehavior: UnknownPriceBehaviorId | "";
   unknownPriceCustomRule: string;
+  additionalFeeSelection: AdditionalFeeSelection[];
+  additionalFeeDetails: Record<AdditionalFeeCategory, AdditionalFeeDetail>;
   /** Q68 — mutually exclusive with active fee cards when true. */
   noSeparateFees: boolean;
   hasAreaTravelOrMinimum: YesNo | "";
@@ -912,6 +1011,10 @@ export type Section5Data = {
   paymentMethods: PaymentMethodId[];
   paymentMethodOther: string;
   paymentDuePolicies: PaymentDueId[];
+  paymentAssistance: PaymentAssistanceAuthority;
+  paymentCollectionScope: PaymentCollectionScopeId[];
+  paymentCollectionOther: string;
+  financialRemedies: FinancialRemedySelection[];
   depositWorkDetail: string;
   depositRule: string;
   progressPaymentProjectsDetail: string;
@@ -953,12 +1056,16 @@ export function createDefaultSection5(): Section5Data {
   return {
     pricingModels: [],
     pricingModelOther: "",
+    mayQuoteServicePrices: "not_allowed",
+    servicePrices: [],
     materialMarkupPolicy: "",
     materialMarkupCustomerExplanation: "",
-    unknownPriceBehavior: "",
+    unknownPriceBehavior: "technician_after_evaluation",
     unknownPriceCustomRule: "",
+    additionalFeeSelection: [],
+    additionalFeeDetails: createDefaultAdditionalFeeDetails(),
     noSeparateFees: false,
-    hasAreaTravelOrMinimum: "",
+    hasAreaTravelOrMinimum: "no",
     areaPricingRows: [],
     visitTypeByServiceId: createDefaultVisitTypeByService(),
     paidDiagnosticExplanation: "",
@@ -976,6 +1083,15 @@ export function createDefaultSection5(): Section5Data {
     paymentMethods: [],
     paymentMethodOther: "",
     paymentDuePolicies: [],
+    paymentAssistance: "secure_link",
+    paymentCollectionScope: [
+      "booking_or_service_fees",
+      "deposits",
+      "completed_invoices",
+      "outstanding_balances",
+    ],
+    paymentCollectionOther: "",
+    financialRemedies: ["none"],
     depositWorkDetail: "",
     depositRule: "",
     progressPaymentProjectsDetail: "",
@@ -1081,7 +1197,10 @@ export function createDefaultNonServiceCallPolicies(): Record<
 > {
   const policies = {} as Record<NonServiceCallTypeId, NonServiceCallPolicyRow>;
   for (const row of NON_SERVICE_CALL_TYPE_ROWS) {
-    policies[row.id] = { disposition: "", contactId: "" };
+    policies[row.id] = {
+      disposition: DEFAULT_NON_SERVICE_DISPOSITIONS[row.id],
+      contactId: "",
+    };
   }
   return policies;
 }
@@ -1284,12 +1403,9 @@ export type Section8Data = {
   finalOperatingNotes: string;
 };
 
-/**
- * MD “preselect all capabilities” = every concrete approved capability.
- * `other` is an extension affordance requiring custom text — not preselected.
- */
+/** Legacy capability checklist is not a current question. */
 export function createDefaultAuthorizedCapabilities(): IntegrationCapabilityId[] {
-  return ALL_INTEGRATION_CAPABILITY_IDS.filter((id) => id !== "other");
+  return [];
 }
 
 export function createDefaultSection8(): Section8Data {
@@ -1323,7 +1439,7 @@ export function createDefaultSection8(): Section8Data {
 
     connectionNoticeAcknowledged: false,
 
-    failureFallback: "",
+    failureFallback: "collect_and_send",
     failureFallbackCustom: "",
 
     finalOperatingNotes: "",
@@ -1375,7 +1491,7 @@ export function createDefaultSection4(): Section4Data {
     spendingLimits: [],
     emergencyAuthMode: "",
     emergencyAuthSpecialRules: "",
-    defaultBookingMode: "",
+    defaultBookingMode: "book_appointment",
     bookingHorizonDays: "",
     bookingHorizonNoMaximum: false,
     appointmentWindows: createDefaultAppointmentWindows(),
@@ -1453,6 +1569,11 @@ export type OnboardingDraft = {
   /** Shared software registry (MD §1.2) — Section 8 references by stable id. */
   systems: SoftwareRecord[];
   submission: OnboardingSubmission;
+  /**
+   * Stage 2 load-time notes for answers that were mapped or defaulted.
+   * Not shown in the questionnaire.
+   */
+  stage2Migration?: Stage2MigrationNote[];
 };
 
 export function createDefaultSection1(): Section1Data {

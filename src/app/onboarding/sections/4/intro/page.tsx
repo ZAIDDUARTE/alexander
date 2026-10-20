@@ -26,7 +26,7 @@ export default function Section4IntroPage() {
       <SectionIntro
         sectionNumber={4}
         title="Scheduling"
-        description="Tell Alexander when and how your company can accept appointments. This section defines your booking authority, appointment types, availability, capacity rules, rescheduling process, cancellation policy, and exceptions. You can choose how much responsibility Alexander should have. He may be configured to book within your rules, request approval, collect information for your team, or use a combination of these approaches."
+        description="Tell Alexander when and how your company can accept appointments."
         estimatedTime="10–15 minutes"
         ctaHref="/onboarding/sections/4/form"
         ctaLabel="Begin Scheduling →"

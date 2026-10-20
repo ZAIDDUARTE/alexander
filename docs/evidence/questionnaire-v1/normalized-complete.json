@@ -1,0 +1,1050 @@
+{
+  "schema_version": 10,
+  "company": {
+    "customerFacingName": "Acme Plumbing",
+    "legalName": "Acme Plumbing LLC",
+    "mainPhone": "+14155552671",
+    "website": "",
+    "approvedClaims": [
+      "licensed",
+      "insured"
+    ],
+    "otherApprovedClaim": null,
+    "licensingDetails": "",
+    "forbiddenClaims": "",
+    "officeHours": {
+      "monday": {
+        "closed": false,
+        "start": "08:00",
+        "end": "17:00"
+      },
+      "tuesday": {
+        "closed": false,
+        "start": "08:00",
+        "end": "17:00"
+      },
+      "wednesday": {
+        "closed": false,
+        "start": "08:00",
+        "end": "17:00"
+      },
+      "thursday": {
+        "closed": false,
+        "start": "08:00",
+        "end": "17:00"
+      },
+      "friday": {
+        "closed": false,
+        "start": "08:00",
+        "end": "17:00"
+      },
+      "saturday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      },
+      "sunday": {
+        "closed": true,
+        "start": null,
+        "end": null
+      }
+    },
+    "serviceHours": {
+      "monday": {
+        "mode": "regular",
+        "start": "08:00",
+        "end": "18:00"
+      },
+      "tuesday": {
+        "mode": "regular",
+        "start": "08:00",
+        "end": "18:00"
+      },
+      "wednesday": {
+        "mode": "regular",
+        "start": "08:00",
+        "end": "18:00"
+      },
+      "thursday": {
+        "mode": "regular",
+        "start": "08:00",
+        "end": "18:00"
+      },
+      "friday": {
+        "mode": "regular",
+        "start": "08:00",
+        "end": "18:00"
+      },
+      "saturday": {
+        "mode": "regular",
+        "start": "08:00",
+        "end": "18:00"
+      },
+      "sunday": {
+        "mode": "no_service",
+        "start": null,
+        "end": null
+      }
+    },
+    "answeringMode": "24_7",
+    "answeringSchedule": null,
+    "recurringAvailabilityNotes": ""
+  },
+  "services": {
+    "plumbingServices": [
+      {
+        "id": "general-plumbing-repair",
+        "name": "General plumbing repair",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "toilet-repair-replacement",
+        "name": "Toilet repair or replacement",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "faucet-sink-repair",
+        "name": "Faucet or sink repair",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "garbage-disposal",
+        "name": "Garbage disposal",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "shower-tub-repair",
+        "name": "Shower or tub repair",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "water-heater-repair",
+        "name": "Water heater repair",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "water-heater-replacement",
+        "name": "Water heater replacement",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "tankless-water-heaters",
+        "name": "Tankless water heaters",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "shutoff-main-valves",
+        "name": "Shutoff or main valves",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "pressure-regulators",
+        "name": "Pressure regulators",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "water-service-lines",
+        "name": "Water service lines",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "frozen-pipes",
+        "name": "Frozen pipes",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "slab-leaks",
+        "name": "Slab leaks",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "repiping",
+        "name": "Repiping",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "fixture-installation",
+        "name": "Fixture installation",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "appliance-plumbing-connections",
+        "name": "Appliance plumbing connections",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "gas-line-plumbing-non-emergency",
+        "name": "Gas-line plumbing (non-emergency)",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "excavation",
+        "name": "Excavation",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "trenchless-sewer-service-line-work",
+        "name": "Trenchless sewer/service-line work",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "water-filtration-softening-ro",
+        "name": "Water filtration / softening / reverse osmosis",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "remodel-project-work",
+        "name": "Remodel or project plumbing",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "other-specialty-plumbing",
+        "name": "Specialty plumbing",
+        "policy": "offered",
+        "condition": null
+      }
+    ],
+    "diagnosticServices": [
+      {
+        "id": "general-diagnostic-service-visits",
+        "name": "General diagnostic/service visit",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "plumbing-inspections",
+        "name": "Plumbing inspection",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "leak-detection",
+        "name": "Leak detection",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "drain-cleaning",
+        "name": "Drain cleaning",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "sewer-drain-camera-inspections",
+        "name": "Sewer/drain camera inspection",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "hydro-jetting-advanced-drain-cleaning",
+        "name": "Hydro-jetting",
+        "policy": "offered",
+        "condition": null
+      }
+    ],
+    "customerPropertyTypes": [
+      {
+        "id": "homeowners",
+        "name": "Homeowners",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "tenants",
+        "name": "Tenants",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "landlords-property-managers",
+        "name": "Landlords / property managers",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "single-family-homes",
+        "name": "Single-family homes",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "condos-hoas",
+        "name": "Condos / HOAs",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "multifamily-properties",
+        "name": "Multifamily properties",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "commercial-properties",
+        "name": "Commercial properties",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "real-estate-inspection-transaction-work",
+        "name": "Real-estate inspection / transaction work",
+        "policy": "offered",
+        "condition": null
+      },
+      {
+        "id": "insurance-related-work",
+        "name": "Insurance-related work",
+        "policy": "offered",
+        "condition": null
+      }
+    ],
+    "customerSuppliedMaterials": {
+      "policy": "not_offered",
+      "condition": null
+    },
+    "correctiveWork": {
+      "policy": "not_offered",
+      "condition": null
+    },
+    "serviceArea": {
+      "definitionMode": "cities",
+      "zipCodes": null,
+      "cities": [
+        "Rosamond"
+      ],
+      "distance": null,
+      "excludedTerritory": null,
+      "hasConditionalTerritory": false,
+      "conditionalTerritories": null,
+      "afterHours": {
+        "mode": "same",
+        "geography": null
+      }
+    }
+  },
+  "emergencies": {
+    "emergencyClassifications": [
+      {
+        "id": "uncontrolled-water-leak-inside-property",
+        "name": "Uncontrolled water leaking inside the property",
+        "classification": "emergency"
+      },
+      {
+        "id": "water-leak-near-electrical-equipment",
+        "name": "Water leaking near electrical equipment",
+        "classification": "emergency"
+      },
+      {
+        "id": "suspected-gas-leak-or-odor",
+        "name": "Suspected gas leak or gas odor",
+        "classification": "emergency"
+      },
+      {
+        "id": "sewage-entering-property",
+        "name": "Sewage actively entering the property",
+        "classification": "emergency"
+      },
+      {
+        "id": "multiple-fixtures-backing-up",
+        "name": "Multiple fixtures backing up at the same time",
+        "classification": "emergency"
+      },
+      {
+        "id": "toilet-overflowing-uncontrolled",
+        "name": "Toilet overflowing and the customer cannot stop it",
+        "classification": "emergency"
+      },
+      {
+        "id": "only-usable-toilet-not-working",
+        "name": "The property's only usable toilet is not working",
+        "classification": "emergency"
+      },
+      {
+        "id": "major-water-heater-leak-or-rupture",
+        "name": "Major water-heater leak or rupture",
+        "classification": "emergency"
+      },
+      {
+        "id": "dangerous-water-heater-symptoms",
+        "name": "Potentially dangerous water-heater symptoms",
+        "classification": "emergency"
+      },
+      {
+        "id": "sump-pump-failure-flooding",
+        "name": "Sump-pump failure with active or imminent flooding",
+        "classification": "emergency"
+      },
+      {
+        "id": "frozen-pipe-confirmed-leak",
+        "name": "Frozen pipe with a confirmed leak",
+        "classification": "emergency"
+      },
+      {
+        "id": "complete-loss-of-water",
+        "name": "Complete loss of water to the property",
+        "classification": "emergency"
+      },
+      {
+        "id": "major-water-service-line-leak",
+        "name": "Major water-service-line leak",
+        "classification": "emergency"
+      },
+      {
+        "id": "serious-standing-water-unknown-source",
+        "name": "Serious standing water from an unknown source",
+        "classification": "emergency"
+      },
+      {
+        "id": "unclear-situation-may-be-dangerous",
+        "name": "An unclear situation that may be dangerous",
+        "classification": "emergency"
+      }
+    ],
+    "dispatchApproval": {
+      "scenarioIds": [],
+      "other": false,
+      "otherDetail": null,
+      "none": true
+    },
+    "afterHoursDisposition": {
+      "emergency": "contact_on_call",
+      "urgent_contained": "schedule_service",
+      "routine": "take_message"
+    },
+    "emergencyService": {
+      "mode": "24_7",
+      "schedule": null
+    },
+    "contacts": [
+      {
+        "id": "contact-ro34iyjvmuqzreea",
+        "nameOrRole": "Jamie Rivera, Dispatch Manager",
+        "phone": "+14155552671",
+        "availability": {
+          "monday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "tuesday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "wednesday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "thursday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "friday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "saturday": {
+            "closed": true,
+            "start": null,
+            "end": null
+          },
+          "sunday": {
+            "closed": true,
+            "start": null,
+            "end": null
+          }
+        },
+        "callCategories": [
+          "emergencies"
+        ],
+        "otherCategory": null
+      }
+    ],
+    "primaryContact": {
+      "id": "contact-ro34iyjvmuqzreea",
+      "nameOrRole": "Jamie Rivera, Dispatch Manager",
+      "phone": "+14155552671",
+      "availability": {
+        "monday": {
+          "closed": false,
+          "start": "08:00",
+          "end": "17:00"
+        },
+        "tuesday": {
+          "closed": false,
+          "start": "08:00",
+          "end": "17:00"
+        },
+        "wednesday": {
+          "closed": false,
+          "start": "08:00",
+          "end": "17:00"
+        },
+        "thursday": {
+          "closed": false,
+          "start": "08:00",
+          "end": "17:00"
+        },
+        "friday": {
+          "closed": false,
+          "start": "08:00",
+          "end": "17:00"
+        },
+        "saturday": {
+          "closed": true,
+          "start": null,
+          "end": null
+        },
+        "sunday": {
+          "closed": true,
+          "start": null,
+          "end": null
+        }
+      },
+      "callCategories": [
+        "emergencies"
+      ],
+      "otherCategory": null
+    },
+    "backupContact": null,
+    "nobodyRespondsFallback": {
+      "option": "callback",
+      "customRule": null
+    },
+    "retryRule": {
+      "option": "move_immediately_to_next",
+      "customRule": null
+    },
+    "capacity": {
+      "mode": "arrange_callback",
+      "reservedCapacityText": null,
+      "overrideConditions": null,
+      "approverContactId": null
+    }
+  },
+  "scheduling": {
+    "humanRequest": {
+      "policy": "connect_right_away",
+      "customRule": null
+    },
+    "aiRefusal": {
+      "policy": "connect_to_person",
+      "customRule": null
+    },
+    "exceptionAuthority": [
+      {
+        "id": "scheduling",
+        "label": "Scheduling exception",
+        "authority": "alexander",
+        "approverContactId": null
+      },
+      {
+        "id": "service_area",
+        "label": "Service-area exception",
+        "authority": "alexander",
+        "approverContactId": null
+      },
+      {
+        "id": "fee_or_price",
+        "label": "Fee or price exception",
+        "authority": "alexander",
+        "approverContactId": null
+      },
+      {
+        "id": "discount_or_promotion",
+        "label": "Discount or promotion exception",
+        "authority": "alexander",
+        "approverContactId": null
+      },
+      {
+        "id": "refund_credit_goodwill",
+        "label": "Refund, credit or goodwill exception",
+        "authority": "alexander",
+        "approverContactId": null
+      },
+      {
+        "id": "callback_previous_work",
+        "label": "Warranty or callback exception",
+        "authority": "alexander",
+        "approverContactId": null
+      },
+      {
+        "id": "other",
+        "label": "Other exception",
+        "authority": "alexander",
+        "approverContactId": null
+      }
+    ],
+    "approverUnavailable": {
+      "policy": "callback",
+      "customRule": null
+    },
+    "callerPermissions": [
+      {
+        "id": "homeowner",
+        "label": "Homeowner",
+        "authority": "full_authorization"
+      },
+      {
+        "id": "tenant",
+        "label": "Tenant",
+        "authority": "schedule_only"
+      },
+      {
+        "id": "landlord_property_manager",
+        "label": "Landlord / property manager",
+        "authority": "full_authorization"
+      },
+      {
+        "id": "spouse_family",
+        "label": "Spouse / family member",
+        "authority": "full_authorization"
+      },
+      {
+        "id": "remote_family",
+        "label": "Remote family member",
+        "authority": "full_authorization"
+      },
+      {
+        "id": "realtor_buyer_seller",
+        "label": "Realtor",
+        "authority": "schedule_only"
+      },
+      {
+        "id": "other_third_party",
+        "label": "Other third party",
+        "authority": "human_approval_required"
+      }
+    ],
+    "spendingLimits": null,
+    "emergencyAuth": {
+      "mode": "same_rules",
+      "specialRules": null
+    },
+    "defaultBookingMode": "book_appointment",
+    "bookingHorizon": {
+      "noMaximum": false,
+      "days": 30
+    },
+    "appointmentWindows": [
+      {
+        "id": "morning",
+        "label": "Morning",
+        "start": "08:00",
+        "end": "10:00"
+      }
+    ],
+    "confirmationInfo": [
+      "appointment_date",
+      "appointment_time_or_window",
+      "requested_service",
+      "customer_name_and_address",
+      "callback_phone",
+      "email_address"
+    ],
+    "serviceBookingRules": null,
+    "capacityPolicies": [
+      {
+        "id": "same_day",
+        "label": "Same-day service",
+        "policy": "allowed",
+        "condition": null
+      },
+      {
+        "id": "holiday",
+        "label": "Holiday service",
+        "policy": "allowed",
+        "condition": null
+      }
+    ],
+    "reschedule": {
+      "authority": "direct",
+      "condition": null
+    },
+    "cancellation": {
+      "authority": "direct",
+      "condition": null
+    },
+    "lateCancellationFee": null,
+    "noShowFee": null,
+    "cancellationExceptions": null,
+    "noAvailabilityPriority": [
+      "offer_next_available",
+      "look_for_approved_window",
+      "add_to_callback_waitlist",
+      "ask_team_for_help"
+    ],
+    "callback": {
+      "mayArrange": "yes",
+      "numberPolicy": "calling_from",
+      "ownerContactId": "contact-ro34iyjvmuqzreea"
+    },
+    "technicianAssignments": null,
+    "specificTechnicianRequest": "book_if_confirmed_available",
+    "multiIssue": {
+      "mode": "one_appointment",
+      "separateServiceIds": [],
+      "separateOtherDetail": null
+    },
+    "contacts": [
+      {
+        "id": "contact-ro34iyjvmuqzreea",
+        "nameOrRole": "Jamie Rivera, Dispatch Manager",
+        "phone": "+14155552671",
+        "availability": {
+          "monday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "tuesday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "wednesday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "thursday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "friday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "saturday": {
+            "closed": true,
+            "start": null,
+            "end": null
+          },
+          "sunday": {
+            "closed": true,
+            "start": null,
+            "end": null
+          }
+        },
+        "callCategories": [
+          "emergencies"
+        ],
+        "otherCategory": null
+      }
+    ]
+  },
+  "pricing": {
+    "pricingModels": [
+      "flat_rate"
+    ],
+    "pricingModelOther": null,
+    "materialMarkup": {
+      "policy": "no",
+      "customerExplanation": null
+    },
+    "mayQuoteServicePrices": "not_allowed",
+    "servicePrices": [],
+    "unknownPrice": {
+      "behavior": "technician_after_evaluation",
+      "customRule": null
+    },
+    "additionalFees": {
+      "selection": [
+        "none"
+      ],
+      "details": {}
+    },
+    "noSeparateFees": false,
+    "fees": [],
+    "areaTravelOrMinimum": {
+      "hasPolicy": "no",
+      "rows": null
+    },
+    "visitTypes": [],
+    "paidDiagnosticExplanation": null,
+    "paidDiagnosticFeeId": null,
+    "generalPricingAuthority": null,
+    "servicePricingRules": [],
+    "forbiddenStatements": [],
+    "forbiddenStatementOther": null,
+    "promotions": {
+      "hasPromotions": null,
+      "offers": null,
+      "stacking": null,
+      "stackingRule": null,
+      "modificationAuthority": null,
+      "modificationRule": null
+    },
+    "paymentMethods": [
+      "credit_card"
+    ],
+    "paymentMethodOther": null,
+    "paymentDue": {
+      "policies": [
+        "at_time_of_service"
+      ],
+      "depositWorkDetail": null,
+      "depositRule": null,
+      "progressPaymentProjectsDetail": null,
+      "progressPaymentRule": null,
+      "invoiceCustomersDetail": null,
+      "invoiceTerms": null,
+      "otherRule": null
+    },
+    "paymentAssistance": "secure_link",
+    "paymentCollectionScope": [
+      "booking_or_service_fees",
+      "deposits",
+      "completed_invoices",
+      "outstanding_balances"
+    ],
+    "paymentCollectionOther": null,
+    "financialRemedies": [
+      "none"
+    ],
+    "financialRemedyRules": [],
+    "financing": {
+      "offersFinancing": null,
+      "providerTerms": null,
+      "permissions": [],
+      "permissionOtherDetail": null,
+      "eligibilityStatement": null
+    },
+    "remedies": [],
+    "feeWaiverPrecedence": {
+      "nonWaivableFeeIds": [],
+      "feeWaiverRemedyAuthority": null,
+      "feeWaiverRemedyRule": null
+    },
+    "financialApproverContactId": null,
+    "contacts": [
+      {
+        "id": "contact-ro34iyjvmuqzreea",
+        "nameOrRole": "Jamie Rivera, Dispatch Manager",
+        "phone": "+14155552671",
+        "availability": {
+          "monday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "tuesday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "wednesday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "thursday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "friday": {
+            "closed": false,
+            "start": "08:00",
+            "end": "17:00"
+          },
+          "saturday": {
+            "closed": true,
+            "start": null,
+            "end": null
+          },
+          "sunday": {
+            "closed": true,
+            "start": null,
+            "end": null
+          }
+        },
+        "callCategories": [
+          "emergencies"
+        ],
+        "otherCategory": null
+      }
+    ]
+  },
+  "customer_care": {
+    "previousWorkInitialAction": "schedule_return_visit",
+    "returnVisitEligibilityRule": "Within 30 days of original work when the issue matches the prior service.",
+    "previousWorkCustomRule": null,
+    "repeatCallbackAction": "human_review_after_first",
+    "repeatCallbackUsesReturnVisitRule": false,
+    "escalationTriggers": [
+      "asks_manager",
+      "repair_not_solved",
+      "disputes_charge",
+      "refund_credit_request",
+      "property_damage",
+      "legal_threat",
+      "chargeback_threat",
+      "repeated_dissatisfaction"
+    ],
+    "escalationTriggerOther": null,
+    "forbiddenUnhappyPromises": [
+      "no_admit_fault",
+      "no_refund_unauthorized",
+      "no_free_work_unauthorized",
+      "no_compensation_unauthorized",
+      "no_specific_outcome"
+    ],
+    "forbiddenUnhappyPromiseOther": null,
+    "nonServiceCallPolicies": [
+      {
+        "callTypeId": "vendor_supplier",
+        "callTypeLabel": "Vendor or supplier",
+        "disposition": "take_message",
+        "contactId": null
+      },
+      {
+        "callTypeId": "sales_solicitation",
+        "callTypeLabel": "Sales solicitation",
+        "disposition": "take_message",
+        "contactId": null
+      },
+      {
+        "callTypeId": "job_applicant",
+        "callTypeLabel": "Job applicant",
+        "disposition": "take_message",
+        "contactId": null
+      },
+      {
+        "callTypeId": "current_employee",
+        "callTypeLabel": "Current employee",
+        "disposition": "take_message",
+        "contactId": null
+      },
+      {
+        "callTypeId": "media_inquiry",
+        "callTypeLabel": "Media inquiry",
+        "disposition": "send_specific",
+        "contactId": "contact-ro34iyjvmuqzreea"
+      },
+      {
+        "callTypeId": "attorney_legal",
+        "callTypeLabel": "Attorney / legal inquiry",
+        "disposition": "take_message",
+        "contactId": null
+      },
+      {
+        "callTypeId": "government_regulator",
+        "callTypeLabel": "Government / regulator",
+        "disposition": "take_message",
+        "contactId": null
+      },
+      {
+        "callTypeId": "wrong_number_spam",
+        "callTypeLabel": "Wrong number / spam",
+        "disposition": "take_message",
+        "contactId": null
+      }
+    ],
+    "customerHistoryPolicy": "use_available_history",
+    "customerHistoryCustomRule": null,
+    "restrictedInformation": [
+      "payment_information",
+      "another_customer",
+      "sensitive_account"
+    ],
+    "restrictedInformationOther": null,
+    "additionalServicePolicy": "only_when_asked",
+    "additionalServiceCustomRule": null,
+    "unusualCallNotes": null
+  },
+  "voice_profile": {
+    "primary_language": null,
+    "supported_languages": [
+      "english",
+      "spanish"
+    ],
+    "voice_id": "voice_a",
+    "voice_label": "Voice A — Warm, calm, professional",
+    "communication_style_preset": "warm_professional",
+    "display_name": "Alexander",
+    "ai_disclosure_style": "opening_ai_receptionist",
+    "ai_disclosure_custom": null,
+    "pronunciation_dictionary": [],
+    "language_switching_policy": "ask_preference",
+    "language_switching_custom_rule": null,
+    "perceived_voice_preference": null,
+    "accent_preference": null,
+    "accent_other_approved": null,
+    "formality_preference": null,
+    "approved_phrases_and_avoidances": null,
+    "additional_review_notes": null
+  },
+  "integration_profile": {
+    "crm_fsm": {
+      "software_id": "sw-2zbgxur6",
+      "provider_key": "servicetitan",
+      "display_name": "ServiceTitan",
+      "custom_name": null,
+      "desired_access": null
+    },
+    "scheduling_system": {
+      "software_id": "sw-2zbgxur6",
+      "provider_key": "servicetitan",
+      "display_name": "ServiceTitan",
+      "custom_name": null,
+      "desired_access": null
+    },
+    "dispatch_system": null,
+    "phone_system": {
+      "software_id": "sw-lgzad33x",
+      "provider_key": "ringcentral",
+      "display_name": "RingCentral",
+      "custom_name": null,
+      "desired_access": null
+    },
+    "additional_systems": [],
+    "authorized_capabilities": [],
+    "authorized_capability_other": null,
+    "connection_owner": {
+      "mode": "self_authorized",
+      "person": null
+    },
+    "connection_notice_acknowledged": true,
+    "failure_fallback": {
+      "mode": "collect_and_send",
+      "custom_rule": null
+    },
+    "final_operating_notes": null
+  },
+  "submission": {
+    "status": "draft",
+    "submitted_at": null,
+    "confirmations": {
+      "answersAccurate": true,
+      "capabilitiesDependOnIntegrations": true,
+      "actionsRequireSupportAuthorizationConfirmation": true
+    }
+  }
+}

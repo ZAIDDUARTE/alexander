@@ -1,8 +1,7 @@
-import { INTEGRATION_CAPABILITY_OPTIONS, providerLabel } from "../section8Catalog";
+import { providerLabel } from "../section8Catalog";
 import {
   activeSoftwareIds,
   resolveCrmSoftware,
-  resolveDispatchSoftware,
   resolvePhoneSoftware,
   resolveSchedulingSoftware,
 } from "../softwareRegistry";
@@ -47,15 +46,6 @@ function toRef(record: SoftwareRecord | null): NormalizedSoftwareRef | null {
   };
 }
 
-function normalizeCapabilities(data: Section8Data): { caps: string[]; other: string | null } {
-  const caps = data.authorizedCapabilities.filter((c) => c !== "other");
-  const other =
-    data.authorizedCapabilities.includes("other") && data.authorizedCapabilityOther.trim()
-      ? data.authorizedCapabilityOther.trim()
-      : null;
-  return { caps, other };
-}
-
 export function normalizeSection8(
   data: Section8Data,
   systems: SoftwareRecord[],
@@ -71,8 +61,6 @@ export function normalizeSection8(
     const record = activeSystems.find((s) => s.id === card.softwareId.trim());
     if (record) additional.push(toRef(record)!);
   }
-
-  const { caps, other } = normalizeCapabilities(data);
 
   let ownerPerson: { name: string; email: string; phone: string } | null = null;
   if (data.connectionOwnerMode === "someone_else") {
@@ -91,13 +79,11 @@ export function normalizeSection8(
   return {
     crm_fsm: toRef(resolveCrmSoftware(data, systems)),
     scheduling_system: toRef(resolveSchedulingSoftware(data, systems)),
-    dispatch_system: toRef(resolveDispatchSoftware(data, systems)),
+    dispatch_system: null,
     phone_system: toRef(resolvePhoneSoftware(data, systems)),
     additional_systems: additional,
-    authorized_capabilities: caps.map(
-      (id) => INTEGRATION_CAPABILITY_OPTIONS.find((o) => o.id === id)?.label ?? id,
-    ),
-    authorized_capability_other: other,
+    authorized_capabilities: [],
+    authorized_capability_other: null,
     connection_owner: {
       mode:
         data.connectionOwnerMode === ""

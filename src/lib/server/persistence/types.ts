@@ -49,7 +49,7 @@ export type SessionRecord = {
 
 export type SubmissionRecord = {
   sessionId: string;
-  contentRevision: string;
+  contentRevision: string | null;
   questionnaireSchemaVersion: number;
   rawDraft: DraftEnvelope;
   normalized: unknown;
@@ -59,7 +59,7 @@ export type SubmissionRecord = {
   s3ManifestKey: string;
   rawSha256: string;
   normalizedSha256: string;
-  submittedAt: string;
+  submittedAt: string | null;
   createdAt: string;
 };
 

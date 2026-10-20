@@ -133,21 +133,21 @@ describe("validateSection4 — E: Q42 Other", () => {
   });
 });
 
-describe("validateSection4 — F: Q43 Not allowed exclusivity", () => {
-  it("rejects Not allowed combined with positive permissions", () => {
+describe("validateSection4 — F: Q43 one authority level", () => {
+  it("rejects a blank caller authority", () => {
     const owner = validApproverContact();
     const data = fullyValidSection4([owner], []);
-    data.callerPermissions["homeowner"] = ["schedule_service", "not_allowed"];
-    const errors = validateSection4(data, [owner], []);
-    assert.ok(errors["callerPermissions.homeowner"]);
-  });
-
-  it("requires at least one permission per caller type", () => {
-    const owner = validApproverContact();
-    const data = fullyValidSection4([owner], []);
-    data.callerPermissions["tenant"] = [];
+    data.callerPermissions.tenant = "";
     const errors = validateSection4(data, [owner], []);
     assert.ok(errors.callerPermissions || errors["callerPermissions.tenant"]);
+  });
+
+  it("accepts one current authority that differs from the default", () => {
+    const owner = validApproverContact();
+    const data = fullyValidSection4([owner], []);
+    data.callerPermissions.tenant = "human_approval_required";
+    assert.equal(validateSection4(data, [owner], [])["callerPermissions.tenant"], undefined);
+    assert.equal(section4IsValid(data, [owner], []), true);
   });
 });
 
@@ -219,13 +219,37 @@ describe("validateSection4 — I: Q47 no maximum vs numeric", () => {
 });
 
 describe("validateSection4 — J: Q48 enabled window validation + reorder identity", () => {
+  it("accepts start < end on enabled windows", () => {
+    const owner = validApproverContact();
+    const data = fullyValidSection4([owner], []);
+    setNonOverlappingAppointmentWindows(data);
+    assert.equal(validateSection4(data, [owner], [])["appointmentWindows.morning.times"], undefined);
+    assert.equal(section4IsValid(data, [owner], []), true);
+  });
+
+  it("rejects start = end with a window-specific message", () => {
+    const owner = validApproverContact();
+    const data = fullyValidSection4([owner], []);
+    setNonOverlappingAppointmentWindows(data);
+    const morning = data.appointmentWindows.find((w) => w.id === "morning")!;
+    morning.start = "08:00";
+    morning.end = "08:00";
+    const message = validateSection4(data, [owner], [])["appointmentWindows.morning.times"];
+    assert.match(message ?? "", /Morning/i);
+    assert.match(message ?? "", /after start time/i);
+    assert.equal(section4IsValid(data, [owner], []), false);
+  });
+
   it("requires start/end on enabled windows and start < end", () => {
     const owner = validApproverContact();
     const data = fullyValidSection4([owner], []);
     const morning = data.appointmentWindows.find((w) => w.id === "morning")!;
     morning.start = "12:00";
     morning.end = "08:00";
-    assert.ok(validateSection4(data, [owner], [])["appointmentWindows.morning.times"]);
+    const message = validateSection4(data, [owner], [])["appointmentWindows.morning.times"];
+    assert.ok(message);
+    assert.match(message ?? "", /Morning/i);
+    assert.match(message ?? "", /after start time/i);
   });
 
   it("detects overlapping enabled windows", () => {
@@ -337,10 +361,8 @@ describe("validateSection4 — P: Q54 late-cancellation fee linkage", () => {
     const data = fullyValidSection4([owner], [fee]);
     withLateCancellationFee(data, fee, "yes");
     fee.amountFixed = "";
-    assert.ok(validateSection4(data, [owner], [fee])["lateCancellationFee.amountFixed"]);
-
-    fee.amountFixed = "75";
     fee.noticeRequired = "";
+    assert.equal(validateSection4(data, [owner], [fee])["lateCancellationFee.amountFixed"], undefined);
     assert.ok(validateSection4(data, [owner], [fee])["lateCancellationFee.noticeRequired"]);
 
     fee.noticeRequired = "24 hours";
@@ -363,9 +385,7 @@ describe("validateSection4 — Q: Q55 no-show fee linkage", () => {
     const data = fullyValidSection4([owner], [fee]);
     withNoShowFee(data, fee, "yes");
     fee.amountFixed = "";
-    assert.ok(validateSection4(data, [owner], [fee])["noShowFee.amountFixed"]);
-
-    fee.amountFixed = "50";
+    assert.equal(validateSection4(data, [owner], [fee])["noShowFee.amountFixed"], undefined);
     assert.equal(section4IsValid(data, [owner], [fee]), true);
   });
 });

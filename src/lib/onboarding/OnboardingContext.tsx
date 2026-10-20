@@ -12,8 +12,12 @@ import {
 } from "react";
 import { loadLocalDraft, saveLocalDraft, type SaveStatus } from "./persistence";
 import { interpretServerSave } from "./server-save-status";
-import { fetchServerDraft, putServerDraft } from "./server-api";
-import { createDraftAutosaveController, type DraftAutosaveController } from "./autosave";
+import { fetchServerDraft, putServerDraft, setInvitedDraftVersion } from "./server-api";
+import {
+  createDraftAutosaveController,
+  draftAutosaveFingerprint,
+  type DraftAutosaveController,
+} from "./autosave";
 import { reconcileDrafts, hasDraftContent, addCompletedSection } from "./draft-utils";
 import { applyPostSubmissionEditPolicy } from "./submissionIntegrity";
 import { isSection4LinkedFeeProtected } from "./section4FeeLinks";
@@ -154,7 +158,21 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         draftRef.current = next;
         setDraft(next);
       },
+      onInvitedConflictVersion: (version) => {
+        setInvitedDraftVersion(version);
+      },
+      onAuthoritativeDraft: (next, version) => {
+        setInvitedDraftVersion(version);
+        hydratedSnapshotRef.current = draftAutosaveFingerprint(next);
+        draftRef.current = next;
+        setDraft(next);
+      },
       onResult: (result) => {
+        if (result.invited && result.reason === "stale_draft") {
+          // Authoritative reload after a failed rebase — not a successful save.
+          setSaveStatus("error");
+          return;
+        }
         const status = interpretServerSave(result);
         setSaveStatus(status);
         if (status === "saved" || status === "saved-local") {
@@ -214,8 +232,19 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
       try {
         const result = await fetchServerDraft();
+        if (cancelled) return;
         server = result.draft;
         serverCanSync = result.durableAvailable || result.redisAvailable || result.persistence === "local";
+        if (result.invited) {
+          const winner = result.draft ?? createDefaultDraft();
+          setInvitedDraftVersion(result.draftVersion);
+          setDraft(winner);
+          draftRef.current = winner;
+          hydratedSnapshotRef.current = draftAutosaveFingerprint(winner);
+          setIsDraftHydrated(true);
+          return;
+        }
+        setInvitedDraftVersion(null);
       } catch {
         server = null;
       }
@@ -229,7 +258,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
       setDraft(winner);
       draftRef.current = winner;
-      hydratedSnapshotRef.current = JSON.stringify(winner);
+      hydratedSnapshotRef.current = draftAutosaveFingerprint(winner);
 
       if (needsLocalSync) {
         saveLocalDraft(winner);
@@ -255,7 +284,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isDraftHydrated) return;
 
-    const serialized = JSON.stringify(draft);
+    const serialized = draftAutosaveFingerprint(draft);
     if (hydratedSnapshotRef.current === null) {
       hydratedSnapshotRef.current = serialized;
       return;
@@ -673,7 +702,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         debounceRef.current = null;
       }
       draftRef.current = next;
-      hydratedSnapshotRef.current = JSON.stringify(next);
+      hydratedSnapshotRef.current = draftAutosaveFingerprint(next);
       setDraft(next);
       setSaveStatus("saving");
       saveLocalDraft(next);

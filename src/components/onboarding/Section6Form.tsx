@@ -17,6 +17,7 @@ import {
   CUSTOMER_HISTORY_POLICY_OPTIONS,
   ESCALATION_TRIGGER_OPTIONS,
   FORBIDDEN_UNHAPPY_PROMISE_OPTIONS,
+  NON_SERVICE_CALL_HELP,
   PREVIOUS_WORK_INITIAL_ACTION_OPTIONS,
   REPEAT_CALLBACK_ACTION_OPTIONS,
   RESTRICTED_INFORMATION_OPTIONS,
@@ -28,6 +29,7 @@ import type {
   RestrictedInformationId,
 } from "@/lib/onboarding/types";
 import { validateSection6, type FieldErrors } from "@/lib/onboarding/validation/section6";
+import { scrollToFirstAlert } from "@/lib/onboarding/scrollToFirstAlert";
 
 // Re-export catalog options for radio/checkbox (value/label shape)
 const PREVIOUS_WORK_OPTIONS = PREVIOUS_WORK_INITIAL_ACTION_OPTIONS.map((o) => ({
@@ -73,8 +75,7 @@ export function Section6Form({ mode = "form" }: { mode?: "form" | "review" }) {
     setErrors(nextErrors);
     setSubmitted(true);
     if (Object.keys(nextErrors).length > 0) {
-      const first = document.querySelector("[role='alert']");
-      first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      scrollToFirstAlert();
       return;
     }
     const finalDraft = {
@@ -231,7 +232,11 @@ export function Section6Form({ mode = "form" }: { mode?: "form" | "review" }) {
         )}
       </QuestionCard>
 
-      <QuestionCard title="How should Alexander handle these types of calls?" required>
+      <QuestionCard
+        title="How should Alexander handle other types of calls?"
+        required
+        helpText={NON_SERVICE_CALL_HELP}
+      >
         <NonServiceCallMatrix
           policies={data.nonServiceCallPolicies}
           contacts={contacts}

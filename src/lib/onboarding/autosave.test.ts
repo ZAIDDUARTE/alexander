@@ -4,6 +4,7 @@ import {
   applyAcceptedServerTimestamp,
   bumpUpdatedAtForConflictRetry,
   createDraftAutosaveController,
+  draftAutosaveFingerprint,
   type DraftSaveResult,
 } from "./autosave";
 import { createDefaultDraft } from "./types";
@@ -167,5 +168,15 @@ describe("draft autosave concurrency", () => {
     const result = await controller.flush({ keepalive: true });
     assert.equal(result.ok, true);
     assert.equal(names.at(-1), "Final");
+  });
+});
+
+describe("draft autosave fingerprint", () => {
+  it("ignores a timestamp-only change and notices an answer change", () => {
+    const saved = draftAt("2026-09-30T12:00:00.000Z", "Acme");
+    const stamped = { ...saved, updatedAt: "2026-09-30T12:00:09.000Z" };
+    assert.equal(draftAutosaveFingerprint(saved), draftAutosaveFingerprint(stamped));
+    const edited = draftAt("2026-09-30T12:00:09.000Z", "Edited");
+    assert.notEqual(draftAutosaveFingerprint(saved), draftAutosaveFingerprint(edited));
   });
 });

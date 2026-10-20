@@ -43,6 +43,6 @@ describe("Section 4 linked fee integrity", () => {
     s4.noShowFeeMode = "yes";
     s4.noShowFeeId = fee.id;
     const errors = validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [fee], s4);
-    assert.ok(errors.noSeparateFees);
+    assert.equal(errors.noSeparateFees, undefined);
   });
 });

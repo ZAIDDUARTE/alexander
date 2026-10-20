@@ -5,7 +5,7 @@ import {
   labelForCustomerHistoryPolicy,
   labelForEscalationTrigger,
   labelForForbiddenPromise,
-  labelForNonServiceCallType,
+  formatNonServiceRoutingSummary,
   labelForNonServiceDisposition,
   labelForPreviousWorkAction,
   labelForRepeatCallbackAction,
@@ -89,18 +89,13 @@ export function Section6ReviewSummary({ draft }: { draft: OnboardingDraft }) {
               disposition === "send_specific" && policy?.contactId
                 ? draft.contacts.find((c) => c.id === policy.contactId)
                 : null;
+            const recipientName =
+              contact && contactHasIdentity(contact) ? contact.nameOrRole : "";
             return (
-              <li key={row.id}>
-                <span className="font-medium text-[var(--color-alexander-navy)]">
-                  {labelForNonServiceCallType(row.id)}:{" "}
-                </span>
-                {disposition ? labelForNonServiceDisposition(disposition) : "—"}
-                {contact && contactHasIdentity(contact) && (
-                  <span className="block text-xs">
-                    Recipient: {contact.nameOrRole}
-                    {contact.phone.trim() ? ` — ${contact.phone}` : ""}
-                  </span>
-                )}
+              <li key={row.id} className="whitespace-pre-wrap">
+                {disposition
+                  ? formatNonServiceRoutingSummary(row.label, labelForNonServiceDisposition(disposition), recipientName)
+                  : row.label}
               </li>
             );
           })}

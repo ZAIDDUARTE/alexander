@@ -18,7 +18,7 @@ function validContact(overrides: Partial<Contact> = {}): Contact {
 }
 
 describe("getSection3Progress — fresh section", () => {
-  it("counts Q26 complete when all rows use recommended_default (MD-approved default)", () => {
+  it("counts Q26 complete when every row uses its scenario default", () => {
     const primary = createEmptyContact();
     const data = createDefaultSection3(primary.id);
     const units = getSection3ProgressUnits(data, [primary]);
@@ -137,9 +137,9 @@ describe("getSection3Progress — reaches 1 when fully answered", () => {
     for (const s of EMERGENCY_SCENARIOS) data.emergencyClassifications[s.id] = "emergency";
     data.dispatchApproval = ["none"];
     data.afterHoursDisposition = {
-      emergency: "attempt_contact",
-      urgent_contained: "arrange_callback",
-      routine: "info_only",
+      emergency: "contact_on_call",
+      urgent_contained: "schedule_service",
+      routine: "take_message",
     };
     data.emergencyServiceMode = "24_7";
     data.hasBackupContact = "no";

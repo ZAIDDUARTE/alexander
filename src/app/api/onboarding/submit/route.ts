@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { submitDraftResponse } from "@/lib/server/draft-service";
 import { getOrCreateOnboardingSessionId } from "@/lib/server/session";
+import { submitPersistenceV2IfEnabled } from "@/lib/server/persistence/v2-request";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
+  const pilot = await submitPersistenceV2IfEnabled(request);
+  if (pilot) return pilot;
   const sessionId = await getOrCreateOnboardingSessionId();
   let body: unknown;
   try {

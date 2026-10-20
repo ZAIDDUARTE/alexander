@@ -37,7 +37,6 @@ export function fullyValidSection8(): { section8: Section8Data; systems: Softwar
 
   ({ section8, systems } = seedCrmSoftware(section8, systems, "servicetitan"));
   section8.schedulingProvider = "same_as_crm";
-  section8.dispatchProvider = "same_as_scheduling";
   section8.phoneProvider = "ringcentral";
   const phoneUpsert = upsertRoleSoftware(
     systems,
@@ -51,7 +50,7 @@ export function fullyValidSection8(): { section8: Section8Data; systems: Softwar
   section8.additionalSoftwareCategories = ["none"];
   section8.connectionOwnerMode = "self_authorized";
   section8.connectionNoticeAcknowledged = true;
-  section8.failureFallback = "callback";
+  section8.failureFallback = "collect_and_send";
 
   return { section8, systems };
 }

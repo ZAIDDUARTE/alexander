@@ -1,9 +1,5 @@
-import {
-  FINANCIAL_REMEDY_ROWS,
-  FORBIDDEN_PRICING_STATEMENT_OPTIONS,
-  getVisitTypeMatrixServices,
-} from "../section5Catalog";
-import { getPricingDiscussEligibleServices } from "../pricingServices";
+import { FINANCIAL_REMEDY_ROWS } from "../section5Catalog";
+import { getOfferedPricingServices, pricingServiceLabel } from "../pricingServices";
 import { activeMeaningfulFees } from "../validation/feeRecord";
 import { normalizeContact, type NormalizedContact } from "./section3";
 import type {
@@ -24,7 +20,7 @@ import type {
   VisitTypeId,
   YesNo,
 } from "../types";
-import { contactHasIdentity, createDefaultSection2 } from "../types";
+import { createDefaultSection2 } from "../types";
 
 export type NormalizedFeeRecord = {
   id: string;
@@ -85,9 +81,35 @@ export type NormalizedSection5 = {
     policy: MaterialMarkupPolicy | null;
     customerExplanation: string | null;
   };
+  mayQuoteServicePrices: Section5Data["mayQuoteServicePrices"];
+  servicePrices: {
+    serviceId: string;
+    serviceName: string;
+    mode: string;
+    exactAmount: string | null;
+    startingAmount: string | null;
+    rangeMin: string | null;
+    rangeMax: string | null;
+    hourlyAmount: string | null;
+    conditions: string | null;
+  }[];
   unknownPrice: {
     behavior: Section5Data["unknownPriceBehavior"] | null;
     customRule: string | null;
+  };
+  additionalFees: {
+    selection: Section5Data["additionalFeeSelection"];
+    details: Partial<
+      Record<
+        string,
+        {
+          amount: string;
+          applicability: string | null;
+          credit: string | null;
+          creditWhen: string | null;
+        }
+      >
+    >;
   };
   noSeparateFees: boolean;
   fees: NormalizedFeeRecord[];
@@ -114,14 +136,19 @@ export type NormalizedSection5 = {
   paymentMethodOther: string | null;
   paymentDue: {
     policies: Section5Data["paymentDuePolicies"];
-    depositWorkDetail: string | null;
-    depositRule: string | null;
-    progressPaymentProjectsDetail: string | null;
-    progressPaymentRule: string | null;
-    invoiceCustomersDetail: string | null;
-    invoiceTerms: string | null;
-    otherRule: string | null;
+    depositWorkDetail: null;
+    depositRule: null;
+    progressPaymentProjectsDetail: null;
+    progressPaymentRule: null;
+    invoiceCustomersDetail: null;
+    invoiceTerms: null;
+    otherRule: null;
   };
+  paymentAssistance: Section5Data["paymentAssistance"];
+  paymentCollectionScope: Section5Data["paymentCollectionScope"];
+  paymentCollectionOther: string | null;
+  financialRemedies: Section5Data["financialRemedies"];
+  financialRemedyRules: { id: RemedyId; label: string; rule: string }[];
   financing: {
     offersFinancing: YesNo | null;
     providerTerms: string | null;
@@ -134,10 +161,6 @@ export type NormalizedSection5 = {
   financialApproverContactId: string | null;
   contacts: NormalizedContact[];
 };
-
-const FORBIDDEN_LABELS = new Map(
-  FORBIDDEN_PRICING_STATEMENT_OPTIONS.map((o) => [o.id, o.label]),
-);
 
 function normalizeFees(fees: FeeRecord[], noSeparateFees: boolean): NormalizedFeeRecord[] {
   if (noSeparateFees) return [];
@@ -164,95 +187,22 @@ function normalizeFees(fees: FeeRecord[], noSeparateFees: boolean): NormalizedFe
   }));
 }
 
-function normalizeServicePricingRules(
-  data: Section5Data,
-  section2: Section2Data,
-  fees: FeeRecord[],
-): NormalizedServicePricingRule[] {
-  const eligible = getPricingDiscussEligibleServices(section2);
-  const activeFeeIds = new Set(activeMeaningfulFees(fees).map((f) => f.id));
-  const out: NormalizedServicePricingRule[] = [];
-
-  for (const service of eligible) {
-    const rule = data.servicePricingRules[service.id];
-    if (!rule?.instruction) continue;
-
-    const instruction = rule.instruction;
-    const base: NormalizedServicePricingRule = {
-      serviceId: service.id,
-      serviceName: service.label,
-      instruction,
-      approvedPriceMode: null,
-      approvedPriceExact: null,
-      approvedPriceMin: null,
-      approvedPriceMax: null,
-      pricingConditions: null,
-      linkedFeeIds: [],
-      askTeamDetail: null,
-    };
-
-    if (instruction === "quote_approved") {
-      base.approvedPriceMode = rule.approvedPriceMode || null;
-      if (rule.approvedPriceMode === "exact") {
-        base.approvedPriceExact = rule.approvedPriceExact.trim() || null;
-      } else if (rule.approvedPriceMode === "range") {
-        base.approvedPriceMin = rule.approvedPriceMin.trim() || null;
-        base.approvedPriceMax = rule.approvedPriceMax.trim() || null;
-      }
-      base.pricingConditions = rule.pricingConditions.trim() || null;
-    } else if (instruction === "explain_fee_only") {
-      base.linkedFeeIds = rule.linkedFeeIds.filter((id) => activeFeeIds.has(id));
-    } else if (instruction === "ask_team") {
-      base.askTeamDetail = rule.askTeamDetail.trim() || null;
-    }
-
-    out.push(base);
-  }
-
-  return out;
-}
-
-function normalizeVisitTypes(data: Section5Data): NormalizedVisitTypeRow[] {
-  const out: NormalizedVisitTypeRow[] = [];
-  for (const service of getVisitTypeMatrixServices()) {
-    const visitType = data.visitTypeByServiceId[service.id];
-    if (!visitType) continue;
-    out.push({
-      serviceId: service.id,
-      serviceName: service.label,
-      visitType,
-    });
-  }
-  return out;
-}
-
 function normalizeAreaRows(data: Section5Data): AreaPricingRow[] | null {
   if (data.hasAreaTravelOrMinimum !== "yes") return null;
   const rows: AreaPricingRow[] = [];
   for (const row of data.areaPricingRows) {
     const area = row.area.trim();
-    const travel = row.travelFee.trim();
-    const minimum = row.minimumCharge.trim();
-    if (!area && !travel && !minimum) continue;
+    const feeOrMinimum = (row.feeOrMinimum ?? "").trim();
+    if (!area && !feeOrMinimum) continue;
     rows.push({
       id: row.id,
       area,
-      travelFee: travel,
-      minimumCharge: minimum,
+      travelFee: "",
+      minimumCharge: "",
+      feeOrMinimum,
     });
   }
   return rows;
-}
-
-function remedyRequiresHumanApproval(data: Section5Data): boolean {
-  for (const row of FINANCIAL_REMEDY_ROWS) {
-    if (data.remedyAuthority[row.id as RemedyId] === "human_approval") return true;
-  }
-  return false;
-}
-
-function hasPaidDiagnosticVisit(data: Section5Data): boolean {
-  return Object.values(data.visitTypeByServiceId).some((v) => v === "paid_diagnostic");
 }
 
 /**
@@ -273,47 +223,40 @@ export function normalizeSection5(
     data.materialMarkupPolicy === "yes" || data.materialMarkupPolicy === "sometimes";
 
   const due = data.paymentDuePolicies;
-  const showDeposit = due.includes("deposit_required");
-  const showProgress = due.includes("progress_payments");
-  const showInvoice = due.includes("invoice_after_service");
-  const showDueOther = due.includes("other");
+  const selectedRemedies = data.financialRemedies.includes("none")
+    ? []
+    : data.financialRemedies.filter((id): id is RemedyId => id !== "none");
+  const financialRemedyRules = selectedRemedies.flatMap((id) => {
+    const row = FINANCIAL_REMEDY_ROWS.find((item) => item.id === id);
+    const rule = data.remedyRules[id]?.trim() ?? "";
+    if (!row || !rule) return [];
+    return [{ id, label: row.label, rule }];
+  });
 
-  const showFinancing = data.offersFinancing === "yes";
-  const showPromotions = data.hasPromotions === "yes";
-
-  let financialApproverContactId: string | null = null;
-  if (remedyRequiresHumanApproval(data) && data.financialApproverContactId.trim()) {
-    const raw = contacts.find((c) => c.id === data.financialApproverContactId);
-    if (raw && contactHasIdentity(raw)) financialApproverContactId = raw.id;
-  }
-
-  const remedies: NormalizedRemedyRow[] = [];
-  for (const row of FINANCIAL_REMEDY_ROWS) {
-    const id = row.id as RemedyId;
-    const authority = data.remedyAuthority[id];
-    if (!authority) continue;
-    remedies.push({
-      id,
-      label: row.label,
-      authority,
-      rule: authority === "within_rules" ? data.remedyRules[id].trim() || null : null,
-    });
-  }
-
-  const nonWaivableFeeIds = activeMeaningfulFees(fees)
-    .filter((f) => f.waiverPolicy === "no")
-    .map((f) => f.id);
-  const feeWaiverAuthority = data.remedyAuthority.fee_waiver || null;
+  const nonWaivableFeeIds: string[] = [];
+  const feeWaiverSelected = selectedRemedies.includes("fee_waiver");
   const feeWaiverPrecedence: FeeWaiverPrecedence = {
     nonWaivableFeeIds,
-    feeWaiverRemedyAuthority: feeWaiverAuthority,
-    feeWaiverRemedyRule:
-      feeWaiverAuthority === "within_rules"
-        ? data.remedyRules.fee_waiver.trim() || null
-        : null,
+    feeWaiverRemedyAuthority: null,
+    feeWaiverRemedyRule: feeWaiverSelected ? data.remedyRules.fee_waiver.trim() || null : null,
   };
 
-  const forbidden = data.forbiddenStatements.filter((id) => FORBIDDEN_LABELS.has(id));
+  const offeredIds = new Set(getOfferedPricingServices(section2).map((service) => service.id));
+  const quoting = data.mayQuoteServicePrices === "allowed";
+  const additionalDetails: NormalizedSection5["additionalFees"]["details"] = {};
+  if (!data.additionalFeeSelection.includes("none")) {
+    for (const category of data.additionalFeeSelection) {
+      if (category === "none") continue;
+      const detail = data.additionalFeeDetails[category];
+      if (!detail) continue;
+      additionalDetails[category] = {
+        amount: detail.amount.trim(),
+        applicability: detail.applicability.trim() || null,
+        credit: detail.credit || null,
+        creditWhen: detail.credit === "sometimes" ? detail.creditWhen.trim() || null : null,
+      };
+    }
+  }
 
   return {
     pricingModels: models,
@@ -324,46 +267,55 @@ export function normalizeSection5(
         ? data.materialMarkupCustomerExplanation.trim() || null
         : null,
     },
+    mayQuoteServicePrices: data.mayQuoteServicePrices,
+    servicePrices: quoting
+      ? data.servicePrices
+          .filter((record) => offeredIds.has(record.serviceId))
+          .map((record) => ({
+            serviceId: record.serviceId,
+            serviceName: pricingServiceLabel(record.serviceId),
+            mode: record.mode,
+            exactAmount: record.mode === "exact" ? record.exactAmount.trim() || null : null,
+            startingAmount: record.mode === "starting_at" ? record.startingAmount.trim() || null : null,
+            rangeMin: record.mode === "range" ? record.rangeMin.trim() || null : null,
+            rangeMax: record.mode === "range" ? record.rangeMax.trim() || null : null,
+            hourlyAmount: record.mode === "hourly" ? record.hourlyAmount.trim() || null : null,
+            conditions: record.conditions.trim() || null,
+          }))
+      : [],
     unknownPrice: {
       behavior: data.unknownPriceBehavior || null,
-      customRule:
-        data.unknownPriceBehavior === "custom" ? data.unknownPriceCustomRule.trim() || null : null,
+      customRule: null,
     },
-    noSeparateFees: data.noSeparateFees,
-    fees: normalizeFees(fees, data.noSeparateFees),
+    additionalFees: {
+      selection: data.additionalFeeSelection.includes("none")
+        ? ["none"]
+        : data.additionalFeeSelection.filter((id) => id !== "none"),
+      details: additionalDetails,
+    },
+    noSeparateFees: false,
+    fees: normalizeFees(
+      fees.filter((fee) => fee.feeKey === "late_cancellation" || fee.feeKey === "no_show"),
+      false,
+    ),
     areaTravelOrMinimum: {
       hasPolicy: data.hasAreaTravelOrMinimum || null,
       rows: normalizeAreaRows(data),
     },
-    visitTypes: normalizeVisitTypes(data),
-    paidDiagnosticExplanation:
-      hasPaidDiagnosticVisit(data) ? data.paidDiagnosticExplanation.trim() || null : null,
-    paidDiagnosticFeeId: (() => {
-      if (!hasPaidDiagnosticVisit(data) || data.noSeparateFees) return null;
-      const feeId = data.paidDiagnosticFeeId.trim();
-      if (!feeId) return null;
-      const linked = activeMeaningfulFees(fees).some((fee) => fee.id === feeId);
-      return linked ? feeId : null;
-    })(),
+    visitTypes: [],
+    paidDiagnosticExplanation: null,
+    paidDiagnosticFeeId: null,
     generalPricingAuthority: null,
-    servicePricingRules: normalizeServicePricingRules(data, section2, fees),
-    forbiddenStatements: forbidden,
-    forbiddenStatementOther: forbidden.includes("other")
-      ? data.forbiddenStatementOther.trim() || null
-      : null,
+    servicePricingRules: [],
+    forbiddenStatements: [],
+    forbiddenStatementOther: null,
     promotions: {
-      hasPromotions: data.hasPromotions || null,
-      offers: showPromotions ? data.promotions : null,
-      stacking: showPromotions ? data.promotionStacking || null : null,
-      stackingRule:
-        showPromotions && data.promotionStacking === "conditional"
-          ? data.promotionStackingRule.trim() || null
-          : null,
-      modificationAuthority: showPromotions ? data.promotionModificationAuthority || null : null,
-      modificationRule:
-        showPromotions && data.promotionModificationAuthority === "within_rules"
-          ? data.promotionModificationRule.trim() || null
-          : null,
+      hasPromotions: null,
+      offers: null,
+      stacking: null,
+      stackingRule: null,
+      modificationAuthority: null,
+      modificationRule: null,
     },
     paymentMethods: [...data.paymentMethods],
     paymentMethodOther: data.paymentMethods.includes("other")
@@ -371,26 +323,31 @@ export function normalizeSection5(
       : null,
     paymentDue: {
       policies: [...due],
-      depositWorkDetail: showDeposit ? data.depositWorkDetail.trim() || null : null,
-      depositRule: showDeposit ? data.depositRule.trim() || null : null,
-      progressPaymentProjectsDetail: showProgress
-        ? data.progressPaymentProjectsDetail.trim() || null
-        : null,
-      progressPaymentRule: showProgress ? data.progressPaymentRule.trim() || null : null,
-      invoiceCustomersDetail: showInvoice ? data.invoiceCustomersDetail.trim() || null : null,
-      invoiceTerms: showInvoice ? data.invoiceTerms.trim() || null : null,
-      otherRule: showDueOther ? data.paymentDueOtherRule.trim() || null : null,
+      depositWorkDetail: null,
+      depositRule: null,
+      progressPaymentProjectsDetail: null,
+      progressPaymentRule: null,
+      invoiceCustomersDetail: null,
+      invoiceTerms: null,
+      otherRule: null,
     },
+    paymentAssistance: data.paymentAssistance,
+    paymentCollectionScope: [...data.paymentCollectionScope],
+    paymentCollectionOther: data.paymentCollectionScope.includes("other")
+      ? data.paymentCollectionOther.trim() || null
+      : null,
+    financialRemedies: data.financialRemedies.includes("none") ? ["none"] : selectedRemedies,
+    financialRemedyRules,
     financing: {
-      offersFinancing: data.offersFinancing || null,
-      providerTerms: showFinancing ? data.financingProviderTerms.trim() || null : null,
+      offersFinancing: null,
+      providerTerms: null,
       permissions: [],
       permissionOtherDetail: null,
       eligibilityStatement: null,
     },
-    remedies,
+    remedies: [],
     feeWaiverPrecedence,
-    financialApproverContactId,
+    financialApproverContactId: null,
     contacts: meaningfulContacts,
   };
 }

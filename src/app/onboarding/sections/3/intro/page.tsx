@@ -21,7 +21,7 @@ export default function Section3IntroPage() {
       <SectionIntro
         sectionNumber={3}
         title="Emergencies"
-        description="Tell Alexander which situations require immediate attention and what should happen when your team needs to step in. This section establishes your emergency rules, after-hours response, approval requirements, escalation contacts, retry process, and fallback behavior. Alexander will use this information to recognize urgent situations, gather the right details, and communicate honestly about what has—and has not—been confirmed."
+        description="Tell Alexander which situations require immediate attention and what should happen when your team needs to step in."
         estimatedTime="10–15 minutes"
         ctaHref="/onboarding/sections/3/form"
         ctaLabel="Begin Emergency Setup →"

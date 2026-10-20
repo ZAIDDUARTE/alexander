@@ -94,9 +94,13 @@ export const DEFAULT_FORBIDDEN_UNHAPPY_PROMISE_IDS = FORBIDDEN_UNHAPPY_PROMISE_O
   5,
 ).map((o) => o.id);
 
+/**
+ * Stored id `send_specific` is the current “Transfer the call” action.
+ * It is not renamed: existing drafts already use this id for a named recipient.
+ */
 export const NON_SERVICE_DISPOSITION_OPTIONS = [
-  { id: "send_specific" as const, label: "Send to someone specific" },
-  { id: "take_message" as const, label: "Take a message / callback" },
+  { id: "send_specific" as const, label: "Transfer the call" },
+  { id: "take_message" as const, label: "Take a message" },
   { id: "politely_decline" as const, label: "Politely decline" },
   { id: "human_review" as const, label: "Human review" },
 ];
@@ -109,13 +113,22 @@ export const NON_SERVICE_CALL_TYPE_ROWS = [
   { id: "media_inquiry", label: "Media inquiry" },
   { id: "attorney_legal", label: "Attorney / legal inquiry" },
   { id: "government_regulator", label: "Government / regulator" },
-  {
-    id: "service_not_offered",
-    label: "Customer requesting a service you don’t offer",
-  },
-  { id: "outside_service_area", label: "Customer outside your service area" },
   { id: "wrong_number_spam", label: "Wrong number / spam" },
 ] as const;
+
+export const DEFAULT_NON_SERVICE_DISPOSITIONS = {
+  vendor_supplier: "take_message",
+  sales_solicitation: "politely_decline",
+  job_applicant: "take_message",
+  current_employee: "send_specific",
+  media_inquiry: "human_review",
+  attorney_legal: "human_review",
+  government_regulator: "human_review",
+  wrong_number_spam: "politely_decline",
+} as const;
+
+export const NON_SERVICE_CALL_HELP =
+  "We've preselected the recommended handling for common non-service calls. Review the choices below and change anything that doesn't match how your business operates.";
 
 export type NonServiceCallTypeId = (typeof NON_SERVICE_CALL_TYPE_ROWS)[number]["id"];
 
@@ -198,6 +211,17 @@ export function labelForNonServiceDisposition(id: string): string {
 
 export function labelForNonServiceCallType(id: string): string {
   return NON_SERVICE_CALL_TYPE_ROWS.find((r) => r.id === id)?.label ?? id;
+}
+
+export function formatNonServiceRoutingSummary(
+  callTypeLabel: string,
+  dispositionLabel: string,
+  recipientName?: string,
+): string {
+  if (recipientName?.trim()) {
+    return `${callTypeLabel}\n${dispositionLabel} — ${recipientName.trim()}`;
+  }
+  return `${callTypeLabel}\n${dispositionLabel}`;
 }
 
 export function labelForCustomerHistoryPolicy(id: string): string {

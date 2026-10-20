@@ -1,5 +1,4 @@
 import {
-  CALLER_TYPES,
   CAPACITY_POLICY_ROWS,
   EXCEPTION_TYPES,
   NO_AVAILABILITY_FALLBACK_OPTIONS,
@@ -86,13 +85,9 @@ export function fullyValidSection4(contacts: Contact[], fees: FeeRecord[] = []):
 
   data.approverUnavailablePolicy = "callback";
 
-  for (const row of CALLER_TYPES) {
-    data.callerPermissions[row.id] = ["schedule_service"];
-  }
-
   data.hasSpendingLimits = "no";
   data.emergencyAuthMode = "same_rules";
-  data.defaultBookingMode = "confirm_immediately";
+  data.defaultBookingMode = "book_appointment";
   data.bookingHorizonDays = "30";
   data.bookingHorizonNoMaximum = false;
 

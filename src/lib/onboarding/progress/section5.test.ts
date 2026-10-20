@@ -13,52 +13,25 @@ describe("getSection5Progress — fresh section", () => {
     const progress = getSection5Progress(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []);
     assert.ok(progress > 0);
     assert.ok(progress < 1);
-    // Q74 forbidden-statement defaults are preselected, so that unit starts complete.
-    assert.equal(getSection5ProgressUnits(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [])[8].complete, true);
+    const units = getSection5ProgressUnits(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []);
+    assert.equal(units[1].complete, true);
+    assert.equal(units[3].complete, true);
+    assert.equal(units[5].complete, true);
   });
 });
 
 describe("getSection5Progress — conditional units affect denominator", () => {
-  it("Q71 only applies when Q70 includes paid diagnostic", () => {
-    const data = createDefaultSection5();
-    data.visitTypeByServiceId = { ...data.visitTypeByServiceId };
-    for (const key of Object.keys(data.visitTypeByServiceId)) {
-      data.visitTypeByServiceId[key] = "normal_service";
-    }
-    const unitsNormal = getSection5ProgressUnits(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).filter(
-      (u) => u.applicable,
+  it("service prices apply only when Alexander may quote", () => {
+    const hidden = createDefaultSection5();
+    const applicableHidden = getSection5ProgressUnits(hidden, ELIGIBLE_SECTION2_FOR_PRICING, [], []).filter(
+      (unit) => unit.applicable,
     );
-
-    const paid = createDefaultSection5();
-    const firstKey = Object.keys(paid.visitTypeByServiceId)[0];
-    paid.visitTypeByServiceId[firstKey] = "paid_diagnostic";
-    const unitsPaid = getSection5ProgressUnits(paid, ELIGIBLE_SECTION2_FOR_PRICING, [], []).filter(
-      (u) => u.applicable,
+    const shown = createDefaultSection5();
+    shown.mayQuoteServicePrices = "allowed";
+    const applicableShown = getSection5ProgressUnits(shown, ELIGIBLE_SECTION2_FOR_PRICING, [], []).filter(
+      (unit) => unit.applicable,
     );
-
-    assert.equal(unitsPaid.length, unitsNormal.length + 1);
-  });
-
-  it("Q76–Q77 units are NOT in the denominator until Q75 = yes", () => {
-    const noPromo = createDefaultSection5();
-    noPromo.hasPromotions = "no";
-    const applicableNo = getSection5ProgressUnits(
-      noPromo,
-      ELIGIBLE_SECTION2_FOR_PRICING,
-      [],
-      [],
-    ).filter((u) => u.applicable);
-
-    const yesPromo = createDefaultSection5();
-    yesPromo.hasPromotions = "yes";
-    const applicableYes = getSection5ProgressUnits(
-      yesPromo,
-      ELIGIBLE_SECTION2_FOR_PRICING,
-      [],
-      [],
-    ).filter((u) => u.applicable);
-
-    assert.equal(applicableYes.length, applicableNo.length + 2);
+    assert.equal(applicableShown.length, applicableHidden.length + 1);
   });
 
   it("fully valid section5 scores 1.0", () => {

@@ -220,12 +220,19 @@ export class AlexanderPersistenceStack extends Stack {
     const schema = new CustomResource(this, "SchemaMigration", {
       serviceToken: migration.serviceToken,
       properties: {
-        migrationVersion: "002",
+        migrationVersion: "015",
         databaseAddress: database.dbInstanceEndpointAddress,
       },
       resourceType: "Custom::AlexanderSchema",
     });
     schema.node.addDependency(database);
+
+    // Staging Test Stripe secret (value managed outside CDK; ARN only).
+    const stripeSecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      "StripeTestSecret",
+      "alexander/staging/stripe",
+    );
 
     const proxy = new rds.DatabaseProxy(this, "Proxy", {
       dbProxyName: "alexander-onboarding-proxy",
@@ -256,12 +263,33 @@ export class AlexanderPersistenceStack extends Stack {
         APP_SECRET_ARN: appSecret.secretArn,
         SNAPSHOT_BUCKET: bucket.bucketName,
         SNAPSHOT_KMS_KEY_ARN: key.keyArn,
+        STRIPE_SECRET_ARN: stripeSecret.secretArn,
+        EMAIL_DELIVERY_MODE: "test",
+        // Optional: set after creating Secrets Manager secret alexander/staging/trillet
+        // TRILLET_SECRET_ARN: trilletSecret.secretArn,
+        // Invite flags remain unset/false until explicit enablement.
       },
     });
     appSecret.grantRead(persistenceFn);
+    stripeSecret.grantRead(persistenceFn);
+    // Least-privilege Trillet key: only when deploy context supplies the secret name.
+    // Example: cdk deploy -c trilletSecretName=alexander/staging/trillet
+    // Grants secretsmanager:GetSecretValue on that secret alone. Invite flags stay unset here.
+    const trilletSecretName = this.node.tryGetContext("trilletSecretName");
+    if (typeof trilletSecretName === "string" && /^alexander\/[A-Za-z0-9/_+-]+$/.test(trilletSecretName)) {
+      const trilletSecret = secretsmanager.Secret.fromSecretNameV2(
+        this,
+        "TrilletInviteSecret",
+        trilletSecretName,
+      );
+      trilletSecret.grantRead(persistenceFn);
+      persistenceFn.addEnvironment("TRILLET_SECRET_ARN", trilletSecret.secretArn);
+    }
     key.grantEncryptDecrypt(persistenceFn);
     bucket.grantPut(persistenceFn, "onboarding/*");
     bucket.grantRead(persistenceFn, "onboarding/*");
+    bucket.grantPut(persistenceFn, "customers/*");
+    bucket.grantRead(persistenceFn, "customers/*");
     persistenceFn.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["s3:ListBucket"],

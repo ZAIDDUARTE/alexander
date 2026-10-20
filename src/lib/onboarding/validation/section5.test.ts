@@ -18,7 +18,6 @@ import {
   section2WithEligibleServices,
   setAllVisitTypes,
   setEligibleServicePricingRules,
-  validApproverContact,
   validQ68Fee,
 } from "../section5-test-helpers";
 import {
@@ -51,13 +50,12 @@ describe("validateSection5 — B: Q66 Yes/Sometimes detail", () => {
   });
 });
 
-describe("validateSection5 — C: Q67 custom behavior", () => {
-  it("requires custom rule when Follow another rule is selected", () => {
+describe("validateSection5 — unknown price has two current choices", () => {
+  it("rejects a removed legacy choice", () => {
     const data = fullyValidSection5();
     data.unknownPriceBehavior = "custom";
-    data.unknownPriceCustomRule = "";
-    assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).unknownPriceCustomRule);
-    data.unknownPriceCustomRule = "Offer a callback for pricing.";
+    assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).unknownPriceBehavior);
+    data.unknownPriceBehavior = "team_provides_pricing";
     assert.equal(section5IsValid(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []), true);
   });
 });
@@ -104,25 +102,31 @@ describe("validateSection5 — D–G: Q68 amount models", () => {
   });
 });
 
-describe("validateSection5 — H: Q68 waiver rule", () => {
-  it("requires waiver rule when waiver is Yes or Sometimes", () => {
-    const fee = validQ68Fee({ waiverPolicy: "sometimes", waiverRule: "" });
+describe("validateSection5 — additional fee credit", () => {
+  it("requires a credit explanation only when credited sometimes", () => {
     const data = fullyValidSection5();
-    data.noSeparateFees = false;
-    const errors = validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [fee]);
-    assert.ok(errors[`fees.${fee.id}.waiverRule`]);
-    fee.waiverRule = "Manager approval only.";
-    assert.equal(section5IsValid(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [fee]), true);
+    data.additionalFeeSelection = ["service_diagnostic"];
+    data.additionalFeeDetails.service_diagnostic = {
+      amount: "89",
+      applicability: "Standard residential service calls.",
+      credit: "sometimes",
+      creditWhen: "",
+    };
+    assert.ok(
+      validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [])[
+        "additionalFeeDetails.service_diagnostic.creditWhen"
+      ],
+    );
+    data.additionalFeeDetails.service_diagnostic.credit = "always";
+    assert.equal(section5IsValid(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []), true);
   });
 });
 
-describe("validateSection5 — I: Q68 no-fees exclusivity", () => {
-  it("rejects noSeparateFees when active fee records exist", () => {
-    const fee = validQ68Fee();
+describe("validateSection5 — additional fee none exclusivity", () => {
+  it("rejects none combined with another fee", () => {
     const data = fullyValidSection5();
-    data.noSeparateFees = true;
-    const errors = validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [fee]);
-    assert.ok(errors.noSeparateFees);
+    data.additionalFeeSelection = ["none", "travel"];
+    assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).additionalFeeSelection);
   });
 });
 
@@ -156,37 +160,37 @@ describe("validateSection5 — N: Q69 area pricing", () => {
   it("requires meaningful rows when Yes", () => {
     const data = fullyValidSection5();
     data.hasAreaTravelOrMinimum = "yes";
-    data.areaPricingRows = [{ id: "a1", area: "", travelFee: "", minimumCharge: "" }];
+    data.areaPricingRows = [{ id: "a1", area: "", travelFee: "", minimumCharge: "", feeOrMinimum: "" }];
     assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [])["areaPricingRows.a1"]);
-    data.areaPricingRows = [{ id: "a1", area: "North county", travelFee: "25", minimumCharge: "" }];
+    data.areaPricingRows = [
+      {
+        id: "a1",
+        area: "North county",
+        travelFee: "",
+        minimumCharge: "",
+        feeOrMinimum: "$100 travel fee and $250 minimum service charge",
+      },
+    ];
     assert.equal(section5IsValid(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []), true);
   });
 });
 
-describe("validateSection5 — O/P: Q70 and Q71", () => {
-  it("requires a visit type for every registry service", () => {
+describe("validateSection5 — deleted visit questions are not current", () => {
+  it("does not require visit types or paid-diagnostic copy", () => {
     const data = fullyValidSection5();
     data.visitTypeByServiceId[JOB_SERVICES[0].id] = "";
-    assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [])[`visitTypeByServiceId.${JOB_SERVICES[0].id}`]);
-  });
-
-  it("requires paid diagnostic explanation only when applicable", () => {
-    const data = fullyValidSection5();
-    data.visitTypeByServiceId[FIRST_JOB_SERVICE_ID] = "paid_diagnostic";
     data.paidDiagnosticExplanation = "";
-    assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).paidDiagnosticExplanation);
-    data.paidDiagnosticExplanation = "We charge a diagnostic fee that is explained from our fee list.";
     assert.equal(section5IsValid(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []), true);
   });
 });
 
 describe("validateSection5 — R/S: Q73 eligibility", () => {
-  it("requires pricing instruction for offered services", () => {
+  it("does not require a price for every offered service", () => {
     const s2 = ELIGIBLE_SECTION2_FOR_PRICING;
     const data = fullyValidSection5(s2);
-    delete data.servicePricingRules[FIRST_JOB_SERVICE_ID];
-    const errors = validateSection5(data, s2, [], []);
-    assert.ok(errors[`servicePricingRules.${FIRST_JOB_SERVICE_ID}.instruction`]);
+    data.mayQuoteServicePrices = "allowed";
+    data.servicePrices = [];
+    assert.equal(section5IsValid(data, s2, [], []), true);
   });
 
   it("does not validate not_offered services", () => {
@@ -228,35 +232,44 @@ describe("validateSection5 — Y/Z/AA/AB: Q78–Q79", () => {
     assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).paymentMethodOther);
   });
 
-  it("requires deposit detail when deposit policy selected", () => {
+  it("keeps a deposit policy valid without the old explain-the-rule fields", () => {
     const data = fullyValidSection5();
-    data.paymentDuePolicies = ["deposit_required"];
+    data.paymentDuePolicies = ["deposit_required", "other"];
     data.depositWorkDetail = "";
-    assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).depositWorkDetail);
-    data.depositWorkDetail = "Large replacements";
-    data.depositRule = "50% upfront";
+    data.paymentDueOtherRule = "";
+    assert.equal(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).depositWorkDetail, undefined);
+    assert.equal(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).paymentDueOtherRule, undefined);
     assert.equal(section5IsValid(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []), true);
   });
 });
 
-describe("validateSection5 — AD/AE: Q81–Q82", () => {
-  it("requires per-remedy rule when Alexander may approve within rules", () => {
+describe("validateSection5 — payment assistance, collection, remedies", () => {
+  it("requires a rule only for each selected remedy", () => {
     const data = fullyValidSection5();
-    data.remedyAuthority.refund = "within_rules";
+    data.financialRemedies = ["refund"];
     data.remedyRules.refund = "";
+    data.remedyRules.fee_waiver = "stale waiver rule";
     assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], [])["remedyRules.refund"]);
     data.remedyRules.refund = "Up to $100 without manager.";
     assert.equal(section5IsValid(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []), true);
   });
 
-  it("requires financial approver when any remedy needs human approval", () => {
-    const approver = validApproverContact({ nameOrRole: "Finance lead" });
+  it("accepts None without per-remedy rules", () => {
     const data = fullyValidSection5();
-    data.remedyAuthority.refund = "human_approval";
-    data.financialApproverContactId = "";
-    assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [approver], []).financialApproverContactId);
-    data.financialApproverContactId = approver.id;
-    assert.equal(section5IsValid(data, ELIGIBLE_SECTION2_FOR_PRICING, [approver], []), true);
+    data.financialRemedies = ["none"];
+    data.remedyRules.refund = "stale";
+    assert.equal(section5IsValid(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []), true);
+  });
+
+  it("rejects None combined with a remedy and requires collection Other text", () => {
+    const data = fullyValidSection5();
+    data.financialRemedies = ["none", "refund"];
+    assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).financialRemedies);
+    data.financialRemedies = ["refund"];
+    data.remedyRules.refund = "Duplicate charges up to $50.";
+    data.paymentCollectionScope = ["other"];
+    data.paymentCollectionOther = "";
+    assert.ok(validateSection5(data, ELIGIBLE_SECTION2_FOR_PRICING, [], []).paymentCollectionOther);
   });
 });
 

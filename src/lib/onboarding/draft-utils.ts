@@ -1,4 +1,6 @@
 import {
+  CALLER_AUTHORITY_DEFAULTS,
+  createDefaultAfterHoursDisposition,
   createDefaultAuthorizedCapabilities,
   createDefaultDraft,
   createDefaultConfirmationInfo,
@@ -10,15 +12,22 @@ import {
 } from "./types";
 import { hasAnyOpenOfficeDay } from "./schedule";
 import {
-  emergencyClassificationsAreAllRecommendedDefault,
-  fillBlankQ26WithRecommendedDefault,
+  emergencyClassificationsMatchDefaults,
+  fillBlankEmergencyClassifications,
 } from "./section3Defaults";
+import { migrateStage2Answers } from "./stage2Migration";
+import { migrateStage3CallerAuthorization } from "./stage3Migration";
+import { migrateStage4aPricing } from "./stage4aMigration";
+import { migrateStage4bPayments } from "./stage4bMigration";
+import { migrateStage5CustomerCare } from "./stage5Migration";
+import { migrateStage6Integrations } from "./stage6Migration";
 import { EXCEPTION_TYPES, CALLER_TYPES, CAPACITY_POLICY_ROWS } from "./section4Catalog";
 import { DEFAULT_FORBIDDEN_STATEMENT_IDS } from "./section5Catalog";
 import { FINANCIAL_REMEDY_ROWS } from "./section5Catalog";
 import {
   DEFAULT_ESCALATION_TRIGGER_IDS,
   DEFAULT_FORBIDDEN_UNHAPPY_PROMISE_IDS,
+  DEFAULT_NON_SERVICE_DISPOSITIONS,
   DEFAULT_RESTRICTED_INFORMATION_IDS,
   NON_SERVICE_CALL_TYPE_ROWS,
 } from "./section6Catalog";
@@ -43,6 +52,7 @@ export type RedisOnboardingDraft = {
     fees: OnboardingDraft["fees"];
     systems: OnboardingDraft["systems"];
     submission: OnboardingDraft["submission"];
+    stage2Migration?: OnboardingDraft["stage2Migration"];
   };
 };
 
@@ -98,10 +108,17 @@ function contactHasContent(contact: Contact): boolean {
 }
 
 function section3HasContent(s3: OnboardingDraft["section3"], contacts: Contact[]): boolean {
-  if (!emergencyClassificationsAreAllRecommendedDefault(s3.emergencyClassifications)) return true;
+  if (!emergencyClassificationsMatchDefaults(s3.emergencyClassifications)) return true;
   if (s3.dispatchApproval.length > 0) return true;
   if (s3.dispatchApprovalOtherDetail.trim()) return true;
-  if (Object.values(s3.afterHoursDisposition).some((v) => v !== "")) return true;
+  const afterHoursDefaults = createDefaultAfterHoursDisposition();
+  if (
+    s3.afterHoursDisposition.emergency !== afterHoursDefaults.emergency ||
+    s3.afterHoursDisposition.urgent_contained !== afterHoursDefaults.urgent_contained ||
+    s3.afterHoursDisposition.routine !== afterHoursDefaults.routine
+  ) {
+    return true;
+  }
   if (s3.emergencyServiceMode) return true;
   if (hasAnyOpenOfficeDay(s3.emergencyServiceSchedule)) return true;
   if (s3.hasBackupContact) return true;
@@ -149,12 +166,18 @@ function section4HasContent(s4: OnboardingDraft["section4"], fees: FeeRecord[]):
   if (Object.values(s4.exceptionApproverContactIds).some((id) => id.trim())) return true;
   if (s4.approverUnavailablePolicy) return true;
   if (s4.approverUnavailableCustomRule.trim()) return true;
-  if (CALLER_TYPES.some((r) => (s4.callerPermissions[r.id] ?? []).length > 0)) return true;
+  if (
+    CALLER_TYPES.some(
+      (row) => (s4.callerPermissions[row.id] ?? "") !== CALLER_AUTHORITY_DEFAULTS[row.id],
+    )
+  ) {
+    return true;
+  }
   if (s4.hasSpendingLimits) return true;
   if (s4.spendingLimits.length > 0) return true;
   if (s4.emergencyAuthMode) return true;
   if (s4.emergencyAuthSpecialRules.trim()) return true;
-  if (s4.defaultBookingMode) return true;
+  if (s4.defaultBookingMode && s4.defaultBookingMode !== "book_appointment") return true;
   if (s4.bookingHorizonDays.trim()) return true;
   if (s4.bookingHorizonNoMaximum) return true;
   // Window shells: only count if times/labels diverge from defaults meaningfully
@@ -203,15 +226,29 @@ function section4HasContent(s4: OnboardingDraft["section4"], fees: FeeRecord[]):
 function section5HasContent(s5: OnboardingDraft["section5"]): boolean {
   if (s5.pricingModels.length > 0) return true;
   if (s5.pricingModelOther.trim()) return true;
+  if (s5.mayQuoteServicePrices === "allowed") return true;
+  if (s5.servicePrices.length > 0) return true;
   if (s5.materialMarkupPolicy) return true;
   if (s5.materialMarkupCustomerExplanation.trim()) return true;
-  if (s5.unknownPriceBehavior) return true;
+  if (s5.unknownPriceBehavior && s5.unknownPriceBehavior !== "technician_after_evaluation") return true;
   if (s5.unknownPriceCustomRule.trim()) return true;
+  if (s5.additionalFeeSelection.length > 0) return true;
+  if (
+    Object.values(s5.additionalFeeDetails).some(
+      (detail) =>
+        detail.amount.trim() ||
+        detail.applicability.trim() ||
+        detail.credit ||
+        detail.creditWhen.trim(),
+    )
+  ) {
+    return true;
+  }
   if (s5.noSeparateFees) return true;
   const defaultForbidden = DEFAULT_FORBIDDEN_STATEMENT_IDS.slice().sort().join(",");
   const currentForbidden = [...s5.forbiddenStatements].slice().sort().join(",");
   if (currentForbidden !== defaultForbidden) return true;
-  if (s5.hasAreaTravelOrMinimum) return true;
+  if (s5.hasAreaTravelOrMinimum === "yes") return true;
   if (s5.areaPricingRows.length > 0) return true;
   if (s5.forbiddenStatementOther.trim()) return true;
   if (s5.hasPromotions) return true;
@@ -223,15 +260,17 @@ function section5HasContent(s5: OnboardingDraft["section5"]): boolean {
   if (s5.paymentMethods.length > 0) return true;
   if (s5.paymentMethodOther.trim()) return true;
   if (s5.paymentDuePolicies.length > 0) return true;
-  if (s5.depositWorkDetail.trim() || s5.depositRule.trim()) return true;
-  if (s5.progressPaymentProjectsDetail.trim() || s5.progressPaymentRule.trim()) return true;
-  if (s5.invoiceCustomersDetail.trim() || s5.invoiceTerms.trim()) return true;
-  if (s5.paymentDueOtherRule.trim()) return true;
-  if (s5.offersFinancing) return true;
-  if (s5.financingProviderTerms.trim()) return true;
-  if (s5.financingPermissions.length > 0) return true;
-  if (s5.financingPermissionOtherDetail.trim()) return true;
-  if (s5.financingEligibilityStatement.trim()) return true;
+  if (s5.paymentAssistance && s5.paymentAssistance !== "secure_link") return true;
+  const defaultScope = ["booking_or_service_fees", "deposits", "completed_invoices", "outstanding_balances"]
+    .slice()
+    .sort()
+    .join(",");
+  const currentScope = [...s5.paymentCollectionScope].slice().sort().join(",");
+  if (currentScope !== defaultScope) return true;
+  if (s5.paymentCollectionOther.trim()) return true;
+  const defaultRemedies = "none";
+  const currentRemedies = [...s5.financialRemedies].slice().sort().join(",");
+  if (currentRemedies !== defaultRemedies) return true;
   if (
     FINANCIAL_REMEDY_ROWS.some((r) => (s5.remedyAuthority[r.id as keyof typeof s5.remedyAuthority] ?? "") !== "")
   ) {
@@ -270,7 +309,9 @@ function section6HasContent(s6: OnboardingDraft["section6"]): boolean {
   if (s6.forbiddenUnhappyPromiseOther.trim()) return true;
   for (const row of NON_SERVICE_CALL_TYPE_ROWS) {
     const policy = s6.nonServiceCallPolicies[row.id];
-    if (policy?.disposition) return true;
+    if (policy?.disposition && policy.disposition !== DEFAULT_NON_SERVICE_DISPOSITIONS[row.id]) {
+      return true;
+    }
     if (policy?.contactId.trim()) return true;
   }
   if (s6.customerHistoryPolicy) return true;
@@ -306,7 +347,7 @@ function section8HasContent(s8: OnboardingDraft["section8"], submission: Onboard
     return true;
   }
   if (s8.connectionNoticeAcknowledged) return true;
-  if (s8.failureFallback) return true;
+  if (s8.failureFallback && s8.failureFallback !== "collect_and_send") return true;
   if (s8.failureFallbackCustom.trim()) return true;
   if (s8.finalOperatingNotes.trim()) return true;
 
@@ -372,7 +413,7 @@ export function hasDraftContent(draft: OnboardingDraft): boolean {
 
 export function mergeWithDefaults(partial: Partial<OnboardingDraft>): OnboardingDraft {
   const base = createDefaultDraft();
-  return {
+  const merged: OnboardingDraft = {
     ...base,
     ...partial,
     schemaVersion: SCHEMA_VERSION,
@@ -382,7 +423,7 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
     section3: {
       ...base.section3,
       ...partial.section3,
-      emergencyClassifications: fillBlankQ26WithRecommendedDefault({
+      emergencyClassifications: fillBlankEmergencyClassifications({
         ...base.section3.emergencyClassifications,
         ...partial.section3?.emergencyClassifications,
       }),
@@ -425,7 +466,21 @@ export function mergeWithDefaults(partial: Partial<OnboardingDraft>): Onboarding
         ...partial.submission?.confirmations,
       },
     },
+    stage2Migration: partial.stage2Migration,
   };
+  return migrateStage6Integrations(
+    migrateStage5CustomerCare(
+      migrateStage4bPayments(
+        migrateStage4aPricing(
+          migrateStage3CallerAuthorization(migrateStage2Answers(merged).draft).draft,
+          partial.section5,
+        ).draft,
+        partial.section5,
+      ).draft,
+      partial.section6,
+    ).draft,
+    partial.section8,
+  ).draft;
 }
 
 export function toRedisDraft(draft: OnboardingDraft, currentRoute: string): RedisOnboardingDraft {
@@ -449,6 +504,7 @@ export function toRedisDraft(draft: OnboardingDraft, currentRoute: string): Redi
       fees: draft.fees,
       systems: draft.systems,
       submission: draft.submission,
+      stage2Migration: draft.stage2Migration,
     },
   };
 }
@@ -471,6 +527,7 @@ export function fromRedisDraft(redis: RedisOnboardingDraft): OnboardingDraft {
     fees: redis.data.fees,
     systems: redis.data.systems,
     submission: redis.data.submission,
+    stage2Migration: redis.data.stage2Migration,
   });
 }
 

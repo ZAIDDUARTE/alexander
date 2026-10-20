@@ -17,10 +17,10 @@ export function sanitizePhoneInput(raw: string): string {
       digitCount++;
     } else if (c === "+" && out.length === 0) {
       out += c;
-    } else if (
-      (c === " " || c === "(" || c === ")" || c === "-") &&
-      out.length > 0
-    ) {
+    } else if (c === "(") {
+      // Leading or embedded — supports paste of (415) 555-2671
+      out += c;
+    } else if ((c === " " || c === ")" || c === "-") && out.length > 0) {
       out += c;
     }
   }

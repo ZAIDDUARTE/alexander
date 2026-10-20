@@ -31,6 +31,7 @@ import {
   validateSection3,
   type FieldErrors,
 } from "@/lib/onboarding/validation/section3";
+import { scrollToFirstAlert } from "@/lib/onboarding/scrollToFirstAlert";
 
 const NOBODY_RESPONDS_HELP_TEXT =
   "Never tell the customer that someone has been reached, dispatched, or is handling the situation unless that action is confirmed.";
@@ -120,8 +121,7 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
     setErrors(nextErrors);
     setSubmitted(true);
     if (Object.keys(nextErrors).length > 0) {
-      const first = document.querySelector("[role='alert']");
-      first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      scrollToFirstAlert();
       return;
     }
     const finalDraft = {
@@ -155,7 +155,6 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
       <QuestionCard
         title="How should Alexander treat each of these situations?"
         required
-        helpText="Choose how you want Alexander to handle each situation. If you’re comfortable using Alexander’s built-in safety rules, choose Use Alexander’s recommended default."
       >
         <EmergencyClassificationGroup
           scenarios={EMERGENCY_SCENARIOS}
@@ -253,7 +252,7 @@ export function Section3Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Who should Alexander contact first?"
+        title="Who should Alexander contact first when a call requires immediate human attention?"
         required
       >
         {primaryContact && (

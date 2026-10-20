@@ -103,8 +103,19 @@ export function AppointmentWindowEditor({
                   <select
                     id={`window-start-${window.id}`}
                     value={window.start}
-                    onChange={(e) => update(window.id, { start: e.target.value })}
-                    className={selectClass}
+                    onChange={(e) => {
+                      const start = e.target.value;
+                      const patch: Partial<AppointmentWindow> = { start };
+                      // Keep an obviously invalid equal/inverted pair from sticking
+                      // when the customer changes start after end was chosen.
+                      if (start && window.end && start >= window.end) {
+                        patch.end = "";
+                      }
+                      update(window.id, patch);
+                    }}
+                    className={`${selectClass} ${timesError ? "border-[var(--color-alexander-required)]" : ""}`}
+                    aria-invalid={timesError ? true : undefined}
+                    aria-describedby={timesError ? `window-times-${window.id}-error` : undefined}
                   >
                     <option value="">Select…</option>
                     {TIME_OPTIONS.map((t) => (
@@ -126,10 +137,12 @@ export function AppointmentWindowEditor({
                     id={`window-end-${window.id}`}
                     value={window.end}
                     onChange={(e) => update(window.id, { end: e.target.value })}
-                    className={selectClass}
+                    className={`${selectClass} ${timesError ? "border-[var(--color-alexander-required)]" : ""}`}
+                    aria-invalid={timesError ? true : undefined}
+                    aria-describedby={timesError ? `window-times-${window.id}-error` : undefined}
                   >
                     <option value="">Select…</option>
-                    {TIME_OPTIONS.map((t) => (
+                    {TIME_OPTIONS.filter((t) => !window.start || t > window.start).map((t) => (
                       <option key={t} value={t}>
                         {formatTime12h(t)}
                       </option>
@@ -140,12 +153,20 @@ export function AppointmentWindowEditor({
             )}
 
             {timesError && (
-              <p className="mt-2 text-sm text-[var(--color-alexander-required)]" role="alert">
+              <p
+                id={`window-times-${window.id}-error`}
+                className="mt-2 text-sm text-[var(--color-alexander-required)]"
+                role="alert"
+              >
                 {timesError}
               </p>
             )}
             {overlapError && (
-              <p className="mt-2 text-sm text-[var(--color-alexander-required)]" role="alert">
+              <p
+                id={`window-overlap-${window.id}-error`}
+                className="mt-2 text-sm text-[var(--color-alexander-required)]"
+                role="alert"
+              >
                 {overlapError}
               </p>
             )}

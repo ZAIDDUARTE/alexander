@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useOnboarding } from "@/lib/onboarding/OnboardingContext";
 import { QuestionCard, ConditionalPanel } from "./ui/Card";
 import { TextField, TextareaField } from "./ui/Fields";
+import { MoneyField } from "./ui/MoneyField";
 import { RadioGroup } from "./ui/RadioGroup";
 import { CheckboxGroup } from "./ui/CheckboxGroup";
 import { PrimaryButton, SecondaryButton } from "./ui/Buttons";
@@ -16,6 +17,7 @@ import { ContactCardEditor, type ContactCardErrors } from "./ContactCardEditor";
 import { ContactPicker } from "./ContactPicker";
 import { addCompletedSection } from "@/lib/onboarding/draft-utils";
 import { getSchedulingEligibleServices } from "@/lib/onboarding/schedulingServices";
+import { CAPACITY_CONDITION_PLACEHOLDERS } from "@/lib/onboarding/section4Placeholders";
 import {
   CALLER_TYPES,
   CAPACITY_POLICY_ROWS,
@@ -51,6 +53,7 @@ import {
   validateSection4,
   type FieldErrors,
 } from "@/lib/onboarding/validation/section4";
+import { scrollToFirstAlert } from "@/lib/onboarding/scrollToFirstAlert";
 
 const CONFIRMATION_HELP_TEXT =
   "Alexander may repeat only information confirmed by the scheduling system or company team. He must not promise a specific technician, exact arrival time, immediate dispatch, or anything that was not confirmed.";
@@ -172,8 +175,7 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
     setErrors(nextErrors);
     setSubmitted(true);
     if (Object.keys(nextErrors).length > 0) {
-      const first = document.querySelector("[role='alert']");
-      first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      scrollToFirstAlert();
       return;
     }
     const finalDraft = {
@@ -347,9 +349,9 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
           highlightIncomplete={submitted}
           groupError={submitted ? errors.callerPermissions : undefined}
           rowErrors={submitted ? callerRowErrors : {}}
-          onChange={(callerTypeId, permissions) =>
+          onChange={(callerTypeId, authority) =>
             updateSection4(
-              { callerPermissions: { ...data.callerPermissions, [callerTypeId]: permissions } },
+              { callerPermissions: { ...data.callerPermissions, [callerTypeId]: authority } },
               { immediate: true },
             )
           }
@@ -430,9 +432,9 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
                         </p>
                       )}
                     </div>
-                    <TextField
+                    <MoneyField
                       id={`spending-amount-${row.id}`}
-                      label="Maximum amount ($)"
+                      label="Maximum amount"
                       required
                       value={row.maxAmount}
                       onChange={(v) =>
@@ -502,7 +504,6 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
 
       <QuestionCard
         title="What is Alexander normally allowed to do when a customer wants an appointment?"
-        helpText="When an eligible customer wants service, what may Alexander normally do?"
         required
       >
         <RadioGroup
@@ -727,9 +728,8 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="When may Alexander offer these appointments?"
+        title="When may Alexander offer same-day or holiday appointments?"
         required
-        helpText="When may Alexander offer same-day or holiday appointments?"
       >
         <ul className="space-y-4">
           {CAPACITY_POLICY_ROWS.map((row) => {
@@ -753,6 +753,7 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
                       label="Conditions"
                       required
                       rows={2}
+                      placeholder={CAPACITY_CONDITION_PLACEHOLDERS[row.id]}
                       value={entry.condition}
                       onChange={(v) => updateCapacityRow(row.id, { ...entry, condition: v })}
                       error={submitted ? errors[`capacityPolicies.${row.id}.condition`] : undefined}
@@ -829,14 +830,6 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
             <ConditionalPanel>
               <div className="space-y-3">
                 <TextField
-                  id="lateFeeAmount"
-                  label="Fee amount ($)"
-                  required
-                  value={lateFee.amountFixed}
-                  onChange={(v) => updateFee(data.lateCancellationFeeId, { amountFixed: v })}
-                  error={submitted ? errors["lateCancellationFee.amountFixed"] : undefined}
-                />
-                <TextField
                   id="lateFeeNotice"
                   label="Notice required before cancellation"
                   required
@@ -873,17 +866,9 @@ export function Section4Form({ mode = "form" }: { mode?: "form" | "review" }) {
           onChange={(v) => handleFeeModeChange("no_show", v)}
           error={submitted ? errors.noShowFeeMode : undefined}
         />
-        {(data.noShowFeeMode === "yes" || data.noShowFeeMode === "conditional") && noShowFee && (
+        {data.noShowFeeMode === "conditional" && noShowFee && (
           <ConditionalPanel>
             <div className="space-y-3">
-              <TextField
-                id="noShowFeeAmount"
-                label="Fee amount ($)"
-                required
-                value={noShowFee.amountFixed}
-                onChange={(v) => updateFee(data.noShowFeeId, { amountFixed: v })}
-                error={submitted ? errors["noShowFee.amountFixed"] : undefined}
-              />
               {data.noShowFeeMode === "conditional" && (
                 <TextareaField
                   id="noShowFeeRule"

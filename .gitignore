@@ -30,6 +30,9 @@ yarn-error.log*
 # env — keep .env.example tracked; ignore all real env files
 .env
 .env.local
+
+# Google OAuth client secrets (never commit)
+client_secret_*.json
 .env.development.local
 .env.test.local
 .env.production.local
@@ -58,3 +61,13 @@ infra/cdk-outputs.json
 
 # local research / media (not part of the deployable app)
 /zoom/
+.env*
+!.env.example
+
+# Local recovery packages and customer artifacts. Not application source.
+.deploy-tmp/
+/output/
+/transcripts/
+/website-images/
+/*.docx
+/*.png

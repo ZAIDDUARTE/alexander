@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { migrateDraft, migrateNavigationV2ToV3 } from "./migrate";
+import { EMERGENCY_ROW_DEFAULTS } from "./section3Defaults";
 import {
   SCHEMA_VERSION,
   createDefaultSection1,
@@ -155,8 +156,8 @@ describe("migrateDraft", () => {
     // Section 3 initializes safely (no MD-approved defaults exist for
     // Q26–Q38), with exactly one fresh, uniquely identified primary
     // contact placeholder — never left undefined/omitted.
-    for (const value of Object.values(migrated.section3.emergencyClassifications)) {
-      assert.equal(value, "recommended_default");
+    for (const [id, value] of Object.entries(migrated.section3.emergencyClassifications)) {
+      assert.equal(value, EMERGENCY_ROW_DEFAULTS[id]);
     }
     assert.equal(migrated.contacts.length, 1);
     assert.equal(migrated.section3.primaryContactId, migrated.contacts[0].id);

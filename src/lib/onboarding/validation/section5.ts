@@ -1,162 +1,56 @@
 import {
-  FINANCIAL_REMEDY_ROWS,
+  PAYMENT_ASSISTANCE_OPTIONS,
+  PAYMENT_COLLECTION_OPTIONS,
   PAYMENT_DUE_OPTIONS,
   PAYMENT_METHOD_OPTIONS,
   PRICING_MODEL_OPTIONS,
-  PROMOTION_MODIFICATION_OPTIONS,
-  PROMOTION_STACKING_OPTIONS,
-  SERVICE_PRICING_INSTRUCTION_OPTIONS,
   UNKNOWN_PRICE_OPTIONS,
-  VISIT_TYPE_OPTIONS,
-  getVisitTypeMatrixServices,
 } from "../section5Catalog";
-import { getPricingDiscussEligibleServices } from "../pricingServices";
-import { hasActiveSection4LinkedFeePolicies } from "../section4FeeLinks";
+import { getOfferedPricingServices, pricingServiceLabel } from "../pricingServices";
 import {
-  activeMeaningfulFees,
-  feeCardStarted,
-  isPositiveMoney,
-  validateFeeCard,
-} from "./feeRecord";
-import {
-  approverContactIsValid,
-  validateApproverContact,
-} from "./section3";
+  activeServicePrices,
+  additionalFeeDetailErrors,
+  additionalFeeSelectionConflict,
+  servicePriceRecordErrors,
+} from "../section5Pricing";
+import { section4AdditionalFeeConsistencyError } from "../section4FeeLinks";
 import type {
   Contact,
   FeeRecord,
-  ForbiddenStatementId,
+  AdditionalFeeCategory,
   PricingModelId,
   RemedyId,
   Section2Data,
   Section4Data,
   Section5Data,
 } from "../types";
-import { contactHasIdentity, createDefaultSection2, createDefaultSection4 } from "../types";
+import { createDefaultSection2, createDefaultSection4 } from "../types";
 
 export type FieldErrors = Partial<Record<string, string>>;
 
 const PRICING_MODEL_IDS = new Set(PRICING_MODEL_OPTIONS.map((o) => o.id));
 const UNKNOWN_PRICE_IDS = new Set(UNKNOWN_PRICE_OPTIONS.map((o) => o.id));
-const VISIT_TYPE_IDS = new Set(VISIT_TYPE_OPTIONS.map((o) => o.id));
-const INSTRUCTION_IDS = new Set(SERVICE_PRICING_INSTRUCTION_OPTIONS.map((o) => o.id));
 const PAYMENT_METHOD_IDS = new Set(PAYMENT_METHOD_OPTIONS.map((o) => o.id));
 const PAYMENT_DUE_IDS = new Set(PAYMENT_DUE_OPTIONS.map((o) => o.id));
-const STACKING_IDS = new Set(PROMOTION_STACKING_OPTIONS.map((o) => o.id));
-const MODIFICATION_IDS = new Set(PROMOTION_MODIFICATION_OPTIONS.map((o) => o.id));
-const REMEDY_IDS = new Set(FINANCIAL_REMEDY_ROWS.map((r) => r.id));
-const VALID_REMEDY_AUTHORITIES = new Set(["within_rules", "human_approval", "never"]);
-
-function hasPaidDiagnosticVisit(data: Section5Data): boolean {
-  for (const visitType of Object.values(data.visitTypeByServiceId)) {
-    if (visitType === "paid_diagnostic") return true;
-  }
-  return false;
-}
-
-function remedyRequiresHumanApproval(data: Section5Data): boolean {
-  for (const row of FINANCIAL_REMEDY_ROWS) {
-    if (data.remedyAuthority[row.id as RemedyId] === "human_approval") return true;
-  }
-  return false;
-}
+const ASSISTANCE_IDS = new Set(PAYMENT_ASSISTANCE_OPTIONS.map((option) => option.id));
+const COLLECTION_IDS = new Set(PAYMENT_COLLECTION_OPTIONS.map((option) => option.id));
 
 function validateAreaPricingRows(data: Section5Data, errors: FieldErrors): void {
   if (data.areaPricingRows.length === 0) {
-    errors.areaPricingRows = "Add at least one area with a travel fee or minimum charge.";
+    errors.areaPricingRows = "Add at least one area.";
     return;
   }
+  let complete = 0;
   for (const row of data.areaPricingRows) {
     const area = row.area.trim();
-    const travel = row.travelFee.trim();
-    const minimum = row.minimumCharge.trim();
-    const hasTravel = travel && isPositiveMoney(travel);
-    const hasMinimum = minimum && isPositiveMoney(minimum);
-    if (!area && !hasTravel && !hasMinimum) {
-      errors[`areaPricingRows.${row.id}`] =
-        "Enter an area name, travel fee, or minimum charge for this row.";
+    const feeOrMinimum = (row.feeOrMinimum ?? "").trim();
+    if (!area || !feeOrMinimum) {
+      errors[`areaPricingRows.${row.id}`] = "Enter the area and the fee or minimum.";
+      continue;
     }
-    if (travel && !isPositiveMoney(travel)) {
-      errors[`areaPricingRows.${row.id}.travelFee`] = "Enter a valid travel fee amount.";
-    }
-    if (minimum && !isPositiveMoney(minimum)) {
-      errors[`areaPricingRows.${row.id}.minimumCharge`] = "Enter a valid minimum charge amount.";
-    }
+    complete += 1;
   }
-}
-
-function validateServicePricingRule(
-  serviceId: string,
-  serviceName: string,
-  rule: Section5Data["servicePricingRules"][string] | undefined,
-  fees: FeeRecord[],
-  errors: FieldErrors,
-): void {
-  const prefix = `servicePricingRules.${serviceId}`;
-  const instruction = rule?.instruction ?? "";
-  if (!instruction || !INSTRUCTION_IDS.has(instruction)) {
-    errors[`${prefix}.instruction`] = "Select how Alexander may discuss pricing for this service.";
-    return;
-  }
-
-  if (instruction === "quote_approved") {
-    const mode = rule?.approvedPriceMode ?? "";
-    if (mode !== "exact" && mode !== "range") {
-      errors[`${prefix}.approvedPriceMode`] = "Select an approved price or range.";
-      return;
-    }
-    if (mode === "exact") {
-      if (!isPositiveMoney(rule?.approvedPriceExact ?? "")) {
-        errors[`${prefix}.approvedPriceExact`] =
-          `Enter a valid approved price greater than zero for ${serviceName}.`;
-      }
-    } else {
-      if (!isPositiveMoney(rule?.approvedPriceMin ?? "")) {
-        errors[`${prefix}.approvedPriceMin`] = `Enter a valid minimum price for ${serviceName}.`;
-      }
-      if (!isPositiveMoney(rule?.approvedPriceMax ?? "")) {
-        errors[`${prefix}.approvedPriceMax`] = `Enter a valid maximum price for ${serviceName}.`;
-      }
-      if (
-        isPositiveMoney(rule?.approvedPriceMin ?? "") &&
-        isPositiveMoney(rule?.approvedPriceMax ?? "") &&
-        parseFloat(rule!.approvedPriceMin) > parseFloat(rule!.approvedPriceMax)
-      ) {
-        errors[`${prefix}.approvedPriceRange`] =
-          `Minimum must be less than or equal to maximum for ${serviceName}.`;
-      }
-    }
-  } else if (instruction === "explain_fee_only") {
-    const linked = rule?.linkedFeeIds ?? [];
-    const validLinked = linked.filter((id) => {
-      const fee = fees.find((f) => f.id === id);
-      return Boolean(fee && fee.active);
-    });
-    if (validLinked.length === 0) {
-      errors[`${prefix}.linkedFeeIds`] = "Link at least one active fee from your fee list.";
-    }
-  } else if (instruction === "ask_team") {
-    if (!rule?.askTeamDetail.trim()) {
-      errors[`${prefix}.askTeamDetail`] =
-        "Describe what pricing information Alexander should ask the team to confirm.";
-    }
-  }
-}
-
-function validatePromotionOffer(
-  promo: Section5Data["promotions"][number],
-  errors: FieldErrors,
-): void {
-  const prefix = `promotions.${promo.id}`;
-  if (!promo.name.trim()) {
-    errors[`${prefix}.name`] = "Enter an offer name.";
-  }
-  if (!promo.benefit.trim()) {
-    errors[`${prefix}.benefit`] = "Describe the benefit of this offer.";
-  }
-  if (!promo.eligibility.trim()) {
-    errors[`${prefix}.eligibility`] = "Describe who is eligible.";
-  }
+  if (complete === 0) errors.areaPricingRows = "Add at least one area.";
 }
 
 /**
@@ -176,8 +70,8 @@ export function validateSection5(
   section4: Section4Data = createDefaultSection4(),
 ): FieldErrors {
   const errors: FieldErrors = {};
-  const eligibleServices = getPricingDiscussEligibleServices(section2);
-  const matrixServices = getVisitTypeMatrixServices();
+  void fees;
+  void contacts;
 
   // Q65
   const models = data.pricingModels.filter((id) => PRICING_MODEL_IDS.has(id));
@@ -201,131 +95,59 @@ export function validateSection5(
       "Describe what Alexander may tell customers about material pricing.";
   }
 
-  // Q67
-  if (!data.unknownPriceBehavior) {
-    errors.unknownPriceBehavior = "Select an option.";
-  } else if (!UNKNOWN_PRICE_IDS.has(data.unknownPriceBehavior)) {
-    errors.unknownPriceBehavior = "Select a valid option.";
-  } else if (data.unknownPriceBehavior === "custom" && !data.unknownPriceCustomRule.trim()) {
-    errors.unknownPriceCustomRule = "Describe the rule Alexander should follow.";
-  }
-
-  // Q68
-  const meaningfulActive = activeMeaningfulFees(fees);
-  const section4LinkedFees = hasActiveSection4LinkedFeePolicies(section4, fees);
-  if (
-    data.noSeparateFees &&
-    (meaningfulActive.length > 0 || section4LinkedFees)
-  ) {
-    errors.noSeparateFees = section4LinkedFees
-      ? "Cancellation and no-show fees are configured in Scheduling (Section 4). Change those policies there before selecting no separate fees."
-      : "Remove active fee records or turn off “no separate fees” — these choices cannot both apply.";
-    errors.fees = "Resolve the conflict between fee cards and “no separate fees”.";
-  } else if (!data.noSeparateFees) {
-    for (const fee of fees) {
-      if (!fee.active && !feeCardStarted(fee)) continue;
-      if (!fee.active && feeCardStarted(fee)) {
-        validateFeeCard(fee, errors, `fees.${fee.id}`, {
-          requireNotice: fee.feeKey === "late_cancellation",
-        });
+  if (data.mayQuoteServicePrices !== "allowed" && data.mayQuoteServicePrices !== "not_allowed") {
+    errors.mayQuoteServicePrices = "Select whether Alexander may quote service prices.";
+  } else if (data.mayQuoteServicePrices === "allowed") {
+    const offered = getOfferedPricingServices(section2);
+    const offeredIds = new Set(offered.map((service) => service.id));
+    const active = activeServicePrices(data.servicePrices, offeredIds);
+    const seen = new Set<string>();
+    for (const record of active) {
+      if (seen.has(record.serviceId)) {
+        errors[`servicePrices.${record.serviceId}`] = "This service already has pricing.";
         continue;
       }
-      if (fee.active) {
-        validateFeeCard(fee, errors, `fees.${fee.id}`, {
-          requireNotice: fee.feeKey === "late_cancellation",
-        });
+      seen.add(record.serviceId);
+      Object.assign(
+        errors,
+        servicePriceRecordErrors(record, pricingServiceLabel(record.serviceId)),
+      );
+    }
+  }
+
+  if (!data.unknownPriceBehavior || !UNKNOWN_PRICE_IDS.has(data.unknownPriceBehavior)) {
+    errors.unknownPriceBehavior = "Select an option.";
+  }
+
+  if (data.additionalFeeSelection.length === 0) {
+    errors.additionalFeeSelection = "Select at least one option.";
+  } else if (additionalFeeSelectionConflict(data.additionalFeeSelection)) {
+    errors.additionalFeeSelection = "“We don’t charge additional fees” cannot be combined with a fee.";
+  } else {
+    const schedulingFeeConflict = section4AdditionalFeeConsistencyError(
+      section4,
+      data.additionalFeeSelection,
+    );
+    if (schedulingFeeConflict) {
+      errors.additionalFeeSelection = schedulingFeeConflict;
+    } else if (!data.additionalFeeSelection.includes("none")) {
+      for (const category of data.additionalFeeSelection) {
+        if (category === "none") continue;
+        Object.assign(
+          errors,
+          additionalFeeDetailErrors(
+            category as AdditionalFeeCategory,
+            data.additionalFeeDetails[category as AdditionalFeeCategory],
+          ),
+        );
       }
     }
   }
 
-  // Q69
   if (!data.hasAreaTravelOrMinimum) {
     errors.hasAreaTravelOrMinimum = "Select yes or no.";
   } else if (data.hasAreaTravelOrMinimum === "yes") {
     validateAreaPricingRows(data, errors);
-  }
-
-  // Q70
-  let missingVisitType = false;
-  for (const service of matrixServices) {
-    const visitType = data.visitTypeByServiceId[service.id] ?? "";
-    if (!visitType) {
-      missingVisitType = true;
-      errors[`visitTypeByServiceId.${service.id}`] = "Select a visit type for this service.";
-    } else if (!VISIT_TYPE_IDS.has(visitType)) {
-      missingVisitType = true;
-      errors[`visitTypeByServiceId.${service.id}`] = "Select a valid visit type.";
-    }
-  }
-  if (missingVisitType && !errors.visitTypeByServiceId) {
-    errors.visitTypeByServiceId = "Select a visit type for every service.";
-  }
-
-  // Q71
-  if (hasPaidDiagnosticVisit(data) && !data.paidDiagnosticExplanation.trim()) {
-    errors.paidDiagnosticExplanation =
-      "Explain what Alexander should tell customers about paid diagnostic visits.";
-  }
-
-  // Q73
-  for (const service of eligibleServices) {
-    validateServicePricingRule(
-      service.id,
-      service.label,
-      data.servicePricingRules[service.id],
-      fees,
-      errors,
-    );
-  }
-
-  // Q74
-  if (data.forbiddenStatements.length === 0) {
-    errors.forbiddenStatements = "Select at least one rule Alexander must never say.";
-  }
-  if (
-    data.forbiddenStatements.includes("other" as ForbiddenStatementId) &&
-    !data.forbiddenStatementOther.trim()
-  ) {
-    errors.forbiddenStatementOther = "Describe the other prohibited pricing statement.";
-  }
-
-  // Q75
-  if (!data.hasPromotions) {
-    errors.hasPromotions = "Select yes or no.";
-  } else if (data.hasPromotions === "yes") {
-    if (data.promotions.length === 0) {
-      errors.promotions = "Add at least one discount, coupon, or promotion.";
-    }
-    for (const promo of data.promotions) {
-      validatePromotionOffer(promo, errors);
-    }
-  }
-
-  // Q76
-  if (data.hasPromotions === "yes") {
-    if (!data.promotionStacking) {
-      errors.promotionStacking = "Select whether promotions may be combined.";
-    } else if (!STACKING_IDS.has(data.promotionStacking)) {
-      errors.promotionStacking = "Select a valid option.";
-    } else if (data.promotionStacking === "conditional" && !data.promotionStackingRule.trim()) {
-      errors.promotionStackingRule = "Describe when promotions may be combined.";
-    }
-  }
-
-  // Q77
-  if (data.hasPromotions === "yes") {
-    if (!data.promotionModificationAuthority) {
-      errors.promotionModificationAuthority =
-        "Select whether Alexander may waive or modify a fee or discount.";
-    } else if (!MODIFICATION_IDS.has(data.promotionModificationAuthority)) {
-      errors.promotionModificationAuthority = "Select a valid option.";
-    } else if (
-      data.promotionModificationAuthority === "within_rules" &&
-      !data.promotionModificationRule.trim()
-    ) {
-      errors.promotionModificationRule =
-        "Describe the rules or limits for promotion or discount changes.";
-    }
   }
 
   // Q78
@@ -342,80 +164,29 @@ export function validateSection5(
   if (duePolicies.length === 0) {
     errors.paymentDuePolicies = "Select at least one payment-due policy.";
   }
-  if (duePolicies.includes("deposit_required")) {
-    if (!data.depositWorkDetail.trim()) {
-      errors.depositWorkDetail = "Describe which work requires a deposit.";
-    }
-    if (!data.depositRule.trim()) {
-      errors.depositRule = "Describe your deposit rule.";
-    }
-  }
-  if (duePolicies.includes("progress_payments")) {
-    if (!data.progressPaymentProjectsDetail.trim()) {
-      errors.progressPaymentProjectsDetail = "Describe which projects use progress payments.";
-    }
-    if (!data.progressPaymentRule.trim()) {
-      errors.progressPaymentRule = "Describe your progress-payment rule.";
-    }
-  }
-  if (duePolicies.includes("invoice_after_service")) {
-    if (!data.invoiceCustomersDetail.trim()) {
-      errors.invoiceCustomersDetail = "Describe which customers may be invoiced.";
-    }
-    if (!data.invoiceTerms.trim()) {
-      errors.invoiceTerms = "Describe your invoice terms.";
-    }
-  }
-  if (duePolicies.includes("other") && !data.paymentDueOtherRule.trim()) {
-    errors.paymentDueOtherRule = "Describe your other payment-due rule.";
+  if (!ASSISTANCE_IDS.has(data.paymentAssistance)) {
+    errors.paymentAssistance = "Select whether Alexander may help customers make a payment.";
   }
 
-  // Q80
-  if (!data.offersFinancing) {
-    errors.offersFinancing = "Select yes or no.";
-  } else if (data.offersFinancing === "yes") {
-    if (!data.financingProviderTerms.trim()) {
-      errors.financingProviderTerms = "Enter financing provider and terms.";
-    }
+  const scope = data.paymentCollectionScope.filter((id) => COLLECTION_IDS.has(id));
+  if (scope.length === 0) {
+    errors.paymentCollectionScope = "Select at least one type of payment.";
+  }
+  if (scope.includes("other") && !data.paymentCollectionOther.trim()) {
+    errors.paymentCollectionOther = "Describe the other payment Alexander may collect.";
   }
 
-  // Q81
-  let missingRemedyAuthority = false;
-  for (const row of FINANCIAL_REMEDY_ROWS) {
-    const remedyId = row.id as RemedyId;
-    const authority = data.remedyAuthority[remedyId] ?? "";
-    if (!authority) {
-      missingRemedyAuthority = true;
-      continue;
-    }
-    if (!VALID_REMEDY_AUTHORITIES.has(authority) || !REMEDY_IDS.has(remedyId)) {
-      missingRemedyAuthority = true;
-      continue;
-    }
-    if (authority === "within_rules" && !data.remedyRules[remedyId].trim()) {
-      errors[`remedyRules.${remedyId}`] = "Describe the rules or limits for this remedy.";
-    }
-  }
-  if (missingRemedyAuthority) {
-    errors.remedyAuthority = "Select an authority for every financial remedy.";
-  }
-
-  // Q82
-  if (remedyRequiresHumanApproval(data)) {
-    if (!data.financialApproverContactId.trim()) {
-      errors.financialApproverContactId =
-        "Select who Alexander should contact for financial remedy approval.";
-    } else {
-      const approver = contacts.find((c) => c.id === data.financialApproverContactId);
-      if (!approver || !contactHasIdentity(approver)) {
-        errors.financialApproverContactId = "Select a valid contact.";
-      } else if (!approverContactIsValid(approver)) {
-        const approverErrors = validateApproverContact(approver);
-        for (const [key, msg] of Object.entries(approverErrors)) {
-          if (msg && typeof msg === "string") {
-            errors[`financialApproverContact.${key}`] = msg;
-          }
-        }
+  const remedies = data.financialRemedies;
+  const hasNone = remedies.includes("none");
+  const actual = remedies.filter((id): id is RemedyId => id !== "none");
+  if (remedies.length === 0) {
+    errors.financialRemedies = "Select at least one option.";
+  } else if (hasNone && actual.length > 0) {
+    errors.financialRemedies = "“None - human approval is required” cannot be combined with a remedy.";
+  } else if (!hasNone) {
+    for (const remedyId of actual) {
+      if (!data.remedyRules[remedyId]?.trim()) {
+        errors[`remedyRules.${remedyId}`] = "Describe Alexander’s rules or limits for this remedy.";
       }
     }
   }

@@ -52,12 +52,18 @@ export async function getDraftResponse(sessionId: string) {
   };
 }
 
-export async function putDraftResponse(sessionId: string, body: unknown) {
+export async function compileDraftWrite(
+  body: unknown,
+): Promise<
+  | { ok: true; payload: RedisOnboardingDraft }
+  | { ok: false; status: number; body: Record<string, unknown> }
+> {
   const persistence = resolvePersistenceMode();
   const available = await redisAvailable();
   const incoming = (body as { draft?: unknown } | null)?.draft;
   if (!isValidRedisDraft(incoming)) {
     return {
+      ok: false,
       status: 400,
       body: {
         ok: false,
@@ -69,28 +75,6 @@ export async function putDraftResponse(sessionId: string, body: unknown) {
         savedToRedis: false,
       },
     };
-  }
-
-  const store = getOnboardingStore();
-  const current = await store.getDraft(sessionId);
-  if (current.ok && current.draft) {
-    const storedAt = Date.parse(current.draft.updatedAt);
-    const incomingAt = Date.parse(incoming.updatedAt);
-    if (Number.isFinite(storedAt) && Number.isFinite(incomingAt) && incomingAt < storedAt) {
-      return {
-        status: 409,
-        body: {
-          ok: false,
-          reason: "stale_draft",
-          draft: current.draft,
-          redisAvailable: available,
-          durableAvailable: persistence === "durable",
-          persistence,
-          savedDurable: false,
-          savedToRedis: false,
-        },
-      };
-    }
   }
 
   const clientDraft = fromRedisDraft(incoming);
@@ -123,6 +107,38 @@ export async function putDraftResponse(sessionId: string, body: unknown) {
   };
   const payload = toRedisDraft(merged, incoming.currentRoute || "/onboarding");
   payload.updatedAt = merged.updatedAt;
+  return { ok: true, payload };
+}
+
+export async function putDraftResponse(sessionId: string, body: unknown) {
+  const persistence = resolvePersistenceMode();
+  const available = await redisAvailable();
+  const compiled = await compileDraftWrite(body);
+  if (!compiled.ok) return { status: compiled.status, body: compiled.body };
+  const payload = compiled.payload;
+  const incomingUpdatedAt = (body as { draft?: { updatedAt?: string } } | null)?.draft?.updatedAt;
+
+  const store = getOnboardingStore();
+  const current = await store.getDraft(sessionId);
+  if (current.ok && current.draft && typeof incomingUpdatedAt === "string") {
+    const storedAt = Date.parse(current.draft.updatedAt);
+    const incomingAt = Date.parse(incomingUpdatedAt);
+    if (Number.isFinite(storedAt) && Number.isFinite(incomingAt) && incomingAt < storedAt) {
+      return {
+        status: 409,
+        body: {
+          ok: false,
+          reason: "stale_draft",
+          draft: current.draft,
+          redisAvailable: available,
+          durableAvailable: persistence === "durable",
+          persistence,
+          savedDurable: false,
+          savedToRedis: false,
+        },
+      };
+    }
+  }
 
   const saved = await store.saveDraft(sessionId, payload);
   if (!saved.ok && saved.reason === "stale_draft") {

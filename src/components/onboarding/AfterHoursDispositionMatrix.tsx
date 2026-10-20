@@ -10,18 +10,14 @@ const ROW_ORDER: AfterHoursCallClass[] = ["emergency", "urgent_contained", "rout
 
 export const AFTER_HOURS_CALL_CLASS_LABELS: Record<AfterHoursCallClass, string> = {
   emergency: "Emergency",
-  urgent_contained: "Urgent but contained",
+  urgent_contained: "Urgent, but not an emergency",
   routine: "Routine / non-urgent",
 };
 
 export const AFTER_HOURS_DISPOSITION_OPTIONS: { value: AfterHoursDispositionOption; label: string }[] = [
-  { value: "attempt_contact", label: "Attempt to reach our on-call/emergency contact" },
-  { value: "confirm_or_book", label: "Confirm or book service if allowed" },
-  { value: "submit_for_review", label: "Submit the request for team review" },
-  { value: "schedule_next_available", label: "Schedule the next available appointment" },
-  { value: "arrange_callback", label: "Arrange a callback" },
-  { value: "info_only", label: "Provide information only" },
-  { value: "no_service", label: "Do not offer service" },
+  { value: "contact_on_call", label: "Contact our on-call team" },
+  { value: "schedule_service", label: "Schedule service" },
+  { value: "take_message", label: "Take a message for follow-up" },
 ];
 
 const selectClass =
@@ -71,7 +67,6 @@ export function AfterHoursDispositionMatrix({
                 onChange={(e) => onChange(row, e.target.value as AfterHoursDispositionOption)}
                 className={selectClass}
               >
-                <option value="">Select an option…</option>
                 {AFTER_HOURS_DISPOSITION_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}

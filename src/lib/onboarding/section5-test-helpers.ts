@@ -1,4 +1,4 @@
-import { FINANCIAL_REMEDY_ROWS, getVisitTypeMatrixServices } from "./section5Catalog";
+import { getVisitTypeMatrixServices } from "./section5Catalog";
 import { getPricingDiscussEligibleServices } from "./pricingServices";
 import {
   FIRST_JOB_SERVICE_ID,
@@ -8,8 +8,6 @@ import {
 import {
   createCustomFee,
   createDefaultSection5,
-  createDefaultRemedyAuthority,
-  createDefaultRemedyRules,
   createPromotionId,
   type Contact,
   type FeeRecord,
@@ -91,9 +89,11 @@ export function fullyValidSection5(
   const data = createDefaultSection5();
 
   data.pricingModels = ["flat_rate"];
+  data.mayQuoteServicePrices = "not_allowed";
   data.materialMarkupPolicy = "no";
   data.unknownPriceBehavior = "technician_after_evaluation";
-  data.noSeparateFees = true;
+  data.additionalFeeSelection = ["none"];
+  data.noSeparateFees = false;
 
   data.hasAreaTravelOrMinimum = "no";
   setAllVisitTypes(data, "normal_service");
@@ -104,16 +104,14 @@ export function fullyValidSection5(
   data.hasPromotions = "no";
   data.paymentMethods = ["credit_card"];
   data.paymentDuePolicies = ["at_time_of_service"];
-  data.offersFinancing = "no";
-
-  const authority = createDefaultRemedyAuthority();
-  const rules = createDefaultRemedyRules();
-  for (const row of FINANCIAL_REMEDY_ROWS) {
-    authority[row.id as keyof typeof authority] = "never";
-    rules[row.id as keyof typeof rules] = "";
-  }
-  data.remedyAuthority = authority;
-  data.remedyRules = rules;
+  data.paymentAssistance = "secure_link";
+  data.paymentCollectionScope = [
+    "booking_or_service_fees",
+    "deposits",
+    "completed_invoices",
+    "outstanding_balances",
+  ];
+  data.financialRemedies = ["none"];
 
   if (contacts.length === 0) {
     void contacts;

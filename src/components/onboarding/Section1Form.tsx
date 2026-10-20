@@ -20,6 +20,7 @@ import {
 } from "@/lib/onboarding/validation/section1";
 import type { DayKey } from "@/lib/onboarding/schedule";
 import { DAYS } from "@/lib/onboarding/schedule";
+import { scrollToFirstAlert } from "@/lib/onboarding/scrollToFirstAlert";
 
 function mapScheduleErrors(errors: FieldErrors, prefix: string): Partial<Record<DayKey, string>> {
   const out: Partial<Record<DayKey, string>> = {};
@@ -59,8 +60,7 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
     setErrors(nextErrors);
     setSubmitted(true);
     if (Object.keys(nextErrors).length > 0) {
-      const first = document.querySelector("[role='alert']");
-      first?.scrollIntoView({ behavior: "smooth", block: "center" });
+      scrollToFirstAlert();
       return;
     }
     const finalDraft = {
@@ -138,8 +138,7 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
       </QuestionCard>
 
       <QuestionCard
-        title="Which of these may Alexander tell customers?"
-        helpText="Which of these may Alexander tell customers about your company?"
+        title="Which of these may Alexander tell customers about your company?"
         required
       >
         <CheckboxGroup
@@ -174,7 +173,7 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
           label=""
           value={data.licensingDetails}
           onChange={(v) => updateSection1({ licensingDetails: v })}
-          helpText="Example: California Contractor License #123456 — C-36 Plumbing."
+          placeholder="California Contractor License #123456 - C-36 Plumbing."
         />
       </QuestionCard>
 
@@ -228,12 +227,9 @@ export function Section1Form({ mode = "form" }: { mode?: "form" | "review" }) {
         />
         {showAnsweringSchedule && (
           <ConditionalPanel>
-            <p className="mb-1 text-sm font-medium text-[var(--color-alexander-navy)]">
-              What hours should Alexander answer?
-              <span className="ml-1 text-[var(--color-alexander-required)]" aria-hidden>*</span>
-            </p>
-            <p className="mb-4 text-sm text-[var(--color-alexander-muted)]">
+            <p className="mb-4 text-sm font-medium text-[var(--color-alexander-navy)]">
               What hours should Alexander answer your calls?
+              <span className="ml-1 text-[var(--color-alexander-required)]" aria-hidden>*</span>
             </p>
             <OfficeWeeklySchedule
               idPrefix="alexander-hours"

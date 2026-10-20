@@ -9,6 +9,8 @@ export type DraftSaveResult = {
   savedDurable: boolean;
   durableAvailable: boolean;
   persistence: "durable" | "local" | "unavailable";
+  invited?: boolean;
+  draftVersion?: number | null;
 };
 
 export type DraftAutosaveController = {
@@ -25,6 +27,11 @@ export type DraftAutosaveController = {
  * After a successful PUT the server rewrites updatedAt. Keep the newest local
  * answers, and only advance the local clock so the next PUT is not stale.
  */
+/** Answer fingerprint. A server timestamp rewrite must not look like a new edit. */
+export function draftAutosaveFingerprint(draft: OnboardingDraft): string {
+  return JSON.stringify({ ...draft, updatedAt: undefined });
+}
+
 export function applyAcceptedServerTimestamp(
   local: OnboardingDraft,
   sentUpdatedAt: string,
@@ -67,6 +74,12 @@ export function createDraftAutosaveController(deps: {
   getRoute: () => string;
   onResult: (result: DraftSaveResult) => void;
   onLocalDraftAdjusted: (draft: OnboardingDraft) => void;
+  /**
+   * Invited version lock advanced by a 409. Must not replace local answers —
+   * typing in flight would otherwise be wiped by onAuthoritativeDraft.
+   */
+  onInvitedConflictVersion?: (draftVersion: number) => void;
+  onAuthoritativeDraft?: (draft: OnboardingDraft, draftVersion: number | null) => void;
   nowIso?: () => string;
 }): DraftAutosaveController {
   let inFlight = false;
@@ -84,6 +97,21 @@ export function createDraftAutosaveController(deps: {
   async function saveOnce(options?: { keepalive?: boolean }): Promise<DraftSaveResult> {
     const sent = deps.getLatest();
     let result = await deps.save(sent, deps.getRoute(), options);
+
+    if (!result.ok && result.reason === "stale_draft" && result.invited) {
+      // Same-browser coalesced edits can race the version lock. Rebase onto the
+      // server version and retry newest local answers — never discard keystrokes.
+      if (typeof result.draftVersion === "number") {
+        deps.onInvitedConflictVersion?.(result.draftVersion);
+      }
+      const latest = deps.getLatest();
+      result = await deps.save(latest, deps.getRoute(), options);
+      if (!result.ok && result.reason === "stale_draft" && result.invited) {
+        if (result.draft) deps.onAuthoritativeDraft?.(result.draft, result.draftVersion ?? null);
+        deps.onResult(result);
+        return result;
+      }
+    }
 
     if (!result.ok && result.reason === "stale_draft") {
       const bumped = bumpUpdatedAtForConflictRetry(

@@ -42,6 +42,7 @@ import { resolveEffectiveVoiceId } from "@/lib/onboarding/voiceSelection";
 import type { AccentPreference, CallerLanguageId, Section7Data, VoiceSelectionId } from "@/lib/onboarding/types";
 import { createPronunciationEntryId } from "@/lib/onboarding/types";
 import { validateSection7, type FieldErrors } from "@/lib/onboarding/validation/section7";
+import { scrollToFirstAlert } from "@/lib/onboarding/scrollToFirstAlert";
 
 function LanguageCheckboxes({
   data,
@@ -123,7 +124,7 @@ export function Section7Form({ mode = "form" }: { mode?: "form" | "review" }) {
     setErrors(nextErrors);
     setSubmitted(true);
     if (Object.keys(nextErrors).length > 0) {
-      document.querySelector("[role='alert']")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      scrollToFirstAlert();
       return;
     }
     const finalDraft = {

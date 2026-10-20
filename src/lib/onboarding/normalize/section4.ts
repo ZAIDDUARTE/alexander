@@ -9,7 +9,7 @@ import { normalizeContact, type NormalizedContact } from "./section3";
 import type { TimeValue } from "../schedule";
 import type {
   AppointmentWindow,
-  CallerPermission,
+  CallerAuthority,
   CapacityOfferPolicy,
   ChangeAuthority,
   Contact,
@@ -52,7 +52,7 @@ export type NormalizedExceptionAuthorityRow = {
 export type NormalizedCallerPermissionsRow = {
   id: string;
   label: string;
-  permissions: CallerPermission[];
+  authority: CallerAuthority;
 };
 
 export type NormalizedCapacityPolicyRow = {
@@ -307,9 +307,16 @@ export function normalizeSection4(
 
   const callerPermissions: NormalizedCallerPermissionsRow[] = [];
   for (const row of CALLER_TYPES) {
-    const permissions = data.callerPermissions[row.id] ?? [];
-    if (permissions.length === 0) continue;
-    callerPermissions.push({ id: row.id, label: row.label, permissions: [...permissions] });
+    const authority = data.callerPermissions[row.id] ?? "";
+    if (
+      authority !== "schedule_only" &&
+      authority !== "schedule_diagnostic" &&
+      authority !== "full_authorization" &&
+      authority !== "human_approval_required"
+    ) {
+      continue;
+    }
+    callerPermissions.push({ id: row.id, label: row.label, authority });
   }
 
   const capacityPolicies: NormalizedCapacityPolicyRow[] = [];

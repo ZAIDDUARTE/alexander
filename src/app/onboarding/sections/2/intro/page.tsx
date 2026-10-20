@@ -21,7 +21,7 @@ export default function Section2IntroPage() {
       <SectionIntro
         sectionNumber={2}
         title="Your Services"
-        description="Tell Alexander which jobs your company accepts, who you serve, and where you work. This information helps him recognize the difference between a service your company routinely provides, a request that requires review, and a job your company does not accept. The more clearly your service boundaries are defined, the more confidently Alexander can qualify calls and guide customers to the right next step."
+        description="Tell Alexander which jobs your company accepts, who you serve, and where you work."
         estimatedTime="10–15 minutes"
         ctaHref="/onboarding/sections/2/form"
         ctaLabel="Begin Your Services →"

@@ -30,8 +30,37 @@ export function submissionObjectKeys(sessionId: string, contentRevision: string)
   };
 }
 
+const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+
+export function persistenceV2ObjectKeys(
+  customerId: string,
+  onboardingId: string,
+  submissionId: string,
+): {
+  prefix: string;
+  raw: string;
+  answers: string;
+  normalized: string;
+  manifest: string;
+} {
+  const prefix = `customers/${customerId}/onboardings/${onboardingId}/submissions/${submissionId}`;
+  return {
+    prefix,
+    raw: `${prefix}/raw/draft.json`,
+    answers: `${prefix}/answers/questionnaire-answers.json`,
+    normalized: `${prefix}/normalized/normalized-config.json`,
+    manifest: `${prefix}/metadata/manifest.json`,
+  };
+}
+
 export function isSafeSubmissionKey(key: string): boolean {
-  return /^onboarding\/[0-9a-f-]{36}\/submissions\/[0-9a-f]{64}\/(raw-draft|normalized-config|manifest)\.json$/i.test(
-    key,
+  return (
+    /^onboarding\/[0-9a-f-]{36}\/submissions\/[0-9a-f]{64}\/(raw-draft|normalized-config|manifest)\.json$/i.test(
+      key,
+    ) ||
+    new RegExp(
+      `^customers/${UUID}/onboardings/${UUID}/submissions/${UUID}/(?:raw/draft|answers/questionnaire-answers|normalized/normalized-config|metadata/manifest)\\.json$`,
+      "i",
+    ).test(key)
   );
 }

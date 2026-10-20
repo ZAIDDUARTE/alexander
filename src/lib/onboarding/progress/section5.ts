@@ -1,120 +1,62 @@
-import { FINANCIAL_REMEDY_ROWS, getVisitTypeMatrixServices } from "../section5Catalog";
-import { getPricingDiscussEligibleServices } from "../pricingServices";
+import { PAYMENT_ASSISTANCE_OPTIONS, PAYMENT_COLLECTION_OPTIONS } from "../section5Catalog";
+import { getOfferedPricingServices, pricingServiceLabel } from "../pricingServices";
 import {
-  activeMeaningfulFees,
-  feeCardStarted,
-  isPositiveMoney,
-  validateFeeCard,
-} from "../validation/feeRecord";
-import { approverContactIsValid } from "../validation/section3";
+  activeServicePrices,
+  additionalFeeDetailErrors,
+  additionalFeeSelectionConflict,
+  servicePriceRecordErrors,
+} from "../section5Pricing";
 import type { Contact, FeeRecord, RemedyId, Section2Data, Section5Data } from "../types";
-import { contactHasIdentity, createDefaultSection2 } from "../types";
+import { createDefaultSection2 } from "../types";
 
 type ProgressUnit = { applicable: boolean; complete: boolean };
 
-function hasPaidDiagnosticVisit(data: Section5Data): boolean {
-  return Object.values(data.visitTypeByServiceId).some((v) => v === "paid_diagnostic");
-}
-
-function remedyRequiresHumanApproval(data: Section5Data): boolean {
-  for (const row of FINANCIAL_REMEDY_ROWS) {
-    if (data.remedyAuthority[row.id as RemedyId] === "human_approval") return true;
-  }
-  return false;
-}
-
-function q68Complete(data: Section5Data, fees: FeeRecord[]): boolean {
-  const meaningfulActive = activeMeaningfulFees(fees);
-  if (data.noSeparateFees) return meaningfulActive.length === 0;
-  if (meaningfulActive.length === 0 && !fees.some((f) => f.active && feeCardStarted(f))) {
-    return true;
-  }
-  const errors: Record<string, string> = {};
-  for (const fee of fees) {
-    if (!fee.active && !feeCardStarted(fee)) continue;
-    if (!fee.active && feeCardStarted(fee)) {
-      validateFeeCard(fee, errors, `fees.${fee.id}`, {
-        requireNotice: fee.feeKey === "late_cancellation",
-      });
-      continue;
-    }
-    if (fee.active) {
-      validateFeeCard(fee, errors, `fees.${fee.id}`, {
-        requireNotice: fee.feeKey === "late_cancellation",
-      });
-    }
-  }
-  return Object.keys(errors).length === 0;
-}
-
 function areaRowsComplete(data: Section5Data): boolean {
   if (data.areaPricingRows.length === 0) return false;
-  return data.areaPricingRows.every((row) => {
-    const area = row.area.trim();
-    const travel = row.travelFee.trim();
-    const minimum = row.minimumCharge.trim();
-    const hasTravel = travel && isPositiveMoney(travel);
-    const hasMinimum = minimum && isPositiveMoney(minimum);
-    if (!area && !hasTravel && !hasMinimum) return false;
-    if (travel && !isPositiveMoney(travel)) return false;
-    if (minimum && !isPositiveMoney(minimum)) return false;
-    return true;
-  });
+  return data.areaPricingRows.every((row) => row.area.trim() && (row.feeOrMinimum ?? "").trim());
 }
 
-function visitTypesComplete(data: Section5Data): boolean {
-  for (const service of getVisitTypeMatrixServices()) {
-    if (!data.visitTypeByServiceId[service.id]) return false;
-  }
-  return true;
-}
-
-function servicePricingComplete(
-  data: Section5Data,
-  section2: Section2Data,
-  fees: FeeRecord[],
-): boolean {
-  const eligible = getPricingDiscussEligibleServices(section2);
-  if (eligible.length === 0) return true;
-  const activeFeeIds = new Set(activeMeaningfulFees(fees).map((f) => f.id));
-  for (const service of eligible) {
-    const rule = data.servicePricingRules[service.id];
-    if (!rule?.instruction) return false;
-    if (rule.instruction === "quote_approved") {
-      if (rule.approvedPriceMode === "exact") {
-        if (!isPositiveMoney(rule.approvedPriceExact)) return false;
-      } else if (rule.approvedPriceMode === "range") {
-        if (!isPositiveMoney(rule.approvedPriceMin) || !isPositiveMoney(rule.approvedPriceMax)) {
-          return false;
-        }
-        if (parseFloat(rule.approvedPriceMin) > parseFloat(rule.approvedPriceMax)) return false;
-      } else {
-        return false;
-      }
-    } else if (rule.instruction === "explain_fee_only") {
-      if (!rule.linkedFeeIds.some((id) => activeFeeIds.has(id))) return false;
-    } else if (rule.instruction === "ask_team") {
-      if (!rule.askTeamDetail.trim()) return false;
+function servicePricesComplete(data: Section5Data, section2: Section2Data): boolean {
+  const offeredIds = new Set(getOfferedPricingServices(section2).map((service) => service.id));
+  const active = activeServicePrices(data.servicePrices, offeredIds);
+  const seen = new Set<string>();
+  for (const record of active) {
+    if (seen.has(record.serviceId)) return false;
+    seen.add(record.serviceId);
+    if (
+      Object.keys(servicePriceRecordErrors(record, pricingServiceLabel(record.serviceId))).length > 0
+    ) {
+      return false;
     }
   }
   return true;
 }
 
-function promotionsComplete(data: Section5Data): boolean {
-  if (data.promotions.length === 0) return false;
-  return data.promotions.every(
-    (p) => p.name.trim() && p.benefit.trim() && p.eligibility.trim(),
-  );
-}
-
-function remediesComplete(data: Section5Data): boolean {
-  for (const row of FINANCIAL_REMEDY_ROWS) {
-    const id = row.id as RemedyId;
-    const authority = data.remedyAuthority[id];
-    if (!authority) return false;
-    if (authority === "within_rules" && !data.remedyRules[id].trim()) return false;
+function additionalFeesComplete(data: Section5Data): boolean {
+  if (data.additionalFeeSelection.length === 0) return false;
+  if (additionalFeeSelectionConflict(data.additionalFeeSelection)) return false;
+  if (data.additionalFeeSelection.includes("none")) return true;
+  for (const category of data.additionalFeeSelection) {
+    if (category === "none") continue;
+    if (
+      Object.keys(additionalFeeDetailErrors(category, data.additionalFeeDetails[category])).length > 0
+    ) {
+      return false;
+    }
   }
   return true;
+}
+
+const ASSISTANCE_IDS = new Set(PAYMENT_ASSISTANCE_OPTIONS.map((option) => option.id));
+const COLLECTION_IDS = new Set(PAYMENT_COLLECTION_OPTIONS.map((option) => option.id));
+
+function remediesComplete(data: Section5Data): boolean {
+  const remedies = data.financialRemedies;
+  if (remedies.length === 0) return false;
+  const actual = remedies.filter((id): id is RemedyId => id !== "none");
+  if (remedies.includes("none") && actual.length > 0) return false;
+  if (remedies.includes("none")) return true;
+  return actual.every((id) => Boolean(data.remedyRules[id]?.trim()));
 }
 
 /**
@@ -126,110 +68,47 @@ export function getSection5ProgressUnits(
   contacts: Contact[] = [],
   fees: FeeRecord[] = [],
 ): ProgressUnit[] {
-  const showPaidDiagnostic = hasPaidDiagnosticVisit(data);
-  const showPromotions = data.hasPromotions === "yes";
-  const showStacking = showPromotions;
-  const showModification = showPromotions;
+  void fees;
+  void contacts;
+  const showServicePrices = data.mayQuoteServicePrices === "allowed";
   const showAreaRows = data.hasAreaTravelOrMinimum === "yes";
-  const showFinancing = data.offersFinancing === "yes";
-  const showFinancialApprover = remedyRequiresHumanApproval(data);
-
   const showMarkupExplanation =
     data.materialMarkupPolicy === "yes" || data.materialMarkupPolicy === "sometimes";
-
-  const due = data.paymentDuePolicies;
-  const depositComplete =
-    !due.includes("deposit_required") ||
-    (Boolean(data.depositWorkDetail.trim()) && Boolean(data.depositRule.trim()));
-  const progressComplete =
-    !due.includes("progress_payments") ||
-    (Boolean(data.progressPaymentProjectsDetail.trim()) &&
-      Boolean(data.progressPaymentRule.trim()));
-  const invoiceComplete =
-    !due.includes("invoice_after_service") ||
-    (Boolean(data.invoiceCustomersDetail.trim()) && Boolean(data.invoiceTerms.trim()));
-  const dueOtherComplete =
-    !due.includes("other") || Boolean(data.paymentDueOtherRule.trim());
-
-  const financialApproverComplete =
-    showFinancialApprover &&
-    Boolean(data.financialApproverContactId.trim()) &&
-    (() => {
-      const approver = contacts.find((c) => c.id === data.financialApproverContactId);
-      return Boolean(approver && contactHasIdentity(approver) && approverContactIsValid(approver));
-    })();
-
-  const forbiddenComplete =
-    data.forbiddenStatements.length > 0 &&
-    (!data.forbiddenStatements.includes("other") || Boolean(data.forbiddenStatementOther.trim()));
+  const collection = data.paymentCollectionScope.filter((id) => COLLECTION_IDS.has(id));
 
   return [
-    // Q65
     {
       applicable: true,
       complete:
         data.pricingModels.length > 0 &&
         (!data.pricingModels.includes("other") || Boolean(data.pricingModelOther.trim())),
     },
-    // Q66
+    {
+      applicable: true,
+      complete: data.mayQuoteServicePrices === "allowed" || data.mayQuoteServicePrices === "not_allowed",
+    },
+    {
+      applicable: showServicePrices,
+      complete: showServicePrices && servicePricesComplete(data, section2),
+    },
+    {
+      applicable: true,
+      complete:
+        data.unknownPriceBehavior === "technician_after_evaluation" ||
+        data.unknownPriceBehavior === "team_provides_pricing",
+    },
+    { applicable: true, complete: additionalFeesComplete(data) },
+    {
+      applicable: true,
+      complete: data.hasAreaTravelOrMinimum !== "" && (!showAreaRows || areaRowsComplete(data)),
+    },
     {
       applicable: true,
       complete:
         data.materialMarkupPolicy !== "" &&
         (!showMarkupExplanation || Boolean(data.materialMarkupCustomerExplanation.trim())),
     },
-    // Q67
-    {
-      applicable: true,
-      complete:
-        data.unknownPriceBehavior !== "" &&
-        (data.unknownPriceBehavior !== "custom" || Boolean(data.unknownPriceCustomRule.trim())),
-    },
-    // Q68
-    { applicable: true, complete: q68Complete(data, fees) },
-    // Q69
-    {
-      applicable: true,
-      complete:
-        data.hasAreaTravelOrMinimum !== "" && (!showAreaRows || areaRowsComplete(data)),
-    },
-    // Q70
-    { applicable: true, complete: visitTypesComplete(data) },
-    // Q71
-    {
-      applicable: showPaidDiagnostic,
-      complete: showPaidDiagnostic && Boolean(data.paidDiagnosticExplanation.trim()),
-    },
-    // Q73
-    {
-      applicable: true,
-      complete: servicePricingComplete(data, section2, fees),
-    },
-    // Q74 — MD default five may pre-complete; Other still conditional
-    { applicable: true, complete: forbiddenComplete },
-    // Q75
-    {
-      applicable: true,
-      complete: data.hasPromotions !== "" && (!showPromotions || promotionsComplete(data)),
-    },
-    // Q76
-    {
-      applicable: showStacking,
-      complete:
-        showStacking &&
-        data.promotionStacking !== "" &&
-        (data.promotionStacking !== "conditional" || Boolean(data.promotionStackingRule.trim())),
-    },
-    // Q77
-    {
-      applicable: showModification,
-      complete:
-        showModification &&
-        data.promotionModificationAuthority !== "" &&
-        (data.promotionModificationAuthority !== "within_rules" ||
-          Boolean(data.promotionModificationRule.trim())),
-    },
-    // Q78
+    // Payment methods through financial remedies.
     {
       applicable: true,
       complete:
@@ -239,24 +118,19 @@ export function getSection5ProgressUnits(
     // Q79
     {
       applicable: true,
-      complete:
-        data.paymentDuePolicies.length > 0 &&
-        depositComplete &&
-        progressComplete &&
-        invoiceComplete &&
-        dueOtherComplete,
+      complete: data.paymentDuePolicies.length > 0,
     },
-    // Q80
+    {
+      applicable: true,
+      complete: ASSISTANCE_IDS.has(data.paymentAssistance),
+    },
     {
       applicable: true,
       complete:
-        data.offersFinancing !== "" &&
-        (!showFinancing || Boolean(data.financingProviderTerms.trim())),
+        collection.length > 0 &&
+        (!collection.includes("other") || Boolean(data.paymentCollectionOther.trim())),
     },
-    // Q81
     { applicable: true, complete: remediesComplete(data) },
-    // Q82
-    { applicable: showFinancialApprover, complete: financialApproverComplete },
   ];
 }
 

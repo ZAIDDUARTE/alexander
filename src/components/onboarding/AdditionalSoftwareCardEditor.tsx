@@ -22,7 +22,8 @@ export function AdditionalSoftwareCardEditor({
       <p className="text-sm font-medium text-[var(--color-alexander-navy)]">{categoryLabel}</p>
       <TextField
         id={`${prefix}.systemName`}
-        label="Exact software name"
+        label="What software do you use?"
+        placeholder="Enter software name"
         value={card.systemName}
         onChange={(v) => onChange({ systemName: v })}
         error={submitted ? errors[`${prefix}.systemName`] : undefined}

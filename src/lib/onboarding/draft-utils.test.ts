@@ -121,7 +121,7 @@ describe("hasDraftContent — Section 3 fields", () => {
   it("detects an in-progress Section 3 answer even with Sections 1–2 blank", () => {
     const draft = createDefaultDraft();
     const firstScenarioId = Object.keys(draft.section3.emergencyClassifications)[0];
-    draft.section3.emergencyClassifications[firstScenarioId] = "emergency";
+    draft.section3.emergencyClassifications[firstScenarioId] = "routine";
     assert.equal(hasDraftContent(draft), true);
   });
 
@@ -164,12 +164,12 @@ describe("contactHasIdentity — Q38 picker eligibility", () => {
   });
 });
 
-describe("Q26 defaults — recommended_default preselection", () => {
-  it("createDefaultEmergencyClassifications preselects recommended_default on every row", () => {
+describe("Q26 defaults — scenario preselection", () => {
+  it("createDefaultEmergencyClassifications preselects each scenario default", () => {
     const map = createDefaultEmergencyClassifications();
-    for (const value of Object.values(map)) {
-      assert.equal(value, "recommended_default");
-    }
+    assert.equal(map["multiple-fixtures-backing-up"], "urgent");
+    assert.equal(map["unclear-situation-may-be-dangerous"], "human_review");
+    assert.equal(map["uncontrolled-water-leak-inside-property"], "emergency");
   });
 });
 

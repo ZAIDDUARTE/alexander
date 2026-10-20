@@ -1,6 +1,11 @@
 "use client";
 
-type Option<T extends string> = { value: T; label: string; disabled?: boolean };
+type Option<T extends string> = {
+  value: T;
+  label: string;
+  description?: string;
+  disabled?: boolean;
+};
 
 export function RadioGroup<T extends string>({
   name,
@@ -44,7 +49,18 @@ export function RadioGroup<T extends string>({
                   }}
                   className="mt-1 h-4 w-4 shrink-0 accent-[var(--color-alexander-blue)]"
                 />
-                <span className="text-sm text-[var(--color-alexander-navy)]">{opt.label}</span>
+                <span className="text-sm text-[var(--color-alexander-navy)]">
+                  {opt.description ? (
+                    <>
+                      <span className="block font-medium">{opt.label}</span>
+                      <span className="mt-1 block font-normal text-[var(--color-alexander-muted)]">
+                        {opt.description}
+                      </span>
+                    </>
+                  ) : (
+                    opt.label
+                  )}
+                </span>
               </label>
             </li>
           );
