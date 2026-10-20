@@ -29,9 +29,11 @@ import {
 } from "../../src/lib/server/persistence/email-outbox";
 import {
   renderDashboardReadyEmail,
+  renderPortalAdminVerificationEmail,
   renderQuestionnaireInvitationCorrectionEmail,
   renderQuestionnaireInvitationEmail,
 } from "../../src/lib/server/persistence/email-templates";
+import { resolveApprovedDashboardUrl, validateCustomerDashboardUrl } from "../../src/lib/server/persistence/dashboard-url";
 import {
   loadStripeSecretKey,
   verifyPaidCheckoutSession,
@@ -41,6 +43,23 @@ import {
   flattenQuestionnaireAnswerFields,
   projectSubmissionToBusinessProfile,
 } from "../../src/lib/server/persistence/profile-projector";
+import {
+  inviteCustomerToTrilletWorkspace,
+  inviteFeatureEnabled,
+  inviteLiveEnabled,
+  loadInviteEligibility,
+  resolveCustomerInviteRole,
+  resolveDashboardUrl,
+} from "../../src/lib/server/persistence/trillet-invite";
+import { resolveTrilletApiKey } from "../../src/lib/server/persistence/trillet-secret";
+import {
+  loadCustomerProvisioningStatus,
+  queueDashboardReadyEmail,
+  reconcileCustomerProvisioning,
+  runCustomerProvisioning,
+} from "../../src/lib/server/persistence/customer-provisioning";
+import { evaluateAgencyWorkspaceContract } from "../../src/lib/server/persistence/trillet-workspace-adapter";
+import { assertOperatorWorkspaceAssignment } from "../../src/lib/server/persistence/provisioning-policy";
 import { submitPersistenceV2FromAccess } from "../../src/lib/server/persistence/v2-submit";
 import type { OnboardingDraft } from "../../src/lib/onboarding/types";
 import {
@@ -67,6 +86,21 @@ function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error("persistence_not_configured");
   return value;
+}
+
+/** Load Trillet API key from Secrets Manager into process.env for this invocation only. Never logs the value. */
+async function ensureTrilletApiKeyLoaded(): Promise<void> {
+  if ((process.env.TRILLET_API_KEY || "").trim()) return;
+  const arn = (process.env.TRILLET_SECRET_ARN || "").trim();
+  if (!arn) return;
+  const secrets = new SecretsManagerClient({});
+  const resolved = await resolveTrilletApiKey(process.env, async (secretArn) => {
+    const got = await secrets.send(new GetSecretValueCommand({ SecretId: secretArn }));
+    return got.SecretString || null;
+  });
+  if (resolved.ok) {
+    process.env.TRILLET_API_KEY = resolved.key;
+  }
 }
 
 function iso(value: unknown): string | null {
@@ -370,11 +404,30 @@ export async function handler(event: unknown): Promise<unknown> {
     event && typeof event === "object" && "operation" in event
       ? String((event as { operation?: unknown }).operation ?? "")
       : "";
-  if (["resolveRequestInstallation", "persistVerifiedCall", "listServiceRequests"].includes(operation)) {
-    if (process.env.ALEXANDER_REQUEST_PIPELINE_ENABLED !== "true") return { ok: false, reason: "disabled" };
+  if (
+    [
+      "resolveRequestInstallation",
+      "persistVerifiedCall",
+      "listServiceRequests",
+      "listServiceRequestsByCustomer",
+      "upsertStagingRequestInstallation",
+    ].includes(operation)
+  ) {
+    // Staging seed/list-by-customer ops are IAM-only (Vercel→Lambda). Ingest/list still require the pipeline flag.
+    if (
+      process.env.ALEXANDER_REQUEST_PIPELINE_ENABLED !== "true" &&
+      operation !== "upsertStagingRequestInstallation" &&
+      operation !== "listServiceRequestsByCustomer"
+    ) {
+      return { ok: false, reason: "disabled" };
+    }
     return handleRequestOperation(event as Record<string, unknown>, await getPool() as unknown as SqlPool);
   }
-  if (operation === "persistVerifiedJobberConnection") {
+  if (
+    operation === "persistVerifiedJobberConnection" ||
+    operation === "disconnectJobberTestConnection" ||
+    operation === "inspectJobberTestConnection"
+  ) {
     // Independent of ALEXANDER_REQUEST_PIPELINE_ENABLED so staging OAuth can land without enabling write pipeline.
     return handleJobberOAuthOperation(event as Record<string, unknown>, await getPool() as unknown as SqlPool);
   }
@@ -1030,6 +1083,38 @@ if (operation === "diagnoseCustomerSubmissionState") {
     };
   }
 
+  if (operation === "cancelQueuedDashboardReadyEmail") {
+    const body = event as { customerNumber?: unknown; emailJobId?: unknown };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    const emailJobId = typeof body.emailJobId === "string" ? body.emailJobId.trim() : "";
+    if (!/^ALX-C\d{6}$/.test(customerNumber) || !/^[0-9a-f-]{36}$/i.test(emailJobId)) {
+      return { ok: false, reason: "invalid_payload" };
+    }
+    const pool = await getPool();
+    const classification = await pool.query(
+      `SELECT data_classification FROM customers WHERE customer_number = $1 LIMIT 1`,
+      [customerNumber],
+    );
+    if (String(classification.rows[0]?.data_classification || "") !== "synthetic_test") {
+      return { ok: false, reason: "not_synthetic_test" };
+    }
+    const updated = await pool.query(
+      `UPDATE email_outbox e
+       SET status = 'blocked_test_guard', updated_at = now(), last_error_code = 'staging_e2e_suppressed'
+       FROM customers c
+       WHERE e.id = $1
+         AND e.customer_id = c.id
+         AND c.customer_number = $2
+         AND e.template_type = 'dashboard_ready'
+         AND e.provider_message_id IS NULL
+         AND e.status NOT IN ('sent', 'delivered', 'blocked_test_guard')
+       RETURNING e.id, e.status`,
+      [emailJobId, customerNumber],
+    );
+    return { ok: true, suppressed: updated.rows.length, idPrefix: emailJobId.slice(0, 8) };
+  }
+
   if (operation === "recoverBlockedQuestionnaireInvitation") {
     const body = event as { customerNumber?: unknown };
     const customerNumber =
@@ -1101,21 +1186,51 @@ if (operation === "diagnoseCustomerSubmissionState") {
       const to = allow;
       const firstName = String(job.payload.first_name || "there");
       const invitationUrl = String(job.payload.invitation_url || "");
+      const verificationUrl = String(job.payload.verification_url || "");
+      if (job.templateType === "dashboard_ready") {
+        const dashCheck = validateCustomerDashboardUrl(
+          String(job.payload.dashboard_url || ""),
+          process.env,
+        );
+        if (!dashCheck.ok) {
+          await markEmailRetry(
+            pool as unknown as SqlPool,
+            job.id,
+            `dashboard_url_${dashCheck.reason}`,
+          );
+          results.push({
+            id: job.id,
+            status: "retry_pending",
+            reason: `dashboard_url_${dashCheck.reason}`,
+          });
+          continue;
+        }
+      }
+      if (job.templateType === "portal_admin_verification" && !verificationUrl) {
+        await markEmailRetry(pool as unknown as SqlPool, job.id, "missing_verification_url");
+        results.push({ id: job.id, status: "retry_pending", reason: "missing_verification_url" });
+        continue;
+      }
       let rendered =
         job.templateType === "dashboard_ready"
           ? renderDashboardReadyEmail({
               firstName,
-              dashboardUrl: String(job.payload.dashboard_url || invitationUrl),
+              dashboardUrl: String(job.payload.dashboard_url || ""),
             })
-          : job.templateType === "questionnaire_invitation_correction"
-            ? renderQuestionnaireInvitationCorrectionEmail({
+          : job.templateType === "portal_admin_verification"
+            ? renderPortalAdminVerificationEmail({
                 firstName,
-                invitationUrl,
+                verificationUrl,
               })
-            : renderQuestionnaireInvitationEmail({
-                firstName,
-                invitationUrl,
-              });
+            : job.templateType === "questionnaire_invitation_correction"
+              ? renderQuestionnaireInvitationCorrectionEmail({
+                  firstName,
+                  invitationUrl,
+                })
+              : renderQuestionnaireInvitationEmail({
+                  firstName,
+                  invitationUrl,
+                });
       if (
         (job.templateType === "questionnaire_invitation" ||
           job.templateType === "questionnaire_invitation_correction") &&
@@ -1158,17 +1273,54 @@ if (operation === "diagnoseCustomerSubmissionState") {
       customerId?: unknown;
       workspaceId?: unknown;
       agentId?: unknown;
+      /** @deprecated Ignored for Email #2. Trillet sends its own invite links. */
       invitationUrl?: unknown;
+      dashboardUrl?: unknown;
       operatorRef?: unknown;
+      /** When true, attempt automated Trillet invite after marking ready. */
+      sendTrilletInvite?: unknown;
+      /** Requires TRILLET_INVITE_LIVE_ENABLED=true; default false. */
+      liveInvite?: unknown;
     };
     const customerId = typeof body.customerId === "string" ? body.customerId : "";
-    const workspaceId = typeof body.workspaceId === "string" ? body.workspaceId.trim() : "";
-    const invitationUrl = typeof body.invitationUrl === "string" ? body.invitationUrl.trim() : "";
-    if (!/^[0-9a-f-]{36}$/i.test(customerId) || !workspaceId || !invitationUrl) {
-      return { ok: false, reason: "invalid_payload" };
+    const workspaceRaw = typeof body.workspaceId === "string" ? body.workspaceId.trim() : "";
+    if (!/^[0-9a-f-]{36}$/i.test(customerId) || !workspaceRaw) {
+      return {
+        ok: false,
+        reason: "invalid_payload",
+        detail: "customerId and workspaceId are required",
+      };
     }
+    const workspaceCheck = assertOperatorWorkspaceAssignment(workspaceRaw, process.env);
+    if (!workspaceCheck.ok) {
+      return { ok: false, reason: workspaceCheck.reason, detail: workspaceCheck.detail };
+    }
+    const workspaceId = workspaceCheck.workspaceId;
+
+    // Email #2 is optional and independent of Trillet's native invite.
+    // Never trust body.invitationUrl. Missing/unapproved dashboard URL blocks Email #2 only.
+    const configuredDash = resolveApprovedDashboardUrl(process.env);
+    const explicitDash =
+      typeof body.dashboardUrl === "string" && body.dashboardUrl.trim()
+        ? validateCustomerDashboardUrl(body.dashboardUrl.trim(), process.env)
+        : null;
+    const dashResult =
+      explicitDash && explicitDash.ok
+        ? explicitDash
+        : configuredDash.ok
+          ? configuredDash
+          : explicitDash || configuredDash;
+    const dashboardUrl = dashResult.ok ? dashResult.url : null;
+    const dashboardBlockedReason = dashResult.ok
+      ? null
+      : `${dashResult.reason}${dashResult.detail ? `:${dashResult.detail}` : ""}`;
+
     const pool = await getPool();
     const client = await (pool as unknown as SqlPool).connect();
+    let emailJobId: string | null = null;
+    let emailBlockedReason: string | null = dashboardBlockedReason
+      ? `dashboard_url_${dashboardBlockedReason}`
+      : null;
     try {
       await client.query("BEGIN");
       const submitted = await client.query(
@@ -1200,13 +1352,32 @@ if (operation === "diagnoseCustomerSubmissionState") {
         return { ok: false, reason: "canonical_profile_not_ready" };
       }
       const trilletRow = await client.query(
-        `SELECT status FROM customer_trillet_workspaces WHERE customer_id = $1 LIMIT 1`,
+        `SELECT status, workspace_id FROM customer_trillet_workspaces WHERE customer_id = $1 LIMIT 1`,
         [customerId],
       );
       const trilletStatus = String(trilletRow.rows[0]?.status || "");
-      if (trilletStatus !== "awaiting_internal_setup") {
+      const existingWorkspaceId = trilletRow.rows[0]?.workspace_id
+        ? String(trilletRow.rows[0].workspace_id)
+        : "";
+      const allowedPrior = new Set([
+        "awaiting_internal_setup",
+        "workspace_provisioning_blocked",
+        "provisioning_pending",
+        "error",
+        "trillet_sync_required",
+      ]);
+      // Idempotent re-mark of the same workspace mapping.
+      const sameReady =
+        trilletStatus === "ready" &&
+        existingWorkspaceId &&
+        existingWorkspaceId === workspaceId;
+      if (!sameReady && !allowedPrior.has(trilletStatus)) {
         await client.query("ROLLBACK");
-        return { ok: false, reason: "trillet_status_not_awaiting_setup", status: trilletStatus || null };
+        return {
+          ok: false,
+          reason: "trillet_status_not_awaiting_setup",
+          status: trilletStatus || null,
+        };
       }
       const clash = await client.query(
         `SELECT customer_id FROM customer_trillet_workspaces
@@ -1219,53 +1390,54 @@ if (operation === "diagnoseCustomerSubmissionState") {
       }
       await client.query(
         `INSERT INTO customer_trillet_workspaces (
-           customer_id, workspace_id, agent_id, invitation_url, status,
-           workspace_ready_at, invitation_created_at, operator_ref, updated_at
-         ) VALUES ($1,$2,$3,$4,'ready',now(),now(),$5,now())
+           customer_id, workspace_id, agent_id, invitation_url, dashboard_url, status,
+           workspace_ready_at, operator_ref, provisioning_phase,
+           provisioning_last_error, updated_at
+         ) VALUES ($1,$2,$3,NULL,$4,'ready',now(),$5,'workspace_mapped',NULL,now())
          ON CONFLICT (customer_id) DO UPDATE SET
            workspace_id = EXCLUDED.workspace_id,
            agent_id = EXCLUDED.agent_id,
-           invitation_url = EXCLUDED.invitation_url,
+           dashboard_url = COALESCE(EXCLUDED.dashboard_url, customer_trillet_workspaces.dashboard_url),
            status = 'ready',
            workspace_ready_at = COALESCE(customer_trillet_workspaces.workspace_ready_at, now()),
-           invitation_created_at = COALESCE(customer_trillet_workspaces.invitation_created_at, now()),
            operator_ref = EXCLUDED.operator_ref,
+           provisioning_phase = 'workspace_mapped',
+           provisioning_last_error = NULL,
+           last_error = NULL,
            updated_at = now()`,
         [
           customerId,
           workspaceId,
           typeof body.agentId === "string" ? body.agentId : null,
-          invitationUrl,
+          dashboardUrl,
           typeof body.operatorRef === "string" ? body.operatorRef : null,
         ],
       );
-      const dedupe = `dashboard_ready:${customerId}:${workspaceId}`;
-      const email = await client.query(
-        `SELECT primary_email, customer_facing_name FROM customers WHERE id = $1`,
-        [customerId],
-      );
-      const recipient = String(email.rows[0]?.primary_email || "test-recipient-required@invalid.local");
-      const first = String(email.rows[0]?.customer_facing_name || "there").split(/\s+/)[0] || "there";
-      const job = await client.query(
-        `INSERT INTO email_outbox (
-           customer_id, template_type, recipient, dedupe_key, payload_json, status
-         ) VALUES ($1,'dashboard_ready',$2,$3,$4::jsonb,'queued')
-         ON CONFLICT (dedupe_key) DO UPDATE SET updated_at = now()
-         RETURNING id`,
-        [
+      // Queue Email #2 only when destination AND portal admin are both ready.
+      if (dashboardUrl) {
+        const email = await client.query(
+          `SELECT portal_admin_email, portal_admin_status, customer_facing_name
+           FROM customers WHERE id = $1`,
+          [customerId],
+        );
+        const queued = await queueDashboardReadyEmail(client, {
           customerId,
-          recipient,
-          dedupe,
-          JSON.stringify({ first_name: first, dashboard_url: invitationUrl }),
-        ],
-      );
+          workspaceId,
+          portalAdminEmail: email.rows[0]?.portal_admin_email
+            ? String(email.rows[0].portal_admin_email)
+            : null,
+          portalAdminStatus: email.rows[0]?.portal_admin_status
+            ? String(email.rows[0].portal_admin_status)
+            : null,
+          customerFacingName: email.rows[0]?.customer_facing_name
+            ? String(email.rows[0].customer_facing_name)
+            : null,
+          dashboardUrl,
+        });
+        emailJobId = queued.emailJobId;
+        if (queued.blockedReason) emailBlockedReason = queued.blockedReason;
+      }
       await client.query("COMMIT");
-      return {
-        ok: true,
-        customerId,
-        workspaceId,
-        emailJobId: String(job.rows[0]?.id || ""),
-      };
     } catch (error) {
       try {
         await client.query("ROLLBACK");
@@ -1276,6 +1448,197 @@ if (operation === "diagnoseCustomerSubmissionState") {
     } finally {
       client.release();
     }
+
+    const wantInvite = body.sendTrilletInvite === true || inviteFeatureEnabled(process.env);
+    const resumed = await runCustomerProvisioning(pool as unknown as SqlPool, {
+      customerId,
+      trigger: "mark_workspace_ready",
+      sendTrilletInvite: wantInvite,
+      liveInvite: body.liveInvite === true,
+      operatorRef:
+        typeof body.operatorRef === "string" ? body.operatorRef : "markTrilletWorkspaceReady",
+    });
+    if (
+      resumed.phase === "invite_failed" ||
+      resumed.phase === "workspace_provisioning_blocked" ||
+      resumed.gateReason
+    ) {
+      console.log(
+        JSON.stringify({
+          event: "customer_provisioning_attention",
+          customerIdPrefix: customerId.slice(0, 8),
+          phase: resumed.phase,
+          reason: resumed.gateReason || resumed.detail || resumed.phase,
+        }),
+      );
+    }
+
+    return {
+      ok: true,
+      customerId,
+      workspaceId,
+      dashboardUrl,
+      emailJobId,
+      emailBlockedReason,
+      provisioning: {
+        phase: resumed.phase,
+        ok: resumed.ok,
+        idempotent: resumed.idempotent,
+        emailBlockedReason: resumed.emailBlockedReason || null,
+      },
+      invite: resumed.invite,
+      inviteFeatureEnabled: inviteFeatureEnabled(process.env),
+      inviteLiveEnabled: inviteLiveEnabled(process.env),
+      note:
+        "Trillet native invite is independent of SES Email #2. Email #2 stays blocked without an allowlisted dashboard URL and confirmed portal admin. invite_status=sent is not customer activation.",
+    };
+  }
+
+  if (operation === "reconcileCustomerProvisioning") {
+    const body = event as { execute?: unknown; limit?: unknown };
+    const pool = await getPool();
+    const execute = body.execute === true;
+    await ensureTrilletApiKeyLoaded();
+    const reconciled = await reconcileCustomerProvisioning(pool as unknown as SqlPool, {
+      execute,
+      limit: typeof body.limit === "number" ? body.limit : 25,
+    });
+    return {
+      ...reconciled,
+      inviteFeatureEnabled: inviteFeatureEnabled(process.env),
+      inviteLiveEnabled: inviteLiveEnabled(process.env),
+      note: execute
+        ? "Executed idempotent provisioning. Terminal invitations are not resent. Workspaces are not created."
+        : "Dry-run only. Pass execute:true to recover missed triggers. Does not send live invites unless invite flags are already enabled.",
+    };
+  }
+
+  if (operation === "inspectCustomerProvisioning") {
+    const body = event as { customerNumber?: unknown; customerId?: unknown };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    const customerId = typeof body.customerId === "string" ? body.customerId.trim() : "";
+    if (!customerId && !/^ALX-C\d{6}$/.test(customerNumber)) {
+      return { ok: false, reason: "invalid_payload" };
+    }
+    const pool = await getPool();
+    const loaded = await loadCustomerProvisioningStatus(
+      pool as unknown as SqlPool,
+      { customerId: customerId || undefined, customerNumber: customerNumber || undefined },
+      process.env,
+    );
+    if (!loaded.ok) return loaded;
+    return {
+      ok: true,
+      status: loaded.status,
+      agencyContract: evaluateAgencyWorkspaceContract(),
+      inviteFeatureEnabled: inviteFeatureEnabled(process.env),
+      inviteLiveEnabled: inviteLiveEnabled(process.env),
+      note:
+        "workspace_provisioning_blocked means Agency-managed create is not in the confirmed Trillet API. Operator maps an isolated workspace via markTrilletWorkspaceReady. Never use ALX-C000002 / Phillip workspace.",
+    };
+  }
+
+  if (operation === "runCustomerProvisioning" || operation === "retryCustomerProvisioning") {
+    const body = event as {
+      customerNumber?: unknown;
+      customerId?: unknown;
+      sendTrilletInvite?: unknown;
+      liveInvite?: unknown;
+      forceRetry?: unknown;
+      operatorRef?: unknown;
+    };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    const customerId = typeof body.customerId === "string" ? body.customerId.trim() : "";
+    if (!customerId && !/^ALX-C\d{6}$/.test(customerNumber)) {
+      return { ok: false, reason: "invalid_payload" };
+    }
+    if (customerNumber === "ALX-C000002") {
+      return { ok: false, reason: "customer_blocked", detail: "ALX-C000002 is never provisioned by automation" };
+    }
+    await ensureTrilletApiKeyLoaded();
+    const pool = await getPool();
+    return runCustomerProvisioning(pool as unknown as SqlPool, {
+      customerId: customerId || undefined,
+      customerNumber: customerNumber || undefined,
+      trigger: operation === "retryCustomerProvisioning" ? "operator_retry" : "operator_retry",
+      sendTrilletInvite: body.sendTrilletInvite === true,
+      liveInvite: body.liveInvite === true,
+      forceRetry: operation === "retryCustomerProvisioning" || body.forceRetry === true,
+      operatorRef:
+        typeof body.operatorRef === "string"
+          ? body.operatorRef
+          : operation,
+    });
+  }
+
+  if (operation === "prepareTrilletInvite") {
+    const body = event as {
+      customerNumber?: unknown;
+      customerId?: unknown;
+    };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    const customerId = typeof body.customerId === "string" ? body.customerId.trim() : "";
+    if (!customerId && !/^ALX-C\d{6}$/.test(customerNumber)) {
+      return { ok: false, reason: "invalid_payload" };
+    }
+    if (customerNumber === "ALX-C000002") {
+      return { ok: false, reason: "customer_blocked", detail: "ALX-C000002 is never invited by automation" };
+    }
+    await ensureTrilletApiKeyLoaded();
+    const pool = await getPool();
+    const eligibility = await loadInviteEligibility(
+      pool as unknown as SqlPool,
+      { customerId: customerId || undefined, customerNumber: customerNumber || undefined },
+      process.env,
+    );
+    return {
+      ok: eligibility.ok,
+      eligibility,
+      plannedRole: resolveCustomerInviteRole(process.env),
+      dashboardUrl: resolveDashboardUrl(process.env),
+      inviteFeatureEnabled: inviteFeatureEnabled(process.env),
+      inviteLiveEnabled: inviteLiveEnabled(process.env),
+      trilletApiKeyConfigured: Boolean((process.env.TRILLET_API_KEY || "").trim()),
+      endpoint: "POST https://api.trillet.ai/v1/api/workspaces/{workspaceId}/invite",
+      note: "Dry-run only. Live send requires inviteTrilletCustomer with live:true and TRILLET_INVITE_LIVE_ENABLED=true plus explicit recipient approval. invite_status=sent is not account activation.",
+    };
+  }
+
+  if (operation === "inviteTrilletCustomer") {
+    const body = event as {
+      customerNumber?: unknown;
+      customerId?: unknown;
+      live?: unknown;
+      forceRetry?: unknown;
+      role?: unknown;
+      operatorRef?: unknown;
+    };
+    const customerNumber =
+      typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
+    const customerId = typeof body.customerId === "string" ? body.customerId.trim() : "";
+    if (!customerId && !/^ALX-C\d{6}$/.test(customerNumber)) {
+      return { ok: false, reason: "invalid_payload" };
+    }
+    if (customerNumber === "ALX-C000002") {
+      return { ok: false, reason: "customer_blocked" };
+    }
+    await ensureTrilletApiKeyLoaded();
+    const pool = await getPool();
+    const role =
+      typeof body.role === "string" && ["viewer", "editor", "admin"].includes(body.role)
+        ? (body.role as "viewer" | "editor" | "admin")
+        : undefined;
+    return inviteCustomerToTrilletWorkspace(pool as unknown as SqlPool, {
+      customerId: customerId || undefined,
+      customerNumber: customerNumber || undefined,
+      live: body.live === true,
+      forceRetry: body.forceRetry === true,
+      role,
+      operatorRef: typeof body.operatorRef === "string" ? body.operatorRef : null,
+    });
   }
 
   if (operation === "inspectInvitationRedeemability") {
@@ -1595,7 +1958,10 @@ if (operation === "diagnoseCustomerSubmissionState") {
     operation === "lookupInvitation" ||
     operation === "redeemInvitation" ||
     operation === "resolveAccess" ||
-    operation === "saveInvitedDraft"
+    operation === "saveInvitedDraft" ||
+    operation === "loadPortalAdmin" ||
+    operation === "confirmPortalAdmin" ||
+    operation === "verifyPortalAdmin"
   ) {
     const pool = await getPool();
     return handleOnboardingAccessOperation(event as Record<string, unknown>, pool as unknown as SqlPool);

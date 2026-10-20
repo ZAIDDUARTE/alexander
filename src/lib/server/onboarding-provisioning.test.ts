@@ -40,6 +40,8 @@ describe("invitation link", () => {
     assert.equal(page.includes("localStorage"), false);
     assert.equal(page.includes("sessionStorage"), false);
     assert.equal(page.includes("/api/onboarding/invitations/redeem"), true);
+    assert.equal(page.includes("/onboarding/account"), true);
+    assert.equal(page.includes("Paste the token") || page.includes("invitation token"), true);
   });
 });
 

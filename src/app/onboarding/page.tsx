@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingShell } from "@/components/onboarding/OnboardingShell";
 import { AlexanderLogo } from "@/components/onboarding/AlexanderLogo";
@@ -13,8 +14,47 @@ export default function WelcomePage() {
   const router = useRouter();
   const { draft, saveStatus, lastSavedAt, setNavigation } = useOnboarding();
   const sectionProgress = getSection1Progress(draft.section1);
+  const [accountGate, setAccountGate] = useState<"checking" | "ok" | "needed">("checking");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/onboarding/portal-admin", {
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        if (cancelled) return;
+        if (res.status === 401) {
+          // Anonymous / non-invited local flows may not have portal-admin; allow continue.
+          setAccountGate("ok");
+          return;
+        }
+        if (!res.ok) {
+          setAccountGate("ok");
+          return;
+        }
+        const data = (await res.json()) as { ok?: boolean; view?: { confirmed?: boolean } };
+        if (data.ok && data.view && !data.view.confirmed) {
+          setAccountGate("needed");
+          router.replace("/onboarding/account");
+          return;
+        }
+        setAccountGate("ok");
+      } catch {
+        if (!cancelled) setAccountGate("ok");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   const begin = () => {
+    if (accountGate === "needed") {
+      router.push("/onboarding/account");
+      return;
+    }
     setNavigation({ stage: "section-intro", sectionId: 1 });
     router.push("/onboarding/sections/1/intro");
   };
@@ -65,7 +105,9 @@ export default function WelcomePage() {
           complete
         </p>
         <div className="mx-auto mt-8 max-w-md">
-          <PrimaryButton onClick={begin}>Begin Section 1 →</PrimaryButton>
+          <PrimaryButton onClick={begin} disabled={accountGate === "checking"}>
+            Begin Section 1 →
+          </PrimaryButton>
         </div>
       </ContentCard>
     </OnboardingShell>

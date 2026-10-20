@@ -69,6 +69,33 @@ A product of Beyond Intelligence, Inc.
   return { subject, text, html };
 }
 
+export function renderPortalAdminVerificationEmail(vars: {
+  firstName: string;
+  verificationUrl: string;
+}): EmailRender {
+  const first = vars.firstName.trim() || "there";
+  const subject = "Confirm your Alexander account email";
+  const text = `Hi ${first},
+
+Confirm this email address to manage your Alexander account.
+
+${vars.verificationUrl}
+
+If you did not request this, you can ignore this message.
+
+Alexander
+A product of Beyond Intelligence, Inc.
+`;
+  const html = `<!DOCTYPE html><html><body style="font-family:Inter,system-ui,sans-serif;color:#211f1f;line-height:1.5">
+<p>Hi ${escapeHtml(first)},</p>
+<p>Confirm this email address to manage your Alexander account.</p>
+<p><a href="${escapeAttr(vars.verificationUrl)}" style="display:inline-block;background:#c8ff00;color:#06152b;padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:700">Confirm Account Email</a></p>
+<p>If you did not request this, you can ignore this message.</p>
+<p>Alexander<br/>A product of Beyond Intelligence, Inc.</p>
+</body></html>`;
+  return { subject, text, html };
+}
+
 export function renderDashboardReadyEmail(vars: {
   firstName: string;
   dashboardUrl: string;

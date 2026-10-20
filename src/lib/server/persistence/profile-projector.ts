@@ -161,7 +161,9 @@ async function upsertTrilletAwaitingInternalSetup(
      VALUES ($1, 'awaiting_internal_setup', now())
      ON CONFLICT (customer_id) DO UPDATE SET
        status = CASE
-         WHEN customer_trillet_workspaces.status IN ('ready','active','invitation_created')
+         WHEN customer_trillet_workspaces.status IN (
+           'ready','active','invitation_created','workspace_provisioning_blocked'
+         )
            THEN customer_trillet_workspaces.status
          ELSE 'awaiting_internal_setup'
        END,

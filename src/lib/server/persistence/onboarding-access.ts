@@ -678,6 +678,49 @@ export async function handleOnboardingAccessOperation(
       draft: event.draft,
     });
   }
+  if (event.operation === "loadPortalAdmin") {
+    const accessTokenHash = stringField(event.accessTokenHash);
+    if (!accessTokenHash) return { ok: false, reason: "rejected" };
+    const { loadPortalAdminForAccess } = await import("./portal-admin");
+    return loadPortalAdminForAccess(pool, accessTokenHash);
+  }
+  if (event.operation === "confirmPortalAdmin") {
+    const accessTokenHash = stringField(event.accessTokenHash);
+    const host = stringField(event.host) || "onboard.meetalexander.ai";
+    if (!accessTokenHash) return { ok: false, reason: "rejected" };
+    const { confirmPortalAdminFromAccess } = await import("./portal-admin");
+    const mode = stringField(event.mode);
+    if (mode === "checkout") {
+      if (event.confirm !== true) {
+        return { ok: false, reason: "confirmation_required" };
+      }
+      return confirmPortalAdminFromAccess(
+        pool,
+        accessTokenHash,
+        { mode: "checkout", confirm: true },
+        host,
+      );
+    }
+    if (mode === "alternate") {
+      return confirmPortalAdminFromAccess(
+        pool,
+        accessTokenHash,
+        {
+          mode: "alternate",
+          email: stringField(event.email) || "",
+          confirmEmail: stringField(event.confirmEmail) || "",
+        },
+        host,
+      );
+    }
+    return { ok: false, reason: "invalid_payload" };
+  }
+  if (event.operation === "verifyPortalAdmin") {
+    const rawToken = stringField(event.rawToken);
+    if (!rawToken) return { ok: false, reason: "rejected" };
+    const { verifyPortalAdminToken } = await import("./portal-admin");
+    return verifyPortalAdminToken(pool, rawToken);
+  }
   return { ok: false, reason: "invalid_payload" };
 }
 

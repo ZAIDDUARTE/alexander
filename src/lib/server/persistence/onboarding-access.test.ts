@@ -7,6 +7,7 @@ import { describe, it } from "node:test";
 import { invitationTokenFromHash } from "@/lib/onboarding/invitation-link";
 import {
   invitationTokenFromUrl,
+  lookupInvitation,
   provisionCustomerOnboarding,
   redeemInvitation,
   resolveOnboardingAccess,
@@ -120,6 +121,16 @@ describe("onboarding provisioning database", { skip: psql && pg ? false : "local
       assert.equal(redeemedA.ok, true);
       assert.equal(redeemedB.ok, true);
       if (!redeemedA.ok || !redeemedB.ok) return;
+      const stillOpen = await lookupInvitation(pool, hashToken(rawInvite));
+      assert.equal(stillOpen.ok, true);
+      const inviteState = await pool.query(
+        `SELECT revoked_at IS NULL AS unrevoked,
+                expires_at IS NULL OR expires_at > now() AS unexpired
+         FROM onboarding_invitations WHERE onboarding_id = $1`,
+        [first.onboardingId],
+      );
+      assert.equal(inviteState.rows[0]?.unrevoked, true);
+      assert.equal(inviteState.rows[0]?.unexpired, true);
       assert.equal(redeemedA.sessionId, redeemedB.sessionId);
       assert.equal(redeemedA.onboardingId, first.onboardingId);
 

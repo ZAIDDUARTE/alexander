@@ -220,7 +220,7 @@ export class AlexanderPersistenceStack extends Stack {
     const schema = new CustomResource(this, "SchemaMigration", {
       serviceToken: migration.serviceToken,
       properties: {
-        migrationVersion: "009",
+        migrationVersion: "015",
         databaseAddress: database.dbInstanceEndpointAddress,
       },
       resourceType: "Custom::AlexanderSchema",
@@ -265,10 +265,26 @@ export class AlexanderPersistenceStack extends Stack {
         SNAPSHOT_KMS_KEY_ARN: key.keyArn,
         STRIPE_SECRET_ARN: stripeSecret.secretArn,
         EMAIL_DELIVERY_MODE: "test",
+        // Optional: set after creating Secrets Manager secret alexander/staging/trillet
+        // TRILLET_SECRET_ARN: trilletSecret.secretArn,
+        // Invite flags remain unset/false until explicit enablement.
       },
     });
     appSecret.grantRead(persistenceFn);
     stripeSecret.grantRead(persistenceFn);
+    // Least-privilege Trillet key: only when deploy context supplies the secret name.
+    // Example: cdk deploy -c trilletSecretName=alexander/staging/trillet
+    // Grants secretsmanager:GetSecretValue on that secret alone. Invite flags stay unset here.
+    const trilletSecretName = this.node.tryGetContext("trilletSecretName");
+    if (typeof trilletSecretName === "string" && /^alexander\/[A-Za-z0-9/_+-]+$/.test(trilletSecretName)) {
+      const trilletSecret = secretsmanager.Secret.fromSecretNameV2(
+        this,
+        "TrilletInviteSecret",
+        trilletSecretName,
+      );
+      trilletSecret.grantRead(persistenceFn);
+      persistenceFn.addEnvironment("TRILLET_SECRET_ARN", trilletSecret.secretArn);
+    }
     key.grantEncryptDecrypt(persistenceFn);
     bucket.grantPut(persistenceFn, "onboarding/*");
     bucket.grantRead(persistenceFn, "onboarding/*");

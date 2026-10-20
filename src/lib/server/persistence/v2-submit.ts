@@ -12,6 +12,7 @@ import { persistenceV2ObjectKeys } from "./keys";
 import { resolveOnboardingAccess, type SqlPool } from "./onboarding-access";
 import type { ObjectStorePort } from "./types";
 import { ensureBusinessProfileProjectedAfterSubmit } from "./profile-projector";
+import { runCustomerProvisioning } from "./customer-provisioning";
 
 const ALGORITHM = "questionnaire_answers_v1";
 
@@ -512,6 +513,14 @@ export async function submitPersistenceV2FromAccess(
     } catch {
       // Submission already committed; operator/backfill can retry projection.
     }
+    try {
+      await runCustomerProvisioning(pool, {
+        customerId,
+        trigger: "questionnaire_submit",
+      });
+    } catch {
+      // Provisioning is durable/retryable; never undo a committed submission.
+    }
     return {
       ok: true,
       duplicate: true,
@@ -577,6 +586,14 @@ export async function submitPersistenceV2FromAccess(
       });
     } catch {
       // Submission remains committed even if projection fails; operator can retry.
+    }
+    try {
+      await runCustomerProvisioning(pool, {
+        customerId,
+        trigger: "questionnaire_submit",
+      });
+    } catch {
+      // Provisioning is durable/retryable; never undo a committed submission.
     }
   }
   return finalized;

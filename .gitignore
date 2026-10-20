@@ -61,3 +61,13 @@ infra/cdk-outputs.json
 
 # local research / media (not part of the deployable app)
 /zoom/
+.env*
+!.env.example
+
+# Local recovery packages and customer artifacts. Not application source.
+.deploy-tmp/
+/output/
+/transcripts/
+/website-images/
+/*.docx
+/*.png
