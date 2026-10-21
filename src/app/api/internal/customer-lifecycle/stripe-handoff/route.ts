@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { invokePersistenceLambda } from "@/lib/server/aws-persistence";
 import {
   getAlexanderLifecycleHmacSecret,
-  getAlexanderStripeTestSecretKey,
+  getAlexanderStripeSecretKey,
 } from "@/lib/server/aws-secrets";
 import { verifyLifecycleSignature } from "@/lib/server/lifecycle-hmac";
+import {
+  configuredStripeMode,
+  sessionIdMatchesMode,
+  type StripeRuntimeMode,
+} from "@/lib/server/persistence/stripe-verify";
 import { verifyPaidCheckoutSessionServer } from "@/lib/server/stripe-verify-server";
 
 export const runtime = "nodejs";
@@ -48,13 +53,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const checkoutSessionId =
     typeof body.checkoutSessionId === "string" ? body.checkoutSessionId.trim() : "";
-  if (!/^cs_test_[A-Za-z0-9]+$/.test(checkoutSessionId)) {
+  const mode: StripeRuntimeMode = configuredStripeMode() || "test";
+  if (!sessionIdMatchesMode(checkoutSessionId, mode)) {
     return NextResponse.json({ ok: false, reason: "invalid_session" }, { status: 400 });
   }
 
   let sk: string;
   try {
-    sk = await getAlexanderStripeTestSecretKey();
+    sk = await getAlexanderStripeSecretKey();
   } catch {
     return NextResponse.json({ ok: false, reason: "stripe_secret_not_configured" }, { status: 503 });
   }

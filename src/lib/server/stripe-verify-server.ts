@@ -1,12 +1,13 @@
 /**
  * Server-side Stripe verification for Vercel (internet-capable).
  * Persistence Lambda sits in an isolated VPC without NAT — it cannot call Stripe.
- * Defense-in-depth: Vercel verifies with Test secret, then IAM-invokes Lambda to persist.
+ * Defense-in-depth: Vercel verifies with the mode-matched secret, then IAM-invokes Lambda to persist.
  */
 
 import {
-  ALEXANDER_STRIPE_TEST_PRICE_ID,
-  ALEXANDER_STRIPE_TEST_PRODUCT_ID,
+  expectedStripeCatalog,
+  resolveVerificationMode,
+  sessionIdMatchesMode,
   type StripeVerifyResult,
   type StripeVerifiedCheckout,
 } from "@/lib/server/persistence/stripe-verify";
@@ -46,11 +47,18 @@ export async function verifyPaidCheckoutSessionServer(
   secretKey: string,
 ): Promise<StripeVerifyResult> {
   const sessionId = checkoutSessionId.trim();
-  if (!/^cs_test_[A-Za-z0-9]+$/.test(sessionId)) {
+  const modeResolved = resolveVerificationMode(secretKey);
+  if (!modeResolved.ok) {
+    return { ok: false, reason: modeResolved.reason, retryable: false };
+  }
+  const mode = modeResolved.mode;
+  if (!sessionIdMatchesMode(sessionId, mode)) {
     return { ok: false, reason: "invalid_session_id", retryable: false };
   }
-  if (!secretKey.startsWith("sk_test_")) {
-    return { ok: false, reason: "live_or_invalid_secret", retryable: false };
+
+  const catalog = expectedStripeCatalog(mode);
+  if (!catalog.ok) {
+    return { ok: false, reason: catalog.reason || "catalog_not_configured", retryable: false };
   }
 
   let session: Record<string, unknown>;
@@ -65,8 +73,12 @@ export async function verifyPaidCheckoutSessionServer(
     return { ok: false, reason: "stripe_retrieve_failed", retryable };
   }
 
-  if (session.livemode === true) {
-    return { ok: false, reason: "livemode_not_allowed", retryable: false };
+  const livemode = session.livemode === true;
+  if (mode === "test" && livemode) {
+    return { ok: false, reason: "livemode_mismatch", retryable: false };
+  }
+  if (mode === "live" && !livemode) {
+    return { ok: false, reason: "livemode_mismatch", retryable: false };
   }
   if (asString(session.mode) !== "subscription") {
     return { ok: false, reason: "mode_not_subscription", retryable: false };
@@ -83,10 +95,10 @@ export async function verifyPaidCheckoutSessionServer(
   const price = first?.price as Record<string, unknown> | undefined;
   const priceId = asString(price?.id);
   const productId = expandId(price?.product);
-  if (priceId !== ALEXANDER_STRIPE_TEST_PRICE_ID) {
+  if (priceId !== catalog.priceId) {
     return { ok: false, reason: "price_mismatch", retryable: false };
   }
-  if (productId && productId !== ALEXANDER_STRIPE_TEST_PRODUCT_ID) {
+  if (productId && productId !== catalog.productId) {
     return { ok: false, reason: "product_mismatch", retryable: false };
   }
 
@@ -120,7 +132,7 @@ export async function verifyPaidCheckoutSessionServer(
     customerId,
     subscriptionId,
     priceId,
-    productId: productId || ALEXANDER_STRIPE_TEST_PRODUCT_ID,
+    productId: productId || catalog.productId,
     email: asString(details?.email) || null,
     name: asString(details?.name) || null,
     phone: asString(details?.phone) || null,

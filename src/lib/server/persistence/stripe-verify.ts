@@ -1,10 +1,17 @@
 /**
  * Defense-in-depth Stripe Checkout verification for paid customer provisioning.
  * Secrets are loaded from AWS Secrets Manager at runtime — never from source.
+ *
+ * Mode contract (WordPress success page and this verifier must agree):
+ * - test: cs_test_ + sk_test_/rk_test_ + livemode=false + configured/test catalogue
+ * - live: cs_live_ + sk_live_/rk_live_ + livemode=true + explicit live catalogue
+ * Test sessions are never accepted as live payments.
  */
 
 export const ALEXANDER_STRIPE_TEST_PRICE_ID = "price_1UPnnEQKy1Smykv0n8NSuxFG";
 export const ALEXANDER_STRIPE_TEST_PRODUCT_ID = "prod_VQf7oFN8EMgfWF";
+
+export type StripeRuntimeMode = "test" | "live";
 
 export type StripeVerifiedCheckout = {
   checkoutSessionId: string;
@@ -27,6 +34,68 @@ type StripeSecretShape = {
   webhookSecret?: string;
 };
 
+export function resolveStripeSecretMode(secretKey: string): StripeRuntimeMode | null {
+  const key = secretKey.trim();
+  if (key.startsWith("sk_test_") || key.startsWith("rk_test_")) return "test";
+  if (key.startsWith("sk_live_") || key.startsWith("rk_live_")) return "live";
+  return null;
+}
+
+export function configuredStripeMode(): StripeRuntimeMode | null {
+  const mode = (process.env.ALEXANDER_STRIPE_MODE || "").trim().toLowerCase();
+  if (mode === "test" || mode === "live") return mode;
+  return null;
+}
+
+export function sessionIdMatchesMode(sessionId: string, mode: StripeRuntimeMode): boolean {
+  const id = sessionId.trim();
+  if (mode === "test") return /^cs_test_[A-Za-z0-9]+$/.test(id);
+  return /^cs_live_[A-Za-z0-9]+$/.test(id);
+}
+
+/**
+ * Catalogue expected for the runtime mode.
+ * Live mode never falls back to the test product/price.
+ */
+export function expectedStripeCatalog(mode: StripeRuntimeMode): {
+  priceId: string;
+  productId: string;
+  ok: boolean;
+  reason?: string;
+} {
+  const envPrice = (process.env.ALEXANDER_STRIPE_PRICE_ID || "").trim();
+  const envProduct = (process.env.ALEXANDER_STRIPE_PRODUCT_ID || "").trim();
+
+  if (mode === "test") {
+    const priceId = envPrice || ALEXANDER_STRIPE_TEST_PRICE_ID;
+    const productId = envProduct || ALEXANDER_STRIPE_TEST_PRODUCT_ID;
+    return { priceId, productId, ok: true };
+  }
+
+  if (!envPrice || !envProduct) {
+    return { priceId: "", productId: "", ok: false, reason: "live_catalog_not_configured" };
+  }
+  if (envPrice === ALEXANDER_STRIPE_TEST_PRICE_ID || envProduct === ALEXANDER_STRIPE_TEST_PRODUCT_ID) {
+    return { priceId: "", productId: "", ok: false, reason: "test_catalog_rejected_in_live_mode" };
+  }
+  return { priceId: envPrice, productId: envProduct, ok: true };
+}
+
+export function resolveVerificationMode(
+  secretKey: string,
+): { ok: true; mode: StripeRuntimeMode } | { ok: false; reason: string } {
+  const secretMode = resolveStripeSecretMode(secretKey);
+  if (!secretMode) {
+    return { ok: false, reason: "live_or_invalid_secret" };
+  }
+  const configured = configuredStripeMode();
+  if (configured && configured !== secretMode) {
+    return { ok: false, reason: "mode_secret_mismatch" };
+  }
+  // When ALEXANDER_STRIPE_MODE is unset, infer from the secret (staging default path).
+  return { ok: true, mode: configured || secretMode };
+}
+
 export async function loadStripeSecretKey(secretArn: string): Promise<string> {
   const { SecretsManagerClient, GetSecretValueCommand } = await import(
     "@aws-sdk/client-secrets-manager"
@@ -35,12 +104,19 @@ export async function loadStripeSecretKey(secretArn: string): Promise<string> {
   const result = await client.send(new GetSecretValueCommand({ SecretId: secretArn }));
   if (!result.SecretString) throw new Error("stripe_secret_missing");
   const parsed = JSON.parse(result.SecretString) as StripeSecretShape | string;
+  let key = "";
   if (typeof parsed === "string") {
-    if (!parsed.startsWith("sk_test_")) throw new Error("stripe_secret_not_test");
-    return parsed;
+    key = parsed.trim();
+  } else {
+    key = typeof parsed.secretKey === "string" ? parsed.secretKey.trim() : "";
   }
-  const key = typeof parsed.secretKey === "string" ? parsed.secretKey.trim() : "";
-  if (!key.startsWith("sk_test_")) throw new Error("stripe_secret_not_test");
+  if (!resolveStripeSecretMode(key)) {
+    throw new Error("stripe_secret_invalid_prefix");
+  }
+  const modeCheck = resolveVerificationMode(key);
+  if (!modeCheck.ok) {
+    throw new Error(modeCheck.reason);
+  }
   return key;
 }
 
@@ -79,11 +155,18 @@ export async function verifyPaidCheckoutSession(
   secretKey: string,
 ): Promise<StripeVerifyResult> {
   const sessionId = checkoutSessionId.trim();
-  if (!/^cs_test_[A-Za-z0-9]+$/.test(sessionId)) {
+  const modeResolved = resolveVerificationMode(secretKey);
+  if (!modeResolved.ok) {
+    return { ok: false, reason: modeResolved.reason, retryable: false };
+  }
+  const mode = modeResolved.mode;
+  if (!sessionIdMatchesMode(sessionId, mode)) {
     return { ok: false, reason: "invalid_session_id", retryable: false };
   }
-  if (!secretKey.startsWith("sk_test_")) {
-    return { ok: false, reason: "live_or_invalid_secret", retryable: false };
+
+  const catalog = expectedStripeCatalog(mode);
+  if (!catalog.ok) {
+    return { ok: false, reason: catalog.reason || "catalog_not_configured", retryable: false };
   }
 
   let session: Record<string, unknown>;
@@ -98,8 +181,12 @@ export async function verifyPaidCheckoutSession(
     return { ok: false, reason: "stripe_retrieve_failed", retryable };
   }
 
-  if (session.livemode === true) {
-    return { ok: false, reason: "livemode_not_allowed", retryable: false };
+  const livemode = session.livemode === true;
+  if (mode === "test" && livemode) {
+    return { ok: false, reason: "livemode_mismatch", retryable: false };
+  }
+  if (mode === "live" && !livemode) {
+    return { ok: false, reason: "livemode_mismatch", retryable: false };
   }
   if (asString(session.mode) !== "subscription") {
     return { ok: false, reason: "mode_not_subscription", retryable: false };
@@ -116,10 +203,10 @@ export async function verifyPaidCheckoutSession(
   const price = first?.price as Record<string, unknown> | undefined;
   const priceId = asString(price?.id);
   const productId = expandId(price?.product);
-  if (priceId !== ALEXANDER_STRIPE_TEST_PRICE_ID) {
+  if (priceId !== catalog.priceId) {
     return { ok: false, reason: "price_mismatch", retryable: false };
   }
-  if (productId && productId !== ALEXANDER_STRIPE_TEST_PRODUCT_ID) {
+  if (productId && productId !== catalog.productId) {
     return { ok: false, reason: "product_mismatch", retryable: false };
   }
 
@@ -157,7 +244,7 @@ export async function verifyPaidCheckoutSession(
       customerId,
       subscriptionId,
       priceId,
-      productId: productId || ALEXANDER_STRIPE_TEST_PRODUCT_ID,
+      productId: productId || catalog.productId,
       email: asString(details?.email) || null,
       name: asString(details?.name) || null,
       phone: asString(details?.phone) || null,

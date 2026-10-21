@@ -37,22 +37,51 @@ export async function getSecretString(secretId: string): Promise<string> {
   return result.SecretString;
 }
 
-export async function getAlexanderStripeTestSecretKey(): Promise<string> {
+/**
+ * Load the Stripe secret that matches ALEXANDER_STRIPE_MODE.
+ * Defaults to the staging test secret path when MODE is unset or test.
+ * Never logs secret values.
+ */
+export async function getAlexanderStripeSecretKey(): Promise<string> {
+  const mode = (process.env.ALEXANDER_STRIPE_MODE || "test").trim().toLowerCase();
   const id =
     process.env.ALEXANDER_STRIPE_SECRET_ARN ||
     process.env.ALEXANDER_STRIPE_SECRET_NAME ||
-    "alexander/staging/stripe";
+    (mode === "live" ? "alexander/production/stripe" : "alexander/staging/stripe");
   const raw = await getSecretString(id);
+  let key = "";
   try {
     const parsed = JSON.parse(raw) as { secretKey?: string };
-    if (typeof parsed.secretKey === "string" && parsed.secretKey.startsWith("sk_test_")) {
-      return parsed.secretKey;
-    }
+    if (typeof parsed.secretKey === "string") key = parsed.secretKey.trim();
   } catch {
-    // plain string secret
+    key = raw.trim();
   }
-  if (raw.startsWith("sk_test_")) return raw;
-  throw new Error("stripe_secret_not_test");
+  if (mode === "live") {
+    if (!key.startsWith("sk_live_") && !key.startsWith("rk_live_")) {
+      throw new Error("stripe_secret_not_live");
+    }
+    return key;
+  }
+  if (!key.startsWith("sk_test_") && !key.startsWith("rk_test_")) {
+    throw new Error("stripe_secret_not_test");
+  }
+  return key;
+}
+
+/** @deprecated Prefer getAlexanderStripeSecretKey(). */
+export async function getAlexanderStripeTestSecretKey(): Promise<string> {
+  const previous = process.env.ALEXANDER_STRIPE_MODE;
+  if (!previous) process.env.ALEXANDER_STRIPE_MODE = "test";
+  try {
+    const key = await getAlexanderStripeSecretKey();
+    if (!key.startsWith("sk_test_") && !key.startsWith("rk_test_")) {
+      throw new Error("stripe_secret_not_test");
+    }
+    return key;
+  } finally {
+    if (previous === undefined) delete process.env.ALEXANDER_STRIPE_MODE;
+    else process.env.ALEXANDER_STRIPE_MODE = previous;
+  }
 }
 
 export async function getAlexanderLifecycleHmacSecret(): Promise<string> {

@@ -1909,12 +1909,31 @@ if (operation === "diagnoseCustomerSubmissionState") {
         name: typeof v.name === "string" ? v.name : null,
         phone: typeof v.phone === "string" ? v.phone : null,
       };
+      const sessionMode = stripe.checkoutSessionId.startsWith("cs_live_")
+        ? "live"
+        : stripe.checkoutSessionId.startsWith("cs_test_")
+          ? "test"
+          : null;
+      const configuredMode = (process.env.ALEXANDER_STRIPE_MODE || "test").trim().toLowerCase();
       if (
-        !stripe.checkoutSessionId.startsWith("cs_test_") ||
+        !sessionMode ||
+        sessionMode !== configuredMode ||
         !stripe.customerId.startsWith("cus_") ||
         !stripe.subscriptionId.startsWith("sub_")
       ) {
         return { ok: false, reason: "invalid_verified_payload" };
+      }
+      if (sessionMode === "live") {
+        const livePrice = (process.env.ALEXANDER_STRIPE_PRICE_ID || "").trim();
+        const liveProduct = (process.env.ALEXANDER_STRIPE_PRODUCT_ID || "").trim();
+        if (
+          !livePrice ||
+          !liveProduct ||
+          stripe.priceId !== livePrice ||
+          stripe.productId !== liveProduct
+        ) {
+          return { ok: false, reason: "live_catalog_mismatch" };
+        }
       }
       const pool = await getPool();
       return provisionFromVerifiedStripe(pool as unknown as SqlPool, {
