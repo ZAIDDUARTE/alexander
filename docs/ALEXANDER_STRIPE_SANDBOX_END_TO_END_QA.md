@@ -1,142 +1,131 @@
 # Alexander — Stripe Sandbox End-to-End QA
 
-Date: 2026-10-21  
-Branch (Next.js): `customer-lifecycle-staging` @ `216be33` (Preview build from parent `e555236`)  
-Branch (WordPress): `stripe-test-integration` @ `f642caf` (production test-mode QA gate)  
+Date: 2026-10-21 (Phases A+B executed)  
+Branch (Next.js): `customer-lifecycle-staging` @ `a942893` (promote source parent `e555236` / Preview `dpl_4mAVamRggo4Xz9i4XV8dm74Q6De9`)  
+Branch (WordPress): `stripe-test-integration` @ `85c30b6`  
 Mode contract: **`ALEXANDER_STRIPE_MODE=test` only** — no live keys, no live catalogue, no real charges.
 
 ## Executive answers
 
 | Question | Answer |
 | --- | --- |
-| 1. Sandbox payment workflow verified | **NO** — Checkout initiation PASS; completed `cs_test_` payment → DB **not** run (shared RDS gate) |
-| 2. Production onboarding routes restored | **NO** — Preview PASS; Production `/onboarding/account` and portal-admin still **404** |
-| 3. Database sync via genuine Stripe test events | **NO** — blocked pending shared-RDS write approval + AWS credentials |
-| 4. Email #1 and questionnaire workflow verified | **NO** — depends on (3) and Production promote or Preview-only continue |
+| 1. Sandbox payment workflow verified | **NO** — unpaid `cs_test_` create PASS (QA-gated); completed payment → DB **not** run (Phase C not approved) |
+| 2. Production onboarding routes restored | **YES** — `/onboarding/account` 200; portal-admin 401; invitation + handoff present |
+| 3. Database sync via genuine Stripe test events | **NO** — Phase C not approved |
+| 4. Email #1 and questionnaire workflow verified | **NO** — blocked on Phase C |
 | 5. Safe to consider future live activation | **NO** |
 
-## Deployed revisions (verified this run)
+## Phase A — WordPress QA-gate (APPROVED — executed)
 
-| Component | Revision / evidence | Notes |
-| --- | --- | --- |
-| WordPress production theme | Stripe module restored earlier today (test mode) | Public test Checkout currently open until QA gate is deployed |
-| WordPress source (local) | QA gate + banner implemented; `theme-check` PASS | **Not deployed** — needs approval |
-| Vercel Production `onboard.meetalexander.ai` | Still missing account/portal-admin (404) | Not promoted |
-| Vercel Preview (prior) | `https://alexander-7qigj72vy-zaid-alis-projects.vercel.app` | account 200, portal-admin 401 |
-| Vercel Preview (this run) | `dpl_4mAVamRggo4Xz9i4XV8dm74Q6De9` → `https://alexander-grxn2zqd8-zaid-alis-projects.vercel.app` | From HEAD; account 200; handoff HMAC rejects unsigned POST |
-| AWS Lambda Step 03.7 | Left in place (prior report CodeSha256 `a3sEy6eM…`) | Not redeployed |
-| PostgreSQL | Schema `015` assumed | Shared by Preview + Production frontends |
-| Local AWS CLI | No credentials | Cannot query RDS/Lambda logs from this workstation |
+| Item | Result |
+| --- | --- |
+| Rollback checkpoint | `rollback-theme-20261021-102126` (+ later `rollback-theme-qa-nocache-*`, `rollback-theme-qa-js-*`) |
+| `ALEXANDER_STRIPE_MODE` | `test` (unchanged) |
+| `ALEXANDER_STRIPE_TEST_QA_TOKEN` | Installed in WP Engine `wp-config` on the server only — **never printed/committed** |
+| Token URL hygiene | `?stripe_qa=` redeem redirects and strips query; cookie stores HMAC only; `Referrer-Policy: no-referrer` on Get Started |
+| Edge note | Cloudflare strips custom cookies on **GET** document/API; **POST** preserves them. CTA unlock probes `POST /wp-json/alexander/v1/stripe/qa-status` |
+| Public Checkout | **PASS** — `503` `checkout_qa_required` without QA cookie |
+| Authorized Checkout | **PASS** — unpaid `cs_test_` session create with QA cookie (POST) |
+| Homepage / nav | **PASS** — 200; Sign In → `https://app.trillet.ai/`; Create Your Account → `/get-started/`; Book a Demo present; no critical error |
+| Design | Navbar/login buttons preserved |
 
-## Stage results
+QA unlock (authorized operators only; token never in chat/logs):
 
-| Stage | Result | Actual evidence |
-| --- | --- | --- |
-| WordPress Checkout | **PASS** (initiation) | Prior restore: CTA enabled, `cs_test_` session to `checkout.stripe.com`, $500/month test catalogue. Public visitors can still open test Checkout until QA gate deploys. |
-| Stripe test payment (completed) | **NOT TESTED** | No test-card charge this run. Requires shared-RDS write approval. |
-| Webhook/handoff | **BLOCKED** | Handoff route exists on Production and Preview (`POST` → HMAC `stale_timestamp` / 401 without valid signature). No paid session to hand off. |
-| AWS Lambda | **NOT TESTED** | No new event. No local AWS credentials for log/query. |
-| PostgreSQL customer | **NOT TESTED** | Would write shared `alexander-onboarding` RDS. Isolation: **none** (Preview and Production share persistence). |
-| Subscription record | **NOT TESTED** | Same shared-DB gate. |
-| Email #1 | **NOT TESTED** | SES `EMAIL_DELIVERY_MODE=test` + `ALLOWED_TEST_RECIPIENT` required; no authorized recipient confirmed this run. |
-| Invitation redemption | **BLOCKED** on Production | `/i` 200 on Production, but `/onboarding/account` **404**. Preview `/i` 200 → account 200. |
-| Portal administrator confirmation | **BLOCKED** on Production | `/api/onboarding/portal-admin` **404** on Production; **401** (auth required) on Preview. |
-| Questionnaire access | **PASS** (page) / **BLOCKED** (paid path) | `/onboarding` 200 on Production and Preview. Full invited path needs account parity + invitation. |
-| Questionnaire submission | **NOT TESTED** | No synthetic paid customer this run. |
-| Provisioning trigger | **NOT TESTED** | Expect `workspace_provisioning_blocked` after submit (Trillet managed-child limitation). Do not assign Phillip workspace. |
+1. `POST /wp-json/alexander/v1/stripe/qa-unlock` with JSON `{"token":"<wp-config value>"}` (sets HttpOnly cookie).  
+2. Open `/get-started/` — JS probes QA status over POST and enables CTA when authorized.  
+3. Prefer unlock body over long-lived `?stripe_qa=` URLs.
 
-## Production vs Preview parity
+## Phase B — Vercel Production onboarding parity (APPROVED — executed)
 
-| Route | Production | New Preview (`…grxn2zqd8…`) |
-| --- | --- | --- |
-| `/onboarding` | 200 | 200 |
-| `/onboarding/account` | **404** | **200** |
-| `/onboarding/account/verify` | 404 | 200 |
-| `/api/onboarding/portal-admin` | **404** | **401** (expected without cookie) |
-| `/api/onboarding/invitations/redeem` | 405 GET | 405 GET (POST route present) |
-| `/api/internal/customer-lifecycle/stripe-handoff` | HMAC active | HMAC active |
-| `/i` | 200 | 200 |
+| Item | Value |
+| --- | --- |
+| Prior Production (rollback) | `dpl_EwCnTbRuKEADc1CTttyMDxqFATea` (2026-10-15) |
+| Release candidate Preview | `dpl_4mAVamRggo4Xz9i4XV8dm74Q6De9` |
+| Production after promote | `dpl_G9oCFYKLd4Qa14gy2U4B7U5TvDkD` (alias `onboard.meetalexander.ai`; sibling promote `dpl_CP3A1ybXzSFTqnGATxthMkfsYxRj` also built from the same candidate) |
+| Lambda / RDS / schema | **Unchanged** |
+| Stripe mode on Vercel Production | `ALEXANDER_STRIPE_MODE=test` added |
+| Invitations | `ONBOARDING_INVITATIONS_ENABLED=true` added to Production |
+| Onboarding base URL | `ALEXANDER_ONBOARDING_BASE_URL=https://onboard.meetalexander.ai` added |
+| Email delivery | `EMAIL_DELIVERY_MODE=test` added to Production env (SES allowlist remains on Lambda/`ALLOWED_TEST_RECIPIENT`) |
 
-**Recommended promote (do not execute without approval):** promote Preview deployment `dpl_4mAVamRggo4Xz9i4XV8dm74Q6De9` (commit `e555236`) to Vercel Production. This is the already-tested Preview surface (invitation, portal-admin, questionnaire, handoff), not a blind merge of unrelated Git history onto `main`.
-
-Cherry-picking only `src/app/onboarding/account*` is **not** sufficient — portal-admin APIs, invitation redeem, access cookies, and persistence clients must ship together. The Preview deployment already contains that compatible set.
-
-## WordPress production test-mode QA gate (implemented, not deployed)
-
-Fail-closed when `meetalexander.ai` + `ALEXANDER_STRIPE_MODE=test`:
-
-1. Set `ALEXANDER_STRIPE_TEST_QA_TOKEN` in WP Engine `wp-config` (server-only).
-2. Authorized QA opens `/get-started/?stripe_qa=<token>` (sets HttpOnly 12h cookie).
-3. Public visitors see: checkout unavailable / not accepting live payments; CTA disabled.
-4. Authorized QA see an explicit **TEST MODE — not a real purchase** banner.
-5. REST returns `checkout_qa_required` when gated.
-
-Staging host remains ungated (already test-only).
-
-## Database isolation finding
-
-**Staging/Preview and Production share the same AWS persistence Lambda and PostgreSQL.** There is no separate staging RDS for this workflow.
-
-Alternatives before a synthetic paid run:
-
-1. **Preferred if infra exists:** isolated QA database/Lambda (substantial work — not available today).
-2. **Approved shared-DB synthetic:** use clearly labeled `synthetic_test` customer email on the allowlist; never touch real rows / Phillip `ALX-C000002`.
-3. **Reuse existing synthetic** `ALX-C000009` for portal-admin + questionnaire on Preview only (payment already verified historically) — does **not** satisfy “genuine Stripe test payment this run.”
-
-## Automated checks run this session
+### Production verification (after promote)
 
 | Check | Result |
 | --- | --- |
-| Next.js `stripe-verify` + `portal-admin` + onboarding provisioning unit tests | 22 pass |
-| WordPress `scripts/theme-check.sh` (incl. new QA-gate assertions) | PASS |
-| Fresh Vercel Preview deploy + route probe | PASS |
-| Production route probe | Confirms account/portal-admin still missing |
-| Completed Stripe test-card payment | NOT RUN |
-| RDS row inspection | BLOCKED (no AWS credentials; shared DB policy) |
+| `/onboarding/account` | **200** |
+| `/onboarding/account/verify` | **200** |
+| `/api/onboarding/portal-admin` | **401** `{"ok":false,"reason":"rejected"}` (auth enforced) |
+| `/api/onboarding/invitations/redeem` | **405** on GET (route exists; POST expected) |
+| `/onboarding` questionnaire | **200** |
+| `/i` invitation continue | **200** |
+| Stripe handoff invalid HMAC | **401** `stale_timestamp` |
+| Marketing site | Unchanged (WP homepage 200) |
 
-Failure-mode coverage already in unit tests (not re-proven against live Stripe this run): mode/session mismatch, test vs live catalogue rejection, portal-admin email rules, invitation token hashing.
+Rollback B: `npx vercel promote dpl_EwCnTbRuKEADc1CTttyMDxqFATea --yes` (confirm in Vercel UI first).
 
-## Approvals required before continuing
+## Stage results (updated)
 
-### A. WordPress production — deploy QA gate (recommended first)
+| Stage | Result | Actual evidence |
+| --- | --- | --- |
+| WordPress Checkout | **PASS** (QA-gated) | Public 503 `checkout_qa_required`; authorized unpaid `cs_test_` create |
+| Stripe test payment (completed) | **NOT TESTED** | Phase C not approved |
+| Webhook/handoff | **PASS** (reject path) | Invalid signature → 401; no paid session this run |
+| AWS Lambda | **NOT TESTED** | No new paid event; no local AWS credentials |
+| PostgreSQL customer | **NOT TESTED** | Shared RDS — Phase C gate |
+| Subscription record | **NOT TESTED** | Phase C |
+| Email #1 | **NOT TESTED** | Phase C |
+| Invitation redemption | **PASS** (route) | `/i` 200; redeem route present — full redeem needs invitation from paid flow |
+| Portal administrator confirmation | **PASS** (route/auth) | UI 200; API 401 without access cookie |
+| Questionnaire access | **PASS** | `/onboarding` 200 |
+| Questionnaire submission | **NOT TESTED** | Phase C |
+| Provisioning trigger | **NOT TESTED** | Expect `workspace_provisioning_blocked` after submit |
 
-**Impact:** Public test Checkout on `meetalexander.ai` closes unless `?stripe_qa=` / cookie. Navbar/design unchanged. Stripe remains test mode.  
-**Rollback:** Restore prior theme files from `rollback-theme-20261021-094007`; or unset token and revert QA-gate files.  
-**Also set:** `ALEXANDER_STRIPE_TEST_QA_TOKEN` (out of band).  
-Reply: **approve WordPress QA-gate deploy** and provide/confirm the token is installed (value not in chat).
+## Phase C — prepared, **NOT APPROVED**
 
-### B. Vercel Production — promote onboarding parity
+Do **not** complete a Stripe test payment that writes shared RDS until explicit C approval.
 
-**Impact:** `onboard.meetalexander.ai` gains `/onboarding/account`, portal-admin APIs, invitation continue parity with Preview. Shared Lambda/DB unchanged.  
-**Target:** `dpl_4mAVamRggo4Xz9i4XV8dm74Q6De9` / commit `e555236`.  
-**Production env to confirm before/with promote (names only):** `ONBOARDING_INVITATIONS_ENABLED=true`, `ONBOARDING_HOST` / `ALEXANDER_ONBOARDING_BASE_URL`, `ALEXANDER_STRIPE_MODE=test`, Stripe secret ARN/name, lifecycle HMAC, AWS OIDC → persistence Lambda.  
-**Rollback:** Redeploy previous Production deployment (prior id from Vercel history; historically `dpl_EwCnTbRuKEADc1CTttyMDxqFATea` from 2026-10-15 docs — confirm in Vercel before promote).  
-Reply: **approve Vercel Production promote**.
+### Isolation
 
-### C. Synthetic Stripe test payment writing to shared RDS
+Preview and Production share `alexander-onboarding-persistence` + PostgreSQL. No separate staging DB.
 
-**Impact:** Creates/updates `synthetic_test` customer + subscription + Email #1 outbox in shared production PostgreSQL.  
-**Need:** Authorized test recipient email matching `ALLOWED_TEST_RECIPIENT`; `aws sso login` (or equivalent) so post-payment verification can use read-only Lambda ops `inspectEmailOutbox` / `inspectCustomerProvisioning` (no forged rows); company name clearly fictional.  
-**Rollback:** Do not delete blindly — mark/classify synthetic; cancel Stripe **test** subscription in Dashboard; leave real customers untouched.  
-Reply: **approve shared-DB synthetic payment** + authorized recipient email.
+### Prerequisites before C
 
-### D. Not requested / not done
+1. Authorized synthetic customer email that exactly matches Lambda `ALLOWED_TEST_RECIPIENT` (or Secrets Manager email-guard).  
+2. Local AWS auth (`aws sso login` / `aws login`) for read-only inspect.  
+3. Clearly fictional company name (e.g. “Cedar & Valve Synthetic Plumbing QA”).  
+4. Confirm `EMAIL_DELIVERY_MODE=test` on Lambda (unchanged this run).  
+5. Operator holds QA unlock for WordPress test Checkout.
 
-- Live Stripe mode, live keys, live product/price  
-- Lambda redeploy  
-- Schema changes  
-- Trillet workspace assignment / Phillip touch  
-- Real customer email
+### Exact steps for C (when approved)
 
-## Rollback summary (quick)
+1. Unlock WP QA Checkout (POST `qa-unlock`; do not paste token into tickets).  
+2. Open Stripe Checkout; pay with Stripe test card `4242…`; confirm **test** mode in Dashboard.  
+3. Do **not** trust success-page params alone — confirm Stripe Dashboard `cs_test_` paid + subscription active.  
+4. Confirm WordPress → HMAC handoff → Vercel verify → Lambda `provisionFromVerifiedStripe`.  
+5. Read-only Lambda inspect (no forged rows):
 
-| Surface | Rollback |
-| --- | --- |
-| WordPress QA gate | Theme rollback dir + wp-config bak |
-| Vercel Production promote | Previous production deployment |
-| Synthetic DB rows | Cancel test sub in Stripe; leave real rows; operator review of `synthetic_test` |
-| Lambda / schema | Unchanged this run |
+```bash
+aws lambda invoke --function-name alexander-onboarding-persistence \
+  --payload '{"operation":"inspectCustomerProvisioning","customerNumber":"ALX-C######"}' /tmp/cust.json
+aws lambda invoke --function-name alexander-onboarding-persistence \
+  --payload '{"operation":"inspectEmailOutbox","customerNumber":"ALX-C######"}' /tmp/outbox.json
+```
+
+6. Expected: new/updated `synthetic_test` customer; subscription linked; Email #1 outbox `questionnaire_invitation`; no change to Phillip `ALX-C000002`.  
+7. Redeem invitation on `onboard.meetalexander.ai` (or Preview `/i` if needed); confirm portal admin; draft + submit fictional questionnaire.  
+8. Accept `workspace_provisioning_blocked` — do **not** assign Phillip workspace.
+
+### Rollback C
+
+Cancel the Stripe **test** subscription in Dashboard; leave real rows untouched; operator review of `synthetic_test` only.
+
+## GitHub synchronization
+
+| Repo | Branch | Commit |
+| --- | --- | --- |
+| `ZAIDDUARTE/alexander-wordpress` | `stripe-test-integration` | `85c30b6` |
+| `ZAIDDUARTE/alexander` | `customer-lifecycle-staging` | report update after A/B (this file) |
 
 ## Final status
 
-Sandbox → Backend → Database → Onboarding is **not** fully verified. Safe local/Preview work is done. Stopped for genuine deployment and shared-database approvals above. Real payments remain **disabled**.
+Phases **A** and **B** complete. Real payments remain **disabled**. Stopped before Phase **C** (shared-RDS synthetic payment).
