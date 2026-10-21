@@ -3,12 +3,15 @@ import { describe, it } from "node:test";
 import {
   accountReadinessFromInvite,
   assertOperatorWorkspaceAssignment,
+  assertSubscriptionEligibleForDashboardActivation,
   canceledSyntheticMayUseProductionDashboard,
   decideInviteRetry,
   inviteBackoffMs,
   INVITE_IN_FLIGHT_LOCK_MS,
   liveInviteClaimAllowed,
   MAX_TRANSIENT_INVITE_ATTEMPTS,
+  rejectCallerSuppliedSubscriptionOverride,
+  resolveStoredSubscriptionEligibility,
 } from "./provisioning-policy";
 
 describe("provisioning policy", () => {
@@ -130,5 +133,89 @@ describe("provisioning policy", () => {
       }),
       false,
     );
+  });
+
+  it("requires a current eligible subscription for dashboard activation, not payment_verified alone", () => {
+    const missing = assertSubscriptionEligibleForDashboardActivation({
+      dataClassification: "synthetic_test",
+      stripeSubscriptionStatus: null,
+      stripeLivemode: false,
+    });
+    assert.equal(missing.ok, false);
+    if (!missing.ok) assert.equal(missing.reason, "subscription_status_required");
+
+    const canceled = assertSubscriptionEligibleForDashboardActivation({
+      dataClassification: "synthetic_test",
+      stripeSubscriptionStatus: "canceled",
+      stripeLivemode: false,
+    });
+    assert.equal(canceled.ok, false);
+    if (!canceled.ok) assert.equal(canceled.reason, "canceled_synthetic_blocked");
+
+    const qaIsolated = assertSubscriptionEligibleForDashboardActivation({
+      dataClassification: "synthetic_test",
+      stripeSubscriptionStatus: "canceled",
+      stripeLivemode: false,
+      allowCanceledSyntheticQa: true,
+    });
+    assert.equal(qaIsolated.ok, false);
+    if (!qaIsolated.ok) {
+      assert.equal(qaIsolated.reason, "synthetic_qa_isolated_only");
+      assert.equal(qaIsolated.syntheticQaIsolated, true);
+    }
+
+    const unpaid = assertSubscriptionEligibleForDashboardActivation({
+      dataClassification: "real_customer",
+      stripeSubscriptionStatus: "unpaid",
+      stripeLivemode: true,
+    });
+    assert.equal(unpaid.ok, false);
+    if (!unpaid.ok) assert.equal(unpaid.reason, "subscription_not_eligible");
+
+    const active = assertSubscriptionEligibleForDashboardActivation({
+      dataClassification: "synthetic_test",
+      stripeSubscriptionStatus: "active",
+      stripeLivemode: false,
+    });
+    assert.equal(active.ok, true);
+
+    const trialing = assertSubscriptionEligibleForDashboardActivation({
+      dataClassification: "real_customer",
+      stripeSubscriptionStatus: "trialing",
+      stripeLivemode: true,
+    });
+    assert.equal(trialing.ok, true);
+  });
+
+  it("never lets caller-supplied status override persisted eligibility", () => {
+    const historicalNull = resolveStoredSubscriptionEligibility({
+      dataClassification: "synthetic_test",
+      stripeSubscriptionStatus: null,
+      stripeLivemode: null,
+    });
+    assert.equal(historicalNull.ok, false);
+    if (!historicalNull.ok) assert.equal(historicalNull.reason, "subscription_status_required");
+
+    const storedCanceled = resolveStoredSubscriptionEligibility({
+      dataClassification: "synthetic_test",
+      stripeSubscriptionStatus: "canceled",
+      stripeLivemode: false,
+    });
+    assert.equal(storedCanceled.ok, false);
+
+    const overrideStatus = rejectCallerSuppliedSubscriptionOverride({
+      stripeSubscriptionStatus: "active",
+    });
+    assert.equal(overrideStatus.ok, false);
+    if (!overrideStatus.ok) assert.equal(overrideStatus.reason, "caller_subscription_override_rejected");
+
+    const overrideLive = rejectCallerSuppliedSubscriptionOverride({ stripeLivemode: false });
+    assert.equal(overrideLive.ok, false);
+
+    const overrideQa = rejectCallerSuppliedSubscriptionOverride({ allowCanceledSyntheticQa: true });
+    assert.equal(overrideQa.ok, false);
+
+    const clean = rejectCallerSuppliedSubscriptionOverride({});
+    assert.equal(clean.ok, true);
   });
 });

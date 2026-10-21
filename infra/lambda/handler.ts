@@ -63,7 +63,11 @@ import {
   runCustomerProvisioning,
 } from "../../src/lib/server/persistence/customer-provisioning";
 import { evaluateAgencyWorkspaceContract } from "../../src/lib/server/persistence/trillet-workspace-adapter";
-import { assertOperatorWorkspaceAssignment } from "../../src/lib/server/persistence/provisioning-policy";
+import {
+  assertOperatorWorkspaceAssignment,
+  rejectCallerSuppliedSubscriptionOverride,
+  resolveStoredSubscriptionEligibility,
+} from "../../src/lib/server/persistence/provisioning-policy";
 import { submitPersistenceV2FromAccess } from "../../src/lib/server/persistence/v2-submit";
 import type { OnboardingDraft } from "../../src/lib/onboarding/types";
 import {
@@ -1284,6 +1288,10 @@ if (operation === "diagnoseCustomerSubmissionState") {
       sendTrilletInvite?: unknown;
       /** Requires TRILLET_INVITE_LIVE_ENABLED=true; default false. */
       liveInvite?: unknown;
+      /** Rejected if present — eligibility is DB-only after Stripe sync. */
+      stripeSubscriptionStatus?: unknown;
+      stripeLivemode?: unknown;
+      allowCanceledSyntheticQa?: unknown;
     };
     const customerId = typeof body.customerId === "string" ? body.customerId : "";
     const workspaceRaw = typeof body.workspaceId === "string" ? body.workspaceId.trim() : "";
@@ -1292,6 +1300,14 @@ if (operation === "diagnoseCustomerSubmissionState") {
         ok: false,
         reason: "invalid_payload",
         detail: "customerId and workspaceId are required",
+      };
+    }
+    const overrideCheck = rejectCallerSuppliedSubscriptionOverride(body);
+    if (!overrideCheck.ok) {
+      return {
+        ok: false,
+        reason: overrideCheck.reason,
+        detail: overrideCheck.detail,
       };
     }
     const workspaceCheck = assertOperatorWorkspaceAssignment(workspaceRaw, process.env);
@@ -1329,6 +1345,40 @@ if (operation === "diagnoseCustomerSubmissionState") {
       : null;
     try {
       await client.query("BEGIN");
+
+      // Persisted eligibility only — payment_verified_at and caller status are insufficient.
+      const customerElig = await client.query(
+        `SELECT data_classification, payment_verified_at,
+                stripe_subscription_status, stripe_livemode
+         FROM customers WHERE id = $1 LIMIT 1`,
+        [customerId],
+      );
+      if (!customerElig.rows[0]) {
+        await client.query("ROLLBACK");
+        return { ok: false, reason: "customer_not_found" };
+      }
+      const eligibility = resolveStoredSubscriptionEligibility({
+        dataClassification: customerElig.rows[0].data_classification
+          ? String(customerElig.rows[0].data_classification)
+          : "",
+        stripeSubscriptionStatus: customerElig.rows[0].stripe_subscription_status
+          ? String(customerElig.rows[0].stripe_subscription_status)
+          : null,
+        stripeLivemode:
+          typeof customerElig.rows[0].stripe_livemode === "boolean"
+            ? (customerElig.rows[0].stripe_livemode as boolean)
+            : null,
+      });
+      if (!eligibility.ok) {
+        await client.query("ROLLBACK");
+        return {
+          ok: false,
+          reason: eligibility.reason,
+          detail: eligibility.detail,
+          paymentVerifiedHistorically: Boolean(customerElig.rows[0].payment_verified_at),
+        };
+      }
+
       const submitted = await client.query(
         `SELECT o.id
          FROM customer_onboardings o
@@ -1955,6 +2005,73 @@ if (operation === "diagnoseCustomerSubmissionState") {
     }
   }
 
+  if (operation === "syncStripeSubscriptionEligibility") {
+    // Trusted path only: Vercel retrieves Stripe subscription over the internet, then
+    // IAM-invokes with verified status. Lambda never trusts WordPress/caller status alone.
+    const body = event as {
+      verified?: unknown;
+      correlationKey?: unknown;
+    };
+    const v = (body.verified || {}) as Record<string, unknown>;
+    const subscriptionId =
+      typeof v.subscriptionId === "string" ? v.subscriptionId.trim() : "";
+    const status =
+      typeof v.subscriptionStatus === "string"
+        ? v.subscriptionStatus.trim().toLowerCase()
+        : "";
+    const livemode = v.livemode === true;
+    const stripeCustomerId =
+      typeof v.customerId === "string" ? v.customerId.trim() : "";
+    if (!subscriptionId.startsWith("sub_") || !status) {
+      return { ok: false, reason: "invalid_verified_payload" };
+    }
+    const configuredMode = (process.env.ALEXANDER_STRIPE_MODE || "test").trim().toLowerCase();
+    if (configuredMode === "test" && livemode) {
+      return { ok: false, reason: "livemode_mismatch" };
+    }
+    if (configuredMode === "live" && !livemode) {
+      return { ok: false, reason: "livemode_mismatch" };
+    }
+    const pool = await getPool();
+    const updated = await (pool as unknown as SqlPool).query(
+      `UPDATE customers SET
+         stripe_subscription_status = $2,
+         stripe_livemode = $3,
+         updated_at = now()
+       WHERE stripe_subscription_id = $1
+          OR ($4::text IS NOT NULL AND $4 <> '' AND stripe_customer_id = $4)
+       RETURNING id, customer_number, stripe_subscription_status, stripe_livemode,
+                 payment_verified_at IS NOT NULL AS payment_verified`,
+      [subscriptionId, status, livemode, stripeCustomerId || null],
+    );
+    if (!updated.rows[0]) {
+      return { ok: false, reason: "customer_not_found", subscriptionId };
+    }
+    const customerId = String(updated.rows[0].id);
+    const correlation =
+      (typeof body.correlationKey === "string" && body.correlationKey.trim()) ||
+      `stripe_subscription_sync:${subscriptionId}:${status}`;
+    await (pool as unknown as SqlPool).query(
+      `INSERT INTO customer_lifecycle_events (customer_id, event_type, correlation_key, payload_json)
+       VALUES ($1, 'stripe_subscription_synced', $2, $3::jsonb)
+       ON CONFLICT (event_type, correlation_key) WHERE correlation_key IS NOT NULL DO NOTHING`,
+      [
+        customerId,
+        correlation,
+        JSON.stringify({ subscriptionId, subscriptionStatus: status, livemode }),
+      ],
+    );
+    return {
+      ok: true,
+      customerId,
+      customerNumber: String(updated.rows[0].customer_number || ""),
+      subscriptionId,
+      subscriptionStatus: String(updated.rows[0].stripe_subscription_status || status),
+      livemode: updated.rows[0].stripe_livemode === true,
+      paymentVerifiedHistorically: Boolean(updated.rows[0].payment_verified),
+    };
+  }
+
   if (operation === "provisionFromStripeSession" || operation === "provisionFromVerifiedStripe") {
     const body = event as {
       checkoutSessionId?: unknown;
@@ -1988,6 +2105,9 @@ if (operation === "diagnoseCustomerSubmissionState") {
         email: typeof v.email === "string" ? v.email : null,
         name: typeof v.name === "string" ? v.name : null,
         phone: typeof v.phone === "string" ? v.phone : null,
+        subscriptionStatus:
+          typeof v.subscriptionStatus === "string" ? v.subscriptionStatus : null,
+        livemode: typeof v.livemode === "boolean" ? v.livemode : null,
       };
       const sessionMode = stripe.checkoutSessionId.startsWith("cs_live_")
         ? "live"

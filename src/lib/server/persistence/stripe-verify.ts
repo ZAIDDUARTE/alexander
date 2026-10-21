@@ -23,6 +23,8 @@ export type StripeVerifiedCheckout = {
   name: string | null;
   phone: string | null;
   subscriptionStatus: string;
+  /** Stripe session livemode; false for test Checkout. */
+  livemode: boolean;
 };
 
 export type StripeVerifyResult =
@@ -249,6 +251,7 @@ export async function verifyPaidCheckoutSession(
       name: asString(details?.name) || null,
       phone: asString(details?.phone) || null,
       subscriptionStatus,
+      livemode,
     },
   };
 }

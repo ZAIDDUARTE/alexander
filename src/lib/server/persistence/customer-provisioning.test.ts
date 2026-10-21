@@ -35,6 +35,8 @@ function baseCustomer(overrides: Row = {}): Row {
     status: "active",
     data_classification: "synthetic_test",
     payment_verified_at: new Date(),
+    stripe_subscription_status: "active",
+    stripe_livemode: false,
     portal_admin_email: "qa+synth@example.com",
     portal_admin_status: "confirmed",
     customer_facing_name: "Synth",

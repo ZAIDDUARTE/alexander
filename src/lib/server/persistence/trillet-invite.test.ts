@@ -106,6 +106,8 @@ describe("trillet-invite eligibility", () => {
             portal_admin_email: "qa@example.com",
             portal_admin_status: "confirmed",
             payment_verified_at: new Date(),
+            stripe_subscription_status: "active",
+            stripe_livemode: false,
           },
         ],
       }),
@@ -117,6 +119,34 @@ describe("trillet-invite eligibility", () => {
     );
     assert.equal(result.ok, false);
     if (!result.ok) assert.equal(result.reason, "customer_inactive");
+  });
+
+  it("rejects historical payment_verified without current subscription status", async () => {
+    const pool = mockPool([
+      () => ({
+        rows: [
+          {
+            id: "33333333-3333-3333-3333-333333333333",
+            customer_number: "ALX-C000010",
+            status: "active",
+            data_classification: "synthetic_test",
+            primary_email: "qa@example.com",
+            portal_admin_email: "qa@example.com",
+            portal_admin_status: "confirmed",
+            payment_verified_at: new Date(),
+            stripe_subscription_status: null,
+            stripe_livemode: false,
+          },
+        ],
+      }),
+    ]);
+    const result = await loadInviteEligibility(
+      pool,
+      { customerNumber: "ALX-C000010" },
+      { TRILLET_INVITE_ALLOWED_CUSTOMER_NUMBERS: "ALX-C000010" },
+    );
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.reason, "subscription_not_eligible");
   });
 
   it("blocks ALX-C000002", async () => {
@@ -132,6 +162,8 @@ describe("trillet-invite eligibility", () => {
             portal_admin_email: "phillip@example.com",
             portal_admin_status: "confirmed",
             payment_verified_at: new Date(),
+            stripe_subscription_status: "active",
+            stripe_livemode: false,
           },
         ],
       }),
@@ -155,6 +187,8 @@ describe("trillet-invite eligibility", () => {
             portal_admin_email: "qa@example.com",
             portal_admin_status: "confirmed",
             payment_verified_at: new Date(),
+            stripe_subscription_status: "active",
+            stripe_livemode: false,
           },
         ],
       }),
@@ -185,6 +219,8 @@ describe("trillet-invite eligibility", () => {
             portal_admin_email: "qa@example.com",
             portal_admin_status: "confirmed",
             payment_verified_at: new Date(),
+            stripe_subscription_status: "active",
+            stripe_livemode: false,
           },
         ],
       }),
@@ -229,6 +265,8 @@ function eligibleHandlers(workspaceId = "ws-sandbox"): Array<(text: string, valu
           portal_admin_email: "qa+sandbox@example.com",
           portal_admin_status: "confirmed",
           payment_verified_at: new Date(),
+          stripe_subscription_status: "active",
+          stripe_livemode: false,
         },
       ],
     }),
@@ -299,6 +337,8 @@ describe("trillet-invite orchestration", () => {
             portal_admin_email: "qa+sandbox@example.com",
             portal_admin_status: "email_verified",
             payment_verified_at: new Date(),
+            stripe_subscription_status: "active",
+            stripe_livemode: false,
           },
         ],
       }),
@@ -453,6 +493,8 @@ describe("trillet-invite orchestration", () => {
             portal_admin_email: "qa@example.com",
             portal_admin_status: "confirmed",
             payment_verified_at: new Date(),
+            stripe_subscription_status: "active",
+            stripe_livemode: false,
           },
         ],
       }),
@@ -482,6 +524,8 @@ describe("trillet-invite orchestration", () => {
             portal_admin_email: null,
             portal_admin_status: "review_required",
             payment_verified_at: new Date(),
+            stripe_subscription_status: "active",
+            stripe_livemode: false,
           },
         ],
       }),

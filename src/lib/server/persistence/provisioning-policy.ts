@@ -223,6 +223,79 @@ export function assertOperatorWorkspaceAssignment(
   return { ok: true, workspaceId: id };
 }
 
+/** Current Stripe statuses that may activate a customer dashboard / workspace mapping. */
+export const ELIGIBLE_DASHBOARD_SUBSCRIPTION_STATUSES = new Set(["active", "trialing"]);
+
+export type DashboardSubscriptionEligibility =
+  | { ok: true; mode: "eligible" }
+  | {
+      ok: false;
+      reason:
+        | "subscription_status_required"
+        | "subscription_not_eligible"
+        | "canceled_synthetic_blocked"
+        | "synthetic_qa_isolated_only";
+      detail: string;
+      /** True when canceled synthetic QA may continue inspect/dry-run work, never activation. */
+      syntheticQaIsolated?: true;
+    };
+
+/**
+ * Dashboard / workspace activation requires an eligible *current* subscription.
+ * Historical `payment_verified_at` alone is never sufficient.
+ *
+ * Isolated synthetic QA: canceled test customers may be inspected, but must not
+ * map a production dashboard, queue Email #2, or send Trillet invites.
+ */
+export function assertSubscriptionEligibleForDashboardActivation(input: {
+  dataClassification: string;
+  stripeSubscriptionStatus: string | null | undefined;
+  stripeLivemode: boolean | null | undefined;
+  /** When true, canceled synthetic_test (livemode=false) is classified as isolated QA — still not eligible to activate. */
+  allowCanceledSyntheticQa?: boolean;
+}): DashboardSubscriptionEligibility {
+  const status = (input.stripeSubscriptionStatus || "").trim().toLowerCase();
+  if (!status) {
+    return {
+      ok: false,
+      reason: "subscription_status_required",
+      detail:
+        "Current Stripe subscription status is required for dashboard activation; payment_verified_at alone is insufficient",
+    };
+  }
+
+  const livemode = input.stripeLivemode === true;
+  const synthetic = input.dataClassification === "synthetic_test";
+
+  if (synthetic && status === "canceled" && !livemode) {
+    if (input.allowCanceledSyntheticQa) {
+      return {
+        ok: false,
+        reason: "synthetic_qa_isolated_only",
+        detail:
+          "Canceled synthetic subscription is isolated QA only — no workspace mapping, Email #2, or Trillet invite",
+        syntheticQaIsolated: true,
+      };
+    }
+    return {
+      ok: false,
+      reason: "canceled_synthetic_blocked",
+      detail:
+        "Canceled synthetic Stripe subscription cannot activate a customer dashboard (past test payment only)",
+    };
+  }
+
+  if (!ELIGIBLE_DASHBOARD_SUBSCRIPTION_STATUSES.has(status)) {
+    return {
+      ok: false,
+      reason: "subscription_not_eligible",
+      detail: `Subscription status "${status}" is not eligible for dashboard activation (need active or trialing)`,
+    };
+  }
+
+  return { ok: true, mode: "eligible" };
+}
+
 /**
  * A canceled synthetic Stripe subscription is evidence of a past test payment only.
  * It must not open an unrestricted production customer dashboard.
@@ -232,12 +305,56 @@ export function canceledSyntheticMayUseProductionDashboard(input: {
   stripeSubscriptionStatus: string;
   stripeLivemode: boolean;
 }): boolean {
-  if (input.stripeLivemode) return false;
-  if (
-    input.dataClassification === "synthetic_test" &&
-    input.stripeSubscriptionStatus === "canceled"
-  ) {
-    return false;
+  return assertSubscriptionEligibleForDashboardActivation(input).ok;
+}
+
+/**
+ * Activation eligibility from persisted customer columns only.
+ * Caller-supplied status/livemode must never override these values.
+ */
+export function resolveStoredSubscriptionEligibility(row: {
+  dataClassification: string | null | undefined;
+  stripeSubscriptionStatus: string | null | undefined;
+  stripeLivemode: boolean | null | undefined;
+}): DashboardSubscriptionEligibility {
+  return assertSubscriptionEligibleForDashboardActivation({
+    dataClassification: String(row.dataClassification || ""),
+    stripeSubscriptionStatus: row.stripeSubscriptionStatus,
+    stripeLivemode: row.stripeLivemode,
+    // Never enable synthetic QA isolation from an activation call path.
+    allowCanceledSyntheticQa: false,
+  });
+}
+
+/**
+ * Reject request bodies that attempt to override stored subscription eligibility.
+ * Operators sync status via the verified Stripe → WordPress → HMAC → Lambda path only.
+ */
+export function rejectCallerSuppliedSubscriptionOverride(body: {
+  stripeSubscriptionStatus?: unknown;
+  stripeLivemode?: unknown;
+  allowCanceledSyntheticQa?: unknown;
+}): { ok: true } | { ok: false; reason: "caller_subscription_override_rejected"; detail: string } {
+  if (typeof body.stripeSubscriptionStatus === "string" && body.stripeSubscriptionStatus.trim()) {
+    return {
+      ok: false,
+      reason: "caller_subscription_override_rejected",
+      detail: "stripeSubscriptionStatus cannot be supplied by the caller; use persisted Stripe sync only",
+    };
   }
-  return true;
+  if (typeof body.stripeLivemode === "boolean") {
+    return {
+      ok: false,
+      reason: "caller_subscription_override_rejected",
+      detail: "stripeLivemode cannot be supplied by the caller; use persisted Stripe sync only",
+    };
+  }
+  if (body.allowCanceledSyntheticQa === true) {
+    return {
+      ok: false,
+      reason: "caller_subscription_override_rejected",
+      detail: "allowCanceledSyntheticQa cannot enable dashboard activation",
+    };
+  }
+  return { ok: true };
 }

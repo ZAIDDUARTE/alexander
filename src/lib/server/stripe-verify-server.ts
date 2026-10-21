@@ -137,6 +137,7 @@ export async function verifyPaidCheckoutSessionServer(
     name: asString(details?.name) || null,
     phone: asString(details?.phone) || null,
     subscriptionStatus,
+    livemode,
   };
   return { ok: true, session: verified };
 }

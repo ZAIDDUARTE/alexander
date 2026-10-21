@@ -446,6 +446,8 @@ export async function provisionFromVerifiedStripe(
       email: string | null;
       name: string | null;
       phone: string | null;
+      subscriptionStatus?: string | null;
+      livemode?: boolean | null;
     };
     host: string;
     correlationKey?: string | null;
@@ -484,6 +486,18 @@ export async function provisionFromVerifiedStripe(
     if (existing.rows[0]) {
       customerId = String(existing.rows[0].id);
       customerNumber = String(existing.rows[0].customer_number ?? "");
+      const subscriptionStatus =
+        typeof stripe.subscriptionStatus === "string" && stripe.subscriptionStatus.trim()
+          ? stripe.subscriptionStatus.trim().toLowerCase()
+          : null;
+      const stripeLivemode =
+        typeof stripe.livemode === "boolean"
+          ? stripe.livemode
+          : stripe.checkoutSessionId.startsWith("cs_live_")
+            ? true
+            : stripe.checkoutSessionId.startsWith("cs_test_")
+              ? false
+              : null;
       await client.query(
         `UPDATE customers SET
            stripe_customer_id = COALESCE(stripe_customer_id, $2),
@@ -496,6 +510,8 @@ export async function provisionFromVerifiedStripe(
            primary_phone = COALESCE(primary_phone, $8),
            customer_facing_name = COALESCE(customer_facing_name, $9),
            data_classification = 'synthetic_test',
+           stripe_subscription_status = COALESCE($10, stripe_subscription_status),
+           stripe_livemode = COALESCE($11, stripe_livemode),
            updated_at = now()
          WHERE id = $1`,
         [
@@ -508,15 +524,30 @@ export async function provisionFromVerifiedStripe(
           stripe.email,
           stripe.phone,
           stripe.name,
+          subscriptionStatus,
+          stripeLivemode,
         ],
       );
     } else {
+      const subscriptionStatus =
+        typeof stripe.subscriptionStatus === "string" && stripe.subscriptionStatus.trim()
+          ? stripe.subscriptionStatus.trim().toLowerCase()
+          : null;
+      const stripeLivemode =
+        typeof stripe.livemode === "boolean"
+          ? stripe.livemode
+          : stripe.checkoutSessionId.startsWith("cs_live_")
+            ? true
+            : stripe.checkoutSessionId.startsWith("cs_test_")
+              ? false
+              : null;
       const inserted = await client.query(
         `INSERT INTO customers (
            customer_facing_name, primary_email, primary_phone,
            stripe_customer_id, stripe_subscription_id, stripe_checkout_session_id,
-           stripe_price_id, stripe_product_id, payment_verified_at, data_classification
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,now(),'synthetic_test')
+           stripe_price_id, stripe_product_id, payment_verified_at, data_classification,
+           stripe_subscription_status, stripe_livemode
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,now(),'synthetic_test',$9,$10)
          RETURNING id, customer_number`,
         [
           stripe.name,
@@ -527,6 +558,8 @@ export async function provisionFromVerifiedStripe(
           stripe.checkoutSessionId,
           stripe.priceId,
           stripe.productId,
+          subscriptionStatus,
+          stripeLivemode,
         ],
       );
       customerId = String(inserted.rows[0]?.id ?? "");

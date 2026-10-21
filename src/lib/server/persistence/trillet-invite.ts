@@ -14,6 +14,7 @@
 import type { SqlClient, SqlPool } from "./onboarding-access";
 import { resolveApprovedDashboardUrl } from "./dashboard-url";
 import { resolveInviteRecipientEmail } from "./portal-admin";
+import { resolveStoredSubscriptionEligibility } from "./provisioning-policy";
 import { resolveTrilletApiKeySync } from "./trillet-secret";
 import { TRILLET_WORKSPACE_HARD_BLOCKLIST } from "./trillet-workspace-ids";
 
@@ -42,6 +43,7 @@ export type InviteEligibilityReason =
   | "customer_not_found"
   | "customer_inactive"
   | "payment_not_confirmed"
+  | "subscription_not_eligible"
   | "questionnaire_not_submitted"
   | "canonical_profile_not_ready"
   | "workspace_not_mapped"
@@ -305,7 +307,8 @@ export async function loadInviteEligibility(
 
   const customer = await pool.query(
     `SELECT id, customer_number, status, data_classification, primary_email, payment_verified_at,
-            portal_admin_email, portal_admin_status
+            portal_admin_email, portal_admin_status,
+            stripe_subscription_status, stripe_livemode
      FROM customers
      WHERE ($1::uuid IS NOT NULL AND id = $1::uuid)
         OR ($2::text IS NOT NULL AND customer_number = $2)
@@ -328,6 +331,18 @@ export async function loadInviteEligibility(
   }
   if (!row.payment_verified_at) {
     return { ok: false, reason: "payment_not_confirmed" };
+  }
+  // After migration 016, null/canceled/ineligible status fails closed — payment_verified_at is not enough.
+  const subscriptionEligibility = resolveStoredSubscriptionEligibility({
+    dataClassification: String(row.data_classification || ""),
+    stripeSubscriptionStatus: row.stripe_subscription_status
+      ? String(row.stripe_subscription_status)
+      : null,
+    stripeLivemode:
+      typeof row.stripe_livemode === "boolean" ? (row.stripe_livemode as boolean) : null,
+  });
+  if (!subscriptionEligibility.ok) {
+    return { ok: false, reason: "subscription_not_eligible" };
   }
   if (!row.primary_email) {
     return { ok: false, reason: "missing_primary_email" };
