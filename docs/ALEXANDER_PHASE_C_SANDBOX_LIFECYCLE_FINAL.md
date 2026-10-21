@@ -70,3 +70,7 @@ Complete AWS SSO (`aws sso login --profile AdministratorAccess-820242913027`) an
 | Email #1 sent and questionnaire completed | **NO** — outbox job created; delivery and redeem not verified |
 | Full dashboard / account activation | **NO** — Trillet managed-child blocker remains; Email #2 not sent |
 | Real payments disabled | **YES** |
+
+## Phase C2 follow-up
+
+Completed in `docs/ALEXANDER_PHASE_C2_ONBOARDING_COMPLETION.md`: Email #1 delivered (SES test allowlist), invitation redeemed, portal-admin confirmed, questionnaire submitted, business profile projected, provisioning stopped at `workspace_provisioning_blocked`. No Email #2. No Phillip workspace.

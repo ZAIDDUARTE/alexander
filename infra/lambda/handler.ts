@@ -1650,11 +1650,12 @@ if (operation === "diagnoseCustomerSubmissionState") {
     }
     const pool = await getPool();
     const customer = await pool.query(
-      `SELECT id FROM customers WHERE customer_number = $1`,
+      `SELECT id, data_classification FROM customers WHERE customer_number = $1`,
       [customerNumber],
     );
     if (!customer.rows[0]) return { ok: false, reason: "customer_not_found" };
     const customerId = String(customer.rows[0].id);
+    const dataClassification = String(customer.rows[0].data_classification || "");
     const invites = await pool.query(
       `SELECT i.id, i.revoked_at IS NOT NULL AS revoked,
               i.expires_at IS NOT NULL AND i.expires_at <= now() AS expired,
@@ -1696,6 +1697,10 @@ if (operation === "diagnoseCustomerSubmissionState") {
       if (looked.ok) lookupOnboardingPrefix = looked.onboardingId.slice(0, 8);
     }
     const activeUnrevoked = invites.rows.filter((row) => !row.revoked && row.unexpired);
+    // Synthetic-only: return the already-stored outbox invitation_url so operators can
+    // complete sandbox redeem without forging a token. Never returned for real customers.
+    const syntheticInvitationUrl =
+      dataClassification === "synthetic_test" && invitationUrl ? invitationUrl : null;
     return {
       ok: true,
       invitationCount: invites.rows.length,
@@ -1706,6 +1711,7 @@ if (operation === "diagnoseCustomerSubmissionState") {
       redeemCountColumnExists: false,
       browserRedeemable: lookupOk && activeUnrevoked.length === 1,
       lookupOnboardingPrefix,
+      dataClassification,
       invitationHost: (() => {
         try {
           return invitationUrl ? new URL(invitationUrl).host : null;
@@ -1721,6 +1727,7 @@ if (operation === "diagnoseCustomerSubmissionState") {
         createdAt: row.created_at ? String(row.created_at) : null,
       })),
       redeemed: false,
+      ...(syntheticInvitationUrl ? { invitationUrl: syntheticInvitationUrl } : {}),
     };
   }
 
