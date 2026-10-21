@@ -15,6 +15,7 @@ import type { SqlClient, SqlPool } from "./onboarding-access";
 import { resolveApprovedDashboardUrl } from "./dashboard-url";
 import { resolveInviteRecipientEmail } from "./portal-admin";
 import { resolveTrilletApiKeySync } from "./trillet-secret";
+import { TRILLET_WORKSPACE_HARD_BLOCKLIST } from "./trillet-workspace-ids";
 
 export const TRILLET_API_BASE = "https://api.trillet.ai";
 export const TRILLET_INVITE_PATH = (workspaceId: string) =>
@@ -375,6 +376,9 @@ export async function loadInviteEligibility(
     return { ok: false, reason: "workspace_not_mapped" };
   }
   const workspaceId = String(t.workspace_id);
+  if (TRILLET_WORKSPACE_HARD_BLOCKLIST.has(workspaceId)) {
+    return { ok: false, reason: "workspace_not_authorized" };
+  }
   const allowedWs = allowedWorkspaceIds(env);
   // Live invites require an explicit workspace allowlist (staging id and/or TRILLET_INVITE_ALLOWED_WORKSPACE_IDS).
   // Dry-run eligibility still enforces the allowlist when one is configured.

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   isBlockedVendorDashboardHost,
+  isSharedTrilletAuthUrl,
   resolveApprovedDashboardUrl,
   validateCustomerDashboardUrl,
 } from "./dashboard-url";
@@ -11,6 +12,19 @@ describe("dashboard-url allowlist", () => {
     ALEXANDER_CUSTOMER_DASHBOARD_URL: "https://app.trillet.ai/login",
     ALEXANDER_CUSTOMER_DASHBOARD_ALLOWED_ORIGINS: "https://app.trillet.ai",
   };
+
+  it("treats the shared Trillet login as not a customer dashboard", () => {
+    assert.equal(isSharedTrilletAuthUrl("https://app.trillet.ai/auth/login"), true);
+    assert.equal(
+      isSharedTrilletAuthUrl("https://app.trillet.ai/auth/login?workspaceId=6ad84631243624378abbcfc6"),
+      true,
+    );
+    assert.equal(isSharedTrilletAuthUrl("https://app.trillet.ai/login"), true);
+    assert.equal(isSharedTrilletAuthUrl("https://app.trillet.ai/"), true);
+    const allowlisted = validateCustomerDashboardUrl("https://app.trillet.ai/auth/login", env);
+    assert.equal(allowlisted.ok, true);
+    assert.equal(isSharedTrilletAuthUrl(allowlisted.ok ? allowlisted.url : ""), true);
+  });
 
   it("accepts the configured HTTPS allowlisted URL", () => {
     const result = resolveApprovedDashboardUrl(env);

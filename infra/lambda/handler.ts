@@ -33,7 +33,11 @@ import {
   renderQuestionnaireInvitationCorrectionEmail,
   renderQuestionnaireInvitationEmail,
 } from "../../src/lib/server/persistence/email-templates";
-import { resolveApprovedDashboardUrl, validateCustomerDashboardUrl } from "../../src/lib/server/persistence/dashboard-url";
+import {
+  isSharedTrilletAuthUrl,
+  resolveApprovedDashboardUrl,
+  validateCustomerDashboardUrl,
+} from "../../src/lib/server/persistence/dashboard-url";
 import {
   loadStripeSecretKey,
   verifyPaidCheckoutSession,
@@ -1192,16 +1196,15 @@ if (operation === "diagnoseCustomerSubmissionState") {
           String(job.payload.dashboard_url || ""),
           process.env,
         );
-        if (!dashCheck.ok) {
-          await markEmailRetry(
-            pool as unknown as SqlPool,
-            job.id,
-            `dashboard_url_${dashCheck.reason}`,
-          );
+        if (!dashCheck.ok || isSharedTrilletAuthUrl(dashCheck.ok ? dashCheck.url : "")) {
+          const reason = !dashCheck.ok
+            ? `dashboard_url_${dashCheck.reason}`
+            : "dashboard_url_not_customer_specific";
+          await markEmailRetry(pool as unknown as SqlPool, job.id, reason);
           results.push({
             id: job.id,
             status: "retry_pending",
-            reason: `dashboard_url_${dashCheck.reason}`,
+            reason,
           });
           continue;
         }
@@ -1310,10 +1313,13 @@ if (operation === "diagnoseCustomerSubmissionState") {
         : configuredDash.ok
           ? configuredDash
           : explicitDash || configuredDash;
-    const dashboardUrl = dashResult.ok ? dashResult.url : null;
-    const dashboardBlockedReason = dashResult.ok
-      ? null
-      : `${dashResult.reason}${dashResult.detail ? `:${dashResult.detail}` : ""}`;
+    const sharedAuth = dashResult.ok && isSharedTrilletAuthUrl(dashResult.url);
+    const dashboardUrl = dashResult.ok && !sharedAuth ? dashResult.url : null;
+    const dashboardBlockedReason = sharedAuth
+      ? "not_customer_specific"
+      : dashResult.ok
+        ? null
+        : `${dashResult.reason}${dashResult.detail ? `:${dashResult.detail}` : ""}`;
 
     const pool = await getPool();
     const client = await (pool as unknown as SqlPool).connect();

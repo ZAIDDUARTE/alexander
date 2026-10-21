@@ -2,10 +2,15 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   TRILLET_CREATE_WORKSPACE_PATH,
+  TRILLET_WORKSPACE_HARD_BLOCKLIST,
   evaluateAgencyWorkspaceContract,
   resolveCustomerWorkspaceProvisioning,
   resolveWorkspaceProvisionPolicy,
 } from "./trillet-workspace-adapter";
+import {
+  ALEXANDER_QA_CANDIDATE_WORKSPACE_ID,
+  PHILLIP_LEW_MASTER_WORKSPACE_ID,
+} from "./trillet-workspace-ids";
 
 describe("trillet-workspace-adapter", () => {
   it("documents create workspace path without claiming Agency nesting", () => {
@@ -35,6 +40,23 @@ describe("trillet-workspace-adapter", () => {
       assert.equal(blocked.reason, "workspace_provisioning_blocked");
       assert.equal(blocked.agencyParentManagementSupported, false);
     }
+  });
+
+  it("hard-blocks Phillip's master workspace and still accepts the QA candidate id", () => {
+    assert.equal(TRILLET_WORKSPACE_HARD_BLOCKLIST.has(PHILLIP_LEW_MASTER_WORKSPACE_ID), true);
+    assert.equal(TRILLET_WORKSPACE_HARD_BLOCKLIST.has(ALEXANDER_QA_CANDIDATE_WORKSPACE_ID), false);
+
+    const phillip = resolveCustomerWorkspaceProvisioning({
+      mappedWorkspaceId: PHILLIP_LEW_MASTER_WORKSPACE_ID,
+    });
+    assert.equal(phillip.ok, false);
+    if (!phillip.ok) assert.equal(phillip.reason, "workspace_hard_blocked");
+
+    const qa = resolveCustomerWorkspaceProvisioning({
+      mappedWorkspaceId: ALEXANDER_QA_CANDIDATE_WORKSPACE_ID,
+    });
+    assert.equal(qa.ok, true);
+    if (qa.ok) assert.equal(qa.workspaceId, ALEXANDER_QA_CANDIDATE_WORKSPACE_ID);
   });
 
   it("accepts an already-mapped isolated workspace id", () => {

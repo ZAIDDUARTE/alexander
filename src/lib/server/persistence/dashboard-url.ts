@@ -33,6 +33,25 @@ const BLOCKED_HOSTS = new Set([
 const BLOCKED_VENDOR_HOST_RE =
   /(^|\.)jobber\.com$|(^|\.)getjobber\.com$|jobber.*(staging|admin)|(staging|admin).*jobber/i;
 
+/**
+ * Shared Trillet sign-in. Origin allowlisting does not make this a customer dashboard.
+ * A workspaceId query does not select an isolated tenant (verified on the live host).
+ */
+export function isSharedTrilletAuthUrl(raw: string | null | undefined): boolean {
+  const text = (raw || "").trim();
+  if (!text) return false;
+  let url: URL;
+  try {
+    url = new URL(text);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+  if (url.hostname.toLowerCase() !== "app.trillet.ai") return false;
+  const path = url.pathname.replace(/\/+$/, "") || "/";
+  return path === "/" || path === "/login" || path === "/auth/login";
+}
+
 export function isBlockedVendorDashboardHost(hostname: string): boolean {
   const host = hostname.trim().toLowerCase();
   if (!host) return false;

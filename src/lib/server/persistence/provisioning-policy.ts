@@ -1,3 +1,5 @@
+import { TRILLET_WORKSPACE_HARD_BLOCKLIST } from "./trillet-workspace-ids";
+
 /**
  * Pure provisioning policy: retry backoff, account-readiness interpretation,
  * and operator workspace assignment checks.
@@ -191,7 +193,7 @@ export function accountReadinessFromInvite(inviteStatus: string | null | undefin
 export type WorkspaceDenyEnv = { TRILLET_WORKSPACE_DENY_IDS?: string; [key: string]: string | undefined };
 
 export function deniedWorkspaceIds(env: WorkspaceDenyEnv = process.env): Set<string> {
-  const ids = new Set<string>();
+  const ids = new Set<string>(TRILLET_WORKSPACE_HARD_BLOCKLIST);
   for (const part of (env.TRILLET_WORKSPACE_DENY_IDS || "").split(",")) {
     const id = part.trim();
     if (id) ids.add(id);
@@ -219,4 +221,23 @@ export function assertOperatorWorkspaceAssignment(
     };
   }
   return { ok: true, workspaceId: id };
+}
+
+/**
+ * A canceled synthetic Stripe subscription is evidence of a past test payment only.
+ * It must not open an unrestricted production customer dashboard.
+ */
+export function canceledSyntheticMayUseProductionDashboard(input: {
+  dataClassification: string;
+  stripeSubscriptionStatus: string;
+  stripeLivemode: boolean;
+}): boolean {
+  if (input.stripeLivemode) return false;
+  if (
+    input.dataClassification === "synthetic_test" &&
+    input.stripeSubscriptionStatus === "canceled"
+  ) {
+    return false;
+  }
+  return true;
 }

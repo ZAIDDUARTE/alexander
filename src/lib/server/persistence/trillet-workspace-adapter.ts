@@ -17,14 +17,11 @@
  */
 
 import { TRILLET_API_BASE } from "./trillet-invite";
+import { TRILLET_WORKSPACE_HARD_BLOCKLIST } from "./trillet-workspace-ids";
+
+export { TRILLET_WORKSPACE_HARD_BLOCKLIST } from "./trillet-workspace-ids";
 
 export const TRILLET_CREATE_WORKSPACE_PATH = `${TRILLET_API_BASE}/v1/api/workspaces`;
-
-/** Hard-blocked workspace ids that must never be auto-assigned to customers. */
-export const TRILLET_WORKSPACE_HARD_BLOCKLIST = new Set<string>([
-  // Phillip Lew production workspace — never customer automation target.
-  // Operators may still map a dedicated sandbox via markTrilletWorkspaceReady.
-]);
 
 export type AgencyWorkspaceContract = {
   agencyParentManagementSupported: false;

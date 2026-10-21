@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   accountReadinessFromInvite,
   assertOperatorWorkspaceAssignment,
+  canceledSyntheticMayUseProductionDashboard,
   decideInviteRetry,
   inviteBackoffMs,
   INVITE_IN_FLIGHT_LOCK_MS,
@@ -108,5 +109,26 @@ describe("provisioning policy", () => {
       TRILLET_WORKSPACE_DENY_IDS: "ws-phillip-prod",
     });
     assert.equal(ok.ok, true);
+  });
+
+  it("denies Phillip even when TRILLET_WORKSPACE_DENY_IDS is empty and allows the QA id", () => {
+    const phillip = assertOperatorWorkspaceAssignment("6abab4bdf22720afb93099c6", {});
+    assert.equal(phillip.ok, false);
+    if (!phillip.ok) assert.equal(phillip.reason, "workspace_denied");
+
+    const qa = assertOperatorWorkspaceAssignment("6ad84631243624378abbcfc6", {
+      TRILLET_WORKSPACE_DENY_IDS: "6abab4bdf22720afb93099c6",
+    });
+    assert.equal(qa.ok, true);
+    if (qa.ok) assert.equal(qa.workspaceId, "6ad84631243624378abbcfc6");
+
+    assert.equal(
+      canceledSyntheticMayUseProductionDashboard({
+        dataClassification: "synthetic_test",
+        stripeSubscriptionStatus: "canceled",
+        stripeLivemode: false,
+      }),
+      false,
+    );
   });
 });
