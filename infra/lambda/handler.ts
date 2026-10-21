@@ -1642,7 +1642,7 @@ if (operation === "diagnoseCustomerSubmissionState") {
   }
 
   if (operation === "inspectInvitationRedeemability") {
-    const body = event as { customerNumber?: unknown };
+    const body = event as { customerNumber?: unknown; revealInvitationUrl?: unknown };
     const customerNumber =
       typeof body.customerNumber === "string" ? body.customerNumber.trim() : "";
     if (!/^ALX-C\d{6}$/.test(customerNumber)) {
@@ -1697,10 +1697,10 @@ if (operation === "diagnoseCustomerSubmissionState") {
       if (looked.ok) lookupOnboardingPrefix = looked.onboardingId.slice(0, 8);
     }
     const activeUnrevoked = invites.rows.filter((row) => !row.revoked && row.unexpired);
-    // Synthetic-only: return the already-stored outbox invitation_url so operators can
-    // complete sandbox redeem without forging a token. Never returned for real customers.
-    const syntheticInvitationUrl =
-      dataClassification === "synthetic_test" && invitationUrl ? invitationUrl : null;
+    // Bearer URLs are never returned by default. Opt-in reveal is IAM-gated (Lambda invoke)
+    // and restricted to synthetic_test only. Public Next.js routes never call this op.
+    const revealRequested = body.revealInvitationUrl === true;
+    const mayReveal = revealRequested && dataClassification === "synthetic_test" && Boolean(invitationUrl);
     return {
       ok: true,
       invitationCount: invites.rows.length,
@@ -1712,6 +1712,9 @@ if (operation === "diagnoseCustomerSubmissionState") {
       browserRedeemable: lookupOk && activeUnrevoked.length === 1,
       lookupOnboardingPrefix,
       dataClassification,
+      invitationUrlPresent: Boolean(invitationUrl),
+      invitationRevealAllowed: dataClassification === "synthetic_test",
+      invitationRevealed: mayReveal,
       invitationHost: (() => {
         try {
           return invitationUrl ? new URL(invitationUrl).host : null;
@@ -1727,7 +1730,71 @@ if (operation === "diagnoseCustomerSubmissionState") {
         createdAt: row.created_at ? String(row.created_at) : null,
       })),
       redeemed: false,
-      ...(syntheticInvitationUrl ? { invitationUrl: syntheticInvitationUrl } : {}),
+      ...(mayReveal ? { invitationUrl } : {}),
+    };
+  }
+
+  if (operation === "inspectUnlinkedSubmissionIsolation") {
+    const pool = await getPool();
+    const orphanSubs = await pool.query(
+      `SELECT left(s.id::text, 8) AS id_prefix,
+              s.id,
+              s.persistence_state,
+              s.revision_number,
+              s.submitted_at IS NOT NULL AS has_submitted_at,
+              s.onboarding_id IS NULL AS onboarding_id_null,
+              s.session_id IS NOT NULL AS has_session_id,
+              left(coalesce(s.session_id::text, ''), 8) AS session_prefix
+       FROM onboarding_submissions s
+       WHERE s.onboarding_id IS NULL
+       ORDER BY s.created_at DESC NULLS LAST
+       LIMIT 50`,
+    );
+    const orphanSessions = await pool.query(
+      `SELECT left(s.session_id::text, 8) AS session_prefix,
+              s.submission_status,
+              s.submitted_at IS NOT NULL AS has_submitted_at,
+              s.onboarding_id IS NULL AS onboarding_id_null,
+              s.version,
+              pg_column_size(s.draft_json) AS draft_bytes
+       FROM onboarding_sessions s
+       WHERE s.onboarding_id IS NULL
+         AND (s.submitted_at IS NOT NULL OR s.submission_status = 'submitted')
+       ORDER BY s.updated_at DESC NULLS LAST
+       LIMIT 50`,
+    );
+    const linkedViaCustomer = await pool.query(
+      `SELECT count(*)::int AS n
+       FROM onboarding_submissions s
+       JOIN customer_onboardings o ON o.id = s.onboarding_id
+       JOIN customers c ON c.id = o.customer_id
+       WHERE s.onboarding_id IS NULL`,
+    ).catch(() => ({ rows: [{ n: 0 }] }));
+    return {
+      ok: true,
+      orphanSubmissionCount: orphanSubs.rows.length,
+      orphanSubmittedSessionCount: orphanSessions.rows.length,
+      impossibleCustomerJoinCount: Number(linkedViaCustomer.rows[0]?.n || 0),
+      canAttachToCustomerWithoutOnboardingId: false,
+      canTriggerCustomerProvisioning: false,
+      note:
+        "Unlinked submissions/sessions have NULL onboarding_id, so they cannot join customers or enter runCustomerProvisioning. Preserve for audit; do not DELETE.",
+      orphanSubmissions: orphanSubs.rows.map((row) => ({
+        idPrefix: row.id_prefix,
+        persistenceState: row.persistence_state,
+        revisionNumber: row.revision_number == null ? null : Number(row.revision_number),
+        hasSubmittedAt: Boolean(row.has_submitted_at),
+        onboardingIdNull: Boolean(row.onboarding_id_null),
+        sessionPrefix: row.session_prefix || null,
+      })),
+      orphanSessions: orphanSessions.rows.map((row) => ({
+        sessionPrefix: row.session_prefix,
+        submissionStatus: row.submission_status,
+        hasSubmittedAt: Boolean(row.has_submitted_at),
+        onboardingIdNull: Boolean(row.onboarding_id_null),
+        version: Number(row.version || 0),
+        draftBytes: Number(row.draft_bytes || 0),
+      })),
     };
   }
 

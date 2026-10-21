@@ -8,14 +8,29 @@ import { isValidRedisDraft } from "@/lib/server/draft-store";
 import { hashToken } from "@/lib/server/persistence/onboarding-access";
 import { persistenceV2Enabled, pilotOnboardingIds } from "@/lib/server/persistence/v2-flag";
 
-export async function submitPersistenceV2IfEnabled(request: Request): Promise<NextResponse | null> {
-  if (persistenceV2Enabled()) return submitPersistenceV2Request(request);
+/** Pure routing decision used by submitPersistenceV2IfEnabled (unit-tested). */
+export function shouldRouteSubmitThroughPersistenceV2(input: {
+  persistenceV2Enabled: boolean;
+  hasAccessToken: boolean;
+}): boolean {
+  if (input.persistenceV2Enabled) return true;
   // Invited browser sessions carry alexander_onboarding_access. Those must never fall
   // through to anonymous onboarding_sessions (which orphan the submission from the customer).
+  return input.hasAccessToken;
+}
+
+export async function submitPersistenceV2IfEnabled(request: Request): Promise<NextResponse | null> {
   const accessToken = await getOnboardingAccessToken();
-  if (accessToken) return submitPersistenceV2Request(request);
-  if (pilotOnboardingIds().length === 0) return null;
-  return null;
+  if (
+    !shouldRouteSubmitThroughPersistenceV2({
+      persistenceV2Enabled: persistenceV2Enabled(),
+      hasAccessToken: Boolean(accessToken),
+    })
+  ) {
+    if (pilotOnboardingIds().length === 0) return null;
+    return null;
+  }
+  return submitPersistenceV2Request(request);
 }
 
 export async function submitPersistenceV2Request(request: Request): Promise<NextResponse> {

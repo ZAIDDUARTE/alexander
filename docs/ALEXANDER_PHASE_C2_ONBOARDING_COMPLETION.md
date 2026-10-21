@@ -55,3 +55,7 @@ Repair:
 | No Email #2 / Trillet reassignment | Yes |
 | `ALX-C000002` untouched | Yes (inspect only) |
 | No WordPress changes | Yes |
+
+## Phase C3 follow-up
+
+Browser V2 duplicate-submit, orphan isolation, invitation reveal hardening, and remaining Trillet blockers are recorded in `docs/ALEXANDER_PHASE_C3_FINAL_VALIDATION.md`.
