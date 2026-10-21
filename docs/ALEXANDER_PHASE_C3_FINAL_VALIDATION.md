@@ -5,7 +5,8 @@ Customer: **ALX-C000010** · synthetic_test · Cedar & Valve Synthetic Plumbing 
 Onboarding: `e9e41757-13fe-40b1-a463-49e9c461bd95`  
 Linked submission: `b15e33f7-115f-4423-9a32-cafdd519fec9` (revision 1)  
 Orphan session from C2 defect: `2ea00c48` / submission `a2318927-…` (unlinked; retained for audit)  
-Branch: `customer-lifecycle-staging`  
+Branch: `customer-lifecycle-staging` (`856e94b`)  
+Production onboard deploy: `dpl_BZCBEN9MTr4eE9suPkntfkmhyDW7`  
 Stripe: **test only** — subscription `sub_1USslFQKy1Smykv0CnPyXK69` remains `canceled`, `livemode=false`
 
 ## Validation results
