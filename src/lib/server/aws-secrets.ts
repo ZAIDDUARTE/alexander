@@ -44,6 +44,17 @@ export async function getSecretString(secretId: string): Promise<string> {
  */
 export async function getAlexanderStripeSecretKey(): Promise<string> {
   const mode = (process.env.ALEXANDER_STRIPE_MODE || "test").trim().toLowerCase();
+  // Optional direct key (Vercel). Used when it matches the configured mode so a
+  // live secret in Secrets Manager cannot verify test Checkout sessions.
+  const direct = (process.env.ALEXANDER_STRIPE_SECRET_KEY || "").trim();
+  if (direct && !direct.startsWith("__")) {
+    if (mode === "live" && (direct.startsWith("sk_live_") || direct.startsWith("rk_live_"))) {
+      return direct;
+    }
+    if (mode !== "live" && (direct.startsWith("sk_test_") || direct.startsWith("rk_test_"))) {
+      return direct;
+    }
+  }
   const id =
     process.env.ALEXANDER_STRIPE_SECRET_ARN ||
     process.env.ALEXANDER_STRIPE_SECRET_NAME ||
