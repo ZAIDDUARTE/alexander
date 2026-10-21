@@ -109,13 +109,14 @@ Reply: **approve WordPress QA-gate deploy** and provide/confirm the token is ins
 
 **Impact:** `onboard.meetalexander.ai` gains `/onboarding/account`, portal-admin APIs, invitation continue parity with Preview. Shared Lambda/DB unchanged.  
 **Target:** `dpl_4mAVamRggo4Xz9i4XV8dm74Q6De9` / commit `e555236`.  
+**Production env to confirm before/with promote (names only):** `ONBOARDING_INVITATIONS_ENABLED=true`, `ONBOARDING_HOST` / `ALEXANDER_ONBOARDING_BASE_URL`, `ALEXANDER_STRIPE_MODE=test`, Stripe secret ARN/name, lifecycle HMAC, AWS OIDC → persistence Lambda.  
 **Rollback:** Redeploy previous Production deployment (prior id from Vercel history; historically `dpl_EwCnTbRuKEADc1CTttyMDxqFATea` from 2026-10-15 docs — confirm in Vercel before promote).  
 Reply: **approve Vercel Production promote**.
 
 ### C. Synthetic Stripe test payment writing to shared RDS
 
 **Impact:** Creates/updates `synthetic_test` customer + subscription + Email #1 outbox in shared production PostgreSQL.  
-**Need:** Authorized test recipient email matching `ALLOWED_TEST_RECIPIENT`; confirmation AWS access for post-payment SQL/log verification; company name clearly fictional.  
+**Need:** Authorized test recipient email matching `ALLOWED_TEST_RECIPIENT`; `aws sso login` (or equivalent) so post-payment verification can use read-only Lambda ops `inspectEmailOutbox` / `inspectCustomerProvisioning` (no forged rows); company name clearly fictional.  
 **Rollback:** Do not delete blindly — mark/classify synthetic; cancel Stripe **test** subscription in Dashboard; leave real customers untouched.  
 Reply: **approve shared-DB synthetic payment** + authorized recipient email.
 
