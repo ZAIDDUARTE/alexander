@@ -1,8 +1,8 @@
 # Alexander — Stripe Sandbox End-to-End QA
 
 Date: 2026-10-21  
-Branch (Next.js): `customer-lifecycle-staging` @ `e555236191782432e741ede9b9fc0e2496c7c25c`  
-Branch (WordPress): `stripe-test-integration` (QA gate commit pending push; baseline `02cbb32`)  
+Branch (Next.js): `customer-lifecycle-staging` @ `216be33` (Preview build from parent `e555236`)  
+Branch (WordPress): `stripe-test-integration` @ `f642caf` (production test-mode QA gate)  
 Mode contract: **`ALEXANDER_STRIPE_MODE=test` only** — no live keys, no live catalogue, no real charges.
 
 ## Executive answers
