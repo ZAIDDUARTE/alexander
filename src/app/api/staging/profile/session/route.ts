@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { callOnboardingAccess, directAccessPool } from "@/lib/server/access-gateway";
-import { createProfileUpdateSession } from "@/lib/server/persistence/business-profile-editor";
+import { directAccessPool } from "@/lib/server/access-gateway";
+import { profileCreateSession } from "@/lib/server/persistence/profile-backend";
 import {
   JOBBER_ADMIN_COOKIE_NAME,
   authorizeProfileRequest,
 } from "@/lib/server/persistence/profile-staging-auth";
+import { FICTIONAL_PROFILE_CUSTOMER_ID } from "@/lib/server/persistence/profile-memory-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,27 +38,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     body = (await request.json()) as typeof body;
   } catch {
-    return NextResponse.json(
-      { ok: false, reason: "invalid_json" },
-      { status: 400, headers: { "Cache-Control": "no-store" } },
-    );
+    body = {};
   }
-  const customerId = String(body.customerId || "").trim();
-  if (!customerId) {
-    return NextResponse.json(
-      { ok: false, reason: "customer_id_required" },
-      { status: 400, headers: { "Cache-Control": "no-store" } },
-    );
+  const customerId = String(body.customerId || FICTIONAL_PROFILE_CUSTOMER_ID).trim();
+  const session = await profileCreateSession(customerId);
+  if ("reason" in session && session.reason === "shared_backend_blocked") {
+    return NextResponse.json(session, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
-
-  const session = await callOnboardingAccess(
-    (db) => createProfileUpdateSession(db, customerId),
-    { operation: "createProfileUpdateSession", customerId },
-  );
-
-  if (!session || typeof session !== "object" || !("token" in session)) {
+  if (!("token" in session)) {
     return NextResponse.json(
-      { ok: false, reason: "unavailable" },
+      { ok: false, reason: "unavailable", ...session },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }

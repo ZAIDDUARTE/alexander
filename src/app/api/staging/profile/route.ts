@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { callOnboardingAccess, directAccessPool } from "@/lib/server/access-gateway";
-import {
-  applyCustomerProfileEdit,
-  getBusinessProfile,
-} from "@/lib/server/persistence/business-profile-editor";
+import { directAccessPool } from "@/lib/server/access-gateway";
+import { profileApplyEdit, profileGet } from "@/lib/server/persistence/profile-backend";
 import { groupEditableSettingsBySection } from "@/lib/server/persistence/profile-editable-catalog";
 import {
   JOBBER_ADMIN_COOKIE_NAME,
   assertCustomerScope,
   authorizeProfileRequest,
 } from "@/lib/server/persistence/profile-staging-auth";
+import { FICTIONAL_PROFILE_CUSTOMER_ID } from "@/lib/server/persistence/profile-memory-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,13 +36,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const customerId =
     auth.mode === "customer_session"
       ? auth.customerId
-      : request.nextUrl.searchParams.get("customerId") || "";
-  if (!customerId) {
-    return NextResponse.json(
-      { ok: false, reason: "customer_id_required" },
-      { status: 400, headers: { "Cache-Control": "no-store" } },
-    );
-  }
+      : request.nextUrl.searchParams.get("customerId") || FICTIONAL_PROFILE_CUSTOMER_ID;
   const scope = assertCustomerScope(auth, customerId);
   if (!scope.ok) {
     return NextResponse.json(
@@ -53,14 +45,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const result = await callOnboardingAccess(
-    (pool) => getBusinessProfile(pool, customerId),
-    { operation: "getBusinessProfile", customerId },
-  );
-
-  if (!result) {
+  const result = await profileGet(customerId);
+  if ("reason" in result && result.reason === "shared_backend_blocked") {
+    return NextResponse.json(result, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
+  if (!result.profile) {
     return NextResponse.json(
-      { ok: false, reason: "not_found" },
+      { ok: false, reason: "not_found", mode: result.mode },
       { status: 404, headers: { "Cache-Control": "no-store" } },
     );
   }
@@ -68,9 +59,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   return NextResponse.json(
     {
       ok: true,
-      profile: result,
+      mode: result.mode,
+      profile: result.profile,
+      originalQuestionnaireUntouched: result.originalQuestionnaireUntouched,
       editableCatalog: groupEditableSettingsBySection(),
       authMode: auth.mode,
+      fictionalCustomerId: FICTIONAL_PROFILE_CUSTOMER_ID,
     },
     { headers: { "Cache-Control": "no-store" } },
   );
@@ -100,13 +94,9 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   }
 
   const customerId =
-    auth.mode === "customer_session" ? auth.customerId : String(body.customerId || "");
-  if (!customerId) {
-    return NextResponse.json(
-      { ok: false, reason: "customer_id_required" },
-      { status: 400, headers: { "Cache-Control": "no-store" } },
-    );
-  }
+    auth.mode === "customer_session"
+      ? auth.customerId
+      : String(body.customerId || FICTIONAL_PROFILE_CUSTOMER_ID);
   const scope = assertCustomerScope(auth, customerId);
   if (!scope.ok) {
     return NextResponse.json(
@@ -123,41 +113,26 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const result = await callOnboardingAccess(
-    (pool) =>
-      applyCustomerProfileEdit(pool, {
-        customerId,
-        expectedRevision,
-        patch: body.patch || {},
-        actorType: auth.mode === "staging_admin" ? "internal_admin" : "customer",
-        actorRef: auth.actorRef,
-        changeSource:
-          auth.mode === "staging_admin" ? "internal_admin" : "customer_self_service",
-      }),
-    {
-      operation: "applyCustomerProfileEdit",
-      customerId,
-      expectedRevision,
-      patch: body.patch || {},
-      actorRef: auth.actorRef,
-      changeSource:
-        auth.mode === "staging_admin" ? "internal_admin" : "customer_self_service",
-    },
-  );
+  const result = await profileApplyEdit({
+    customerId,
+    expectedRevision,
+    patch: body.patch || {},
+    actorType: auth.mode === "staging_admin" ? "internal_admin" : "customer",
+    actorRef: auth.actorRef,
+    changeSource: auth.mode === "staging_admin" ? "internal_admin" : "customer_self_service",
+  });
 
-  if (!result || typeof result !== "object" || !("ok" in result)) {
-    return NextResponse.json(
-      { ok: false, reason: "unavailable" },
-      { status: 503, headers: { "Cache-Control": "no-store" } },
-    );
+  if ("reason" in result && result.reason === "shared_backend_blocked") {
+    return NextResponse.json(result, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
-  if (!result.ok) {
+  if (!("ok" in result) || !result.ok) {
+    const reason = "reason" in result ? String(result.reason) : "failed";
     const status =
-      result.reason === "revision_conflict"
+      reason === "revision_conflict"
         ? 409
-        : result.reason === "not_found"
+        : reason === "not_found"
           ? 404
-          : result.reason === "editing_disabled"
+          : reason === "editing_disabled"
             ? 503
             : 400;
     return NextResponse.json(result, { status, headers: { "Cache-Control": "no-store" } });

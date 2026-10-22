@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { callOnboardingAccess, directAccessPool } from "@/lib/server/access-gateway";
-import {
-  getBusinessProfile,
-  updatePublicationState,
-} from "@/lib/server/persistence/business-profile-editor";
+import { directAccessPool } from "@/lib/server/access-gateway";
+import { profileGet, profileUpdatePublication } from "@/lib/server/persistence/profile-backend";
 import {
   JOBBER_ADMIN_COOKIE_NAME,
   assertCustomerScope,
   authorizeProfileRequest,
 } from "@/lib/server/persistence/profile-staging-auth";
+import { FICTIONAL_PROFILE_CUSTOMER_ID } from "@/lib/server/persistence/profile-memory-store";
 import {
   generateRuntimeConfiguration,
   runtimeConfigContentSha256,
@@ -42,13 +40,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const customerId =
-    auth.mode === "customer_session" ? auth.customerId : String(body.customerId || "");
-  if (!customerId) {
-    return NextResponse.json(
-      { ok: false, reason: "customer_id_required" },
-      { status: 400, headers: { "Cache-Control": "no-store" } },
-    );
-  }
+    auth.mode === "customer_session"
+      ? auth.customerId
+      : String(body.customerId || FICTIONAL_PROFILE_CUSTOMER_ID);
   const scope = assertCustomerScope(auth, customerId);
   if (!scope.ok) {
     return NextResponse.json(
@@ -57,11 +51,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const profile = await callOnboardingAccess(
-    (db) => getBusinessProfile(db, customerId),
-    { operation: "getBusinessProfile", customerId },
-  );
-  if (!profile) {
+  const loaded = await profileGet(customerId);
+  if ("reason" in loaded && loaded.reason === "shared_backend_blocked") {
+    return NextResponse.json(loaded, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
+  if (!loaded.profile) {
     return NextResponse.json(
       { ok: false, reason: "not_found" },
       { status: 404, headers: { "Cache-Control": "no-store" } },
@@ -69,51 +63,43 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const config = generateRuntimeConfiguration({
-    fields: profile.fields,
-    profileRevision: profile.currentRevision,
+    fields: loaded.profile.fields,
+    profileRevision: loaded.profile.currentRevision,
     customerId,
-    customerNumber: body.customerNumber || null,
-    questionnaire: profile.profileData.questionnaire,
+    customerNumber: body.customerNumber || "ALX-C000099",
+    questionnaire: loaded.profile.profileData.questionnaire,
   });
   const contentSha = runtimeConfigContentSha256(config);
 
-  await callOnboardingAccess(
-    (db) =>
-      updatePublicationState(db, customerId, (publication, profileData) => {
-        (profileData as { _runtime_config?: unknown })._runtime_config = {
-          contentSha256: contentSha,
-          generatedAt: config.meta.generatedAt,
-          artifacts: {
-            agentInstructions: config.artifacts.agentInstructions,
-            companyKnowledge: config.artifacts.companyKnowledge,
-            greeting: config.artifacts.greeting,
-            callFlow: config.artifacts.callFlow,
-            integrationHints: config.artifacts.integrationHints,
-          },
-          customer: config.customer,
-          source: config.source,
-        };
-        return {
-          ...publication,
-          status: publication.qaRequirements.some((r) => r.required && !r.satisfied)
-            ? "qa_required"
-            : "config_generated",
-          profileRevision: profile.currentRevision,
-          configContentSha256: contentSha,
-          lastFailure: null,
-        };
-      }),
-    {
-      operation: "storeGeneratedRuntimeConfig",
-      customerId,
+  await profileUpdatePublication(customerId, (publication, profileData) => {
+    (profileData as { _runtime_config?: unknown })._runtime_config = {
       contentSha256: contentSha,
-      profileRevision: profile.currentRevision,
-    },
-  );
+      generatedAt: config.meta.generatedAt,
+      artifacts: {
+        agentInstructions: config.artifacts.agentInstructions,
+        companyKnowledge: config.artifacts.companyKnowledge,
+        greeting: config.artifacts.greeting,
+        callFlow: config.artifacts.callFlow,
+        integrationHints: config.artifacts.integrationHints,
+      },
+      customer: config.customer,
+      source: config.source,
+    };
+    return {
+      ...publication,
+      status: publication.qaRequirements.some((r) => r.required && !r.satisfied)
+        ? "qa_required"
+        : "config_generated",
+      profileRevision: loaded.profile!.currentRevision,
+      configContentSha256: contentSha,
+      lastFailure: null,
+    };
+  });
 
   return NextResponse.json(
     {
       ok: true,
+      mode: loaded.mode,
       contentSha256: contentSha,
       config: {
         schema: config.schema,

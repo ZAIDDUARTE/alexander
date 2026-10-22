@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { callOnboardingAccess, directAccessPool } from "@/lib/server/access-gateway";
-import { listProfileRevisions } from "@/lib/server/persistence/business-profile-editor";
+import { directAccessPool } from "@/lib/server/access-gateway";
+import { profileListHistory } from "@/lib/server/persistence/profile-backend";
 import {
   JOBBER_ADMIN_COOKIE_NAME,
   assertCustomerScope,
   authorizeProfileRequest,
 } from "@/lib/server/persistence/profile-staging-auth";
+import { FICTIONAL_PROFILE_CUSTOMER_ID } from "@/lib/server/persistence/profile-memory-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,13 +31,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const customerId =
     auth.mode === "customer_session"
       ? auth.customerId
-      : request.nextUrl.searchParams.get("customerId") || "";
-  if (!customerId) {
-    return NextResponse.json(
-      { ok: false, reason: "customer_id_required" },
-      { status: 400, headers: { "Cache-Control": "no-store" } },
-    );
-  }
+      : request.nextUrl.searchParams.get("customerId") || FICTIONAL_PROFILE_CUSTOMER_ID;
   const scope = assertCustomerScope(auth, customerId);
   if (!scope.ok) {
     return NextResponse.json(
@@ -45,13 +40,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const revisions = await callOnboardingAccess(
-    (db) => listProfileRevisions(db, customerId),
-    { operation: "listProfileRevisions", customerId },
-  );
+  const result = await profileListHistory(customerId);
+  if ("reason" in result && result.reason === "shared_backend_blocked") {
+    return NextResponse.json(result, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
 
   return NextResponse.json(
-    { ok: true, customerId, revisions: revisions || [] },
+    { ok: true, customerId, mode: result.mode, revisions: result.revisions || [] },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

@@ -3,10 +3,9 @@ import {
   JOBBER_ADMIN_COOKIE,
 } from "@/lib/server/requests/jobber-oauth-session";
 import type { SqlPool } from "./onboarding-access";
-import {
-  assertEditingAllowed,
-  resolveProfileUpdateSession,
-} from "./business-profile-editor";
+import { assertEditingAllowed } from "./business-profile-editor";
+import { profileResolveSessionToken } from "./profile-backend";
+import { profileMemoryStoreEnabled } from "./profile-memory-store";
 
 export type ProfileAuth =
   | { ok: true; mode: "staging_admin"; actorRef: string }
@@ -40,9 +39,21 @@ export async function authorizeProfileRequest(input: {
     }
   }
 
+  // Preview memory-store isolation: allow a dedicated non-production editor token.
+  const memoryAdmin = (process.env.ALEXANDER_PROFILE_EDITOR_PREVIEW_TOKEN || "").trim();
   const bearer = extractBearer(input.authorizationHeader) || input.profileTokenHeader;
-  if (bearer && input.pool) {
-    const session = await resolveProfileUpdateSession(input.pool, bearer);
+  if (
+    profileMemoryStoreEnabled() &&
+    memoryAdmin &&
+    bearer &&
+    bearer === memoryAdmin &&
+    String(process.env.VERCEL_ENV || "").toLowerCase() !== "production"
+  ) {
+    return { ok: true, mode: "staging_admin", actorRef: "preview_memory_admin" };
+  }
+
+  if (bearer) {
+    const session = await profileResolveSessionToken(bearer);
     if (session.ok) {
       return {
         ok: true,

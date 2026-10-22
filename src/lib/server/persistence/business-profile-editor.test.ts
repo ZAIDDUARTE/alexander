@@ -21,9 +21,9 @@ describe("business-profile-editor gates and validation", () => {
     assert.equal(gate.ok, false);
   });
 
-  it("allows staging when editing flag is on", () => {
+  it("allows Preview even when NODE_ENV is production", () => {
     const gate = assertEditingAllowed({
-      NODE_ENV: "development",
+      NODE_ENV: "production",
       ALEXANDER_CUSTOMER_PROFILE_EDITING_ENABLED: "true",
       VERCEL_ENV: "preview",
     } as unknown as NodeJS.ProcessEnv);

@@ -70,10 +70,11 @@ export function assertEditingAllowed(env: NodeJS.ProcessEnv = process.env): {
   if (!customerProfileEditingEnabled(env)) {
     return { ok: false, reason: "editing_disabled" };
   }
-  const isProd =
-    String(env.VERCEL_ENV || "").toLowerCase() === "production" ||
-    String(env.NODE_ENV || "").toLowerCase() === "production";
-  if (isProd && !productionCustomerEditingAllowed(env)) {
+  // Vercel Preview/dev set NODE_ENV=production during Next builds — trust VERCEL_ENV first.
+  const vercelEnv = String(env.VERCEL_ENV || "").toLowerCase();
+  const isVercelProduction = vercelEnv === "production";
+  const isNonVercelProduction = !vercelEnv && String(env.NODE_ENV || "").toLowerCase() === "production";
+  if ((isVercelProduction || isNonVercelProduction) && !productionCustomerEditingAllowed(env)) {
     return { ok: false, reason: "editing_disabled" };
   }
   return { ok: true };

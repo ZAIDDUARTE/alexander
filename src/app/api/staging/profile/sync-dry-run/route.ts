@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { callOnboardingAccess, directAccessPool } from "@/lib/server/access-gateway";
-import { getBusinessProfile } from "@/lib/server/persistence/business-profile-editor";
+import { directAccessPool } from "@/lib/server/access-gateway";
+import { profileGet } from "@/lib/server/persistence/profile-backend";
 import { dryRunTrilletConfigSync } from "@/lib/server/persistence/trillet-config-sync";
 import {
   JOBBER_ADMIN_COOKIE_NAME,
   assertCustomerScope,
   authorizeProfileRequest,
 } from "@/lib/server/persistence/profile-staging-auth";
+import { FICTIONAL_PROFILE_CUSTOMER_ID } from "@/lib/server/persistence/profile-memory-store";
 import { generateRuntimeConfiguration } from "@/lib/runtime-config/generator";
 
 export const runtime = "nodejs";
@@ -14,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Dry-run only. Never writes to Trillet. Refuses Phillip/Lisa/Marina targets.
- * Requires staging admin — not customer session — because it reads Trillet API keys.
+ * Requires staging admin. Uses generated config from isolated memory profile when enabled.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const pool = await directAccessPool();
@@ -48,19 +49,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     body = (await request.json()) as typeof body;
   } catch {
-    return NextResponse.json(
-      { ok: false, reason: "invalid_json" },
-      { status: 400, headers: { "Cache-Control": "no-store" } },
-    );
+    body = {};
   }
 
-  const customerId = String(body.customerId || "").trim();
-  if (!customerId) {
-    return NextResponse.json(
-      { ok: false, reason: "customer_id_required" },
-      { status: 400, headers: { "Cache-Control": "no-store" } },
-    );
-  }
+  const customerId = String(body.customerId || FICTIONAL_PROFILE_CUSTOMER_ID).trim();
   const scope = assertCustomerScope(auth, customerId);
   if (!scope.ok) {
     return NextResponse.json(
@@ -69,21 +61,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const apiKey = process.env.TRILLET_API_KEY || "";
-  const workspaceId =
-    body.workspaceId || process.env.STAGING_TRILLET_WORKSPACE_ID || "";
-  if (!apiKey || !workspaceId) {
-    return NextResponse.json(
-      { ok: false, reason: "trillet_not_configured" },
-      { status: 503, headers: { "Cache-Control": "no-store" } },
-    );
+  const loaded = await profileGet(customerId);
+  if ("reason" in loaded && loaded.reason === "shared_backend_blocked") {
+    return NextResponse.json(loaded, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
-
-  const profile = await callOnboardingAccess(
-    (db) => getBusinessProfile(db, customerId),
-    { operation: "getBusinessProfile", customerId },
-  );
-  if (!profile) {
+  if (!loaded.profile) {
     return NextResponse.json(
       { ok: false, reason: "not_found" },
       { status: 404, headers: { "Cache-Control": "no-store" } },
@@ -91,11 +73,44 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const runtimeConfig = generateRuntimeConfiguration({
-    fields: profile.fields,
-    profileRevision: profile.currentRevision,
+    fields: loaded.profile.fields,
+    profileRevision: loaded.profile.currentRevision,
     customerId,
-    questionnaire: profile.profileData.questionnaire,
+    questionnaire: loaded.profile.profileData.questionnaire,
   });
+
+  const apiKey = process.env.TRILLET_API_KEY || "";
+  const workspaceId = body.workspaceId || process.env.STAGING_TRILLET_WORKSPACE_ID || "";
+  if (!apiKey || !workspaceId) {
+    // Still return a planned dry-run payload without contacting Trillet.
+    return NextResponse.json(
+      {
+        ok: true,
+        mode: "dry_run",
+        backendMode: loaded.mode,
+        skippedLiveReads: true,
+        reason: "trillet_not_configured",
+        wouldWrite: true,
+        plan: [
+          {
+            op: "update_call_flow_prompt",
+            method: "PUT",
+            path: "/v1/api/call-flows/{id}",
+            executeInDryRun: false,
+            reasonHeld: "dry_run_only",
+            plannedBody: {
+              promptType: "simple",
+              promptChars: runtimeConfig.artifacts.callFlow.prompt.length,
+            },
+          },
+        ],
+        observations: {
+          note: "No Trillet credentials in this environment; plan only.",
+        },
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  }
 
   const dryRun = await dryRunTrilletConfigSync({
     apiKey,
@@ -105,8 +120,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     runtimeConfig,
   });
 
-  return NextResponse.json(dryRun, {
-    status: dryRun.ok ? 200 : 400,
-    headers: { "Cache-Control": "no-store" },
-  });
+  return NextResponse.json(
+    { ...dryRun, backendMode: loaded.mode },
+    {
+      status: dryRun.ok ? 200 : 400,
+      headers: { "Cache-Control": "no-store" },
+    },
+  );
 }

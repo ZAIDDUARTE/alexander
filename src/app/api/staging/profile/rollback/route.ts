@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { callOnboardingAccess, directAccessPool } from "@/lib/server/access-gateway";
-import { rollbackToApprovedConfiguration } from "@/lib/server/persistence/business-profile-editor";
+import { directAccessPool } from "@/lib/server/access-gateway";
+import { profileRollback } from "@/lib/server/persistence/profile-backend";
 import {
   JOBBER_ADMIN_COOKIE_NAME,
   assertCustomerScope,
   authorizeProfileRequest,
 } from "@/lib/server/persistence/profile-staging-auth";
+import { FICTIONAL_PROFILE_CUSTOMER_ID } from "@/lib/server/persistence/profile-memory-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,9 +44,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const customerId = String(body.customerId || "").trim();
+  const customerId = String(body.customerId || FICTIONAL_PROFILE_CUSTOMER_ID).trim();
   const expectedRevision = Number(body.expectedRevision);
-  if (!customerId || !Number.isFinite(expectedRevision)) {
+  if (!Number.isFinite(expectedRevision)) {
     return NextResponse.json(
       { ok: false, reason: "customer_id_and_revision_required" },
       { status: 400, headers: { "Cache-Control": "no-store" } },
@@ -59,34 +60,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const result = await callOnboardingAccess(
-    (db) =>
-      rollbackToApprovedConfiguration(db, {
-        customerId,
-        expectedRevision,
-        actorRef: auth.actorRef,
-      }),
-    {
-      operation: "rollbackToApprovedConfiguration",
-      customerId,
-      expectedRevision,
-      actorRef: auth.actorRef,
-    },
-  );
-
-  if (!result || typeof result !== "object" || !("ok" in result)) {
-    return NextResponse.json(
-      { ok: false, reason: "unavailable" },
-      { status: 503, headers: { "Cache-Control": "no-store" } },
-    );
+  const result = await profileRollback({
+    customerId,
+    expectedRevision,
+    actorRef: auth.actorRef,
+  });
+  if ("reason" in result && result.reason === "shared_backend_blocked") {
+    return NextResponse.json(result, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
-  if (!result.ok) {
+  if (!("ok" in result) || !result.ok) {
+    const reason = "reason" in result ? String(result.reason) : "failed";
     const status =
-      result.reason === "revision_conflict"
-        ? 409
-        : result.reason === "not_found"
-          ? 404
-          : 400;
+      reason === "revision_conflict" ? 409 : reason === "not_found" ? 404 : 400;
     return NextResponse.json(result, { status, headers: { "Cache-Control": "no-store" } });
   }
 
