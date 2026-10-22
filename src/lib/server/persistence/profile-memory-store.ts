@@ -51,7 +51,6 @@ type MemoryState = {
 };
 
 declare global {
-  // eslint-disable-next-line no-var
   var __alexanderProfileMemoryStore: MemoryState | undefined;
 }
 

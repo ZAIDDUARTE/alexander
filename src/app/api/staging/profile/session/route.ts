@@ -47,7 +47,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
   if (!("token" in session)) {
     return NextResponse.json(
-      { ok: false, reason: "unavailable", ...session },
+      { ...session, ok: false, reason: "unavailable" },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
