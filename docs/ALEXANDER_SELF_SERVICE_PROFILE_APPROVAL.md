@@ -3,6 +3,7 @@
 Date: 2026-10-22  
 Branch: `customer-lifecycle-staging`  
 Base revision before this sprint: `d4a32ba`  
+Implementation commit: `55a9a88` (`55a9a88aba6ca9c13325e97e58aafc63c445018b`) — local only until push approved  
 
 ## Webhook-only sandbox payment status
 
