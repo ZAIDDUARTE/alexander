@@ -1,10 +1,14 @@
 # Alexander — Webhook-only Stripe sandbox test plan (approval required)
 
-Date: 2026-10-21  
-Source revision (guard): branch tip after subscription-eligibility changes (not deployed)  
-Live Production remains: `eba9c45` security deploy  
+Date: 2026-10-22  
+Source: Alexander `d4a32ba` (pushed `customer-lifecycle-staging`) · WordPress `51f514b` (pushed `stripe-test-integration`)  
+Live: schema `016` · Lambda `XpeCLanIQONhhoT/qo25S+OReTF8TajEUu+WIItyO5g=` · Vercel `dpl_GRbG888UTpRCTPwRX2PbCxNeB1wH`  
 
 **Do not run this payment until separately approved.** Stripe test mode only. No live charges. No Trillet workspace create / invite / Email #2. No production config changes during the payment itself.
+
+**Status (2026-10-22):** Not executed. No webhook-only new Checkout evidence after ALX-C000010 subscription-sync verification. Do not repeat payment without new authorization.
+
+Post-deploy note: subscription-sync happy path verified for ALX-C000010 (`sub_…CnPyXK69` → persisted `canceled`, activation still `canceled_synthetic_blocked`). This plan is only for webhook-only **new** sandbox provisioning.
 
 ---
 

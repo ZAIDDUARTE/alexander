@@ -12,6 +12,7 @@ import { persistenceV2ObjectKeys } from "./keys";
 import { resolveOnboardingAccess, type SqlPool } from "./onboarding-access";
 import type { ObjectStorePort } from "./types";
 import { ensureBusinessProfileProjectedAfterSubmit } from "./profile-projector";
+import { queueAccountSetupAfterSubmit } from "./queue-account-setup-after-submit";
 import { runCustomerProvisioning } from "./customer-provisioning";
 
 const ALGORITHM = "questionnaire_answers_v1";
@@ -514,6 +515,14 @@ export async function submitPersistenceV2FromAccess(
       // Submission already committed; operator/backfill can retry projection.
     }
     try {
+      await queueAccountSetupAfterSubmit(pool, {
+        customerId,
+        submissionId: reserved.reserved.submissionId,
+      });
+    } catch {
+      // Email outbox is durable/retryable; never undo a committed submission.
+    }
+    try {
       await runCustomerProvisioning(pool, {
         customerId,
         trigger: "questionnaire_submit",
@@ -586,6 +595,14 @@ export async function submitPersistenceV2FromAccess(
       });
     } catch {
       // Submission remains committed even if projection fails; operator can retry.
+    }
+    try {
+      await queueAccountSetupAfterSubmit(pool, {
+        customerId,
+        submissionId: reserved.reserved.submissionId,
+      });
+    } catch {
+      // Email outbox is durable/retryable; never undo a committed submission.
     }
     try {
       await runCustomerProvisioning(pool, {

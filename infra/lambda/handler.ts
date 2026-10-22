@@ -28,11 +28,13 @@ import {
   stagingEmailAllowed,
 } from "../../src/lib/server/persistence/email-outbox";
 import {
+  renderAccountSetupEmail,
   renderDashboardReadyEmail,
   renderPortalAdminVerificationEmail,
   renderQuestionnaireInvitationCorrectionEmail,
   renderQuestionnaireInvitationEmail,
 } from "../../src/lib/server/persistence/email-templates";
+import { ACCOUNT_SETUP_EMAIL_KIND } from "../../src/lib/server/persistence/account-setup-email";
 import {
   isSharedTrilletAuthUrl,
   resolveApprovedDashboardUrl,
@@ -1229,15 +1231,21 @@ if (operation === "diagnoseCustomerSubmissionState") {
                 firstName,
                 verificationUrl,
               })
-            : job.templateType === "questionnaire_invitation_correction"
-              ? renderQuestionnaireInvitationCorrectionEmail({
+            : job.templateType === "profile_updated" ||
+                String(job.payload.kind || "") === ACCOUNT_SETUP_EMAIL_KIND
+              ? renderAccountSetupEmail({
                   firstName,
-                  invitationUrl,
+                  companyDisplayName: String(job.payload.company_display_name || ""),
                 })
-              : renderQuestionnaireInvitationEmail({
-                  firstName,
-                  invitationUrl,
-                });
+              : job.templateType === "questionnaire_invitation_correction"
+                ? renderQuestionnaireInvitationCorrectionEmail({
+                    firstName,
+                    invitationUrl,
+                  })
+                : renderQuestionnaireInvitationEmail({
+                    firstName,
+                    invitationUrl,
+                  });
       if (
         (job.templateType === "questionnaire_invitation" ||
           job.templateType === "questionnaire_invitation_correction") &&
@@ -2172,6 +2180,112 @@ if (operation === "diagnoseCustomerSubmissionState") {
       host,
       correlationKey,
     });
+  }
+  if (
+    operation === "getBusinessProfile" ||
+    operation === "listProfileRevisions" ||
+    operation === "createProfileUpdateSession" ||
+    operation === "applyCustomerProfileEdit" ||
+    operation === "storeGeneratedRuntimeConfig" ||
+    operation === "updateProfilePublication" ||
+    operation === "rollbackToApprovedConfiguration"
+  ) {
+    const pool = await getPool();
+    const body = event as Record<string, unknown>;
+    const customerId = typeof body.customerId === "string" ? body.customerId : "";
+    if (!customerId && operation !== "createProfileUpdateSession") {
+      // createProfileUpdateSession also requires customerId; keep single check below.
+    }
+    if (!customerId) return { ok: false, reason: "customer_id_required" };
+
+    const {
+      applyCustomerProfileEdit,
+      createProfileUpdateSession,
+      getBusinessProfile,
+      listProfileRevisions,
+      rollbackToApprovedConfiguration,
+      updatePublicationState,
+    } = await import("../../src/lib/server/persistence/business-profile-editor");
+    const { markQaRequirement, allRequiredQaSatisfied } = await import(
+      "../../src/lib/server/persistence/profile-publication"
+    );
+
+    if (operation === "getBusinessProfile") {
+      return getBusinessProfile(pool as unknown as SqlPool, customerId);
+    }
+    if (operation === "listProfileRevisions") {
+      return listProfileRevisions(pool as unknown as SqlPool, customerId);
+    }
+    if (operation === "createProfileUpdateSession") {
+      return createProfileUpdateSession(pool as unknown as SqlPool, customerId);
+    }
+    if (operation === "applyCustomerProfileEdit") {
+      return applyCustomerProfileEdit(pool as unknown as SqlPool, {
+        customerId,
+        expectedRevision: Number(body.expectedRevision),
+        patch: (body.patch as Record<string, unknown>) || {},
+        actorRef: typeof body.actorRef === "string" ? body.actorRef : null,
+        changeSource:
+          body.changeSource === "internal_admin" ? "internal_admin" : "customer_self_service",
+      });
+    }
+    if (operation === "storeGeneratedRuntimeConfig") {
+      return updatePublicationState(pool as unknown as SqlPool, customerId, (publication) => {
+        const contentSha =
+          typeof body.contentSha256 === "string" ? body.contentSha256 : publication.configContentSha256;
+        return {
+          ...publication,
+          status: "config_generated",
+          profileRevision: Number(body.profileRevision || publication.profileRevision),
+          configContentSha256: contentSha,
+          lastFailure: null,
+        };
+      });
+    }
+    if (operation === "updateProfilePublication") {
+      const action = typeof body.action === "string" ? body.action : "publish";
+      return updatePublicationState(pool as unknown as SqlPool, customerId, (publication) => {
+        if (action === "mark_qa" && typeof body.requirementId === "string") {
+          return markQaRequirement(publication, body.requirementId, body.satisfied !== false);
+        }
+        if (action === "mark_failed") {
+          return {
+            ...publication,
+            status: "sync_failed",
+            lastFailure: {
+              code: "sync_failed",
+              message: "Publication failed",
+              at: new Date().toISOString(),
+            },
+          };
+        }
+        if (!publication.configContentSha256 || !allRequiredQaSatisfied(publication)) {
+          return {
+            ...publication,
+            status: "qa_required",
+            lastFailure: {
+              code: "qa_incomplete",
+              message: "Generate config and satisfy QA before publish",
+              at: new Date().toISOString(),
+            },
+          };
+        }
+        return {
+          ...publication,
+          status: "published",
+          approvedProfileRevision: publication.profileRevision,
+          approvedConfigContentSha256: publication.configContentSha256,
+          lastFailure: null,
+        };
+      });
+    }
+    if (operation === "rollbackToApprovedConfiguration") {
+      return rollbackToApprovedConfiguration(pool as unknown as SqlPool, {
+        customerId,
+        expectedRevision: Number(body.expectedRevision),
+        actorRef: typeof body.actorRef === "string" ? body.actorRef : "rollback",
+      });
+    }
   }
   if (
     operation === "lookupInvitation" ||

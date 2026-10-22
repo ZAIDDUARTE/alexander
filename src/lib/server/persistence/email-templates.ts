@@ -96,6 +96,37 @@ A product of Beyond Intelligence, Inc.
   return { subject, text, html };
 }
 
+export function renderAccountSetupEmail(vars: {
+  firstName: string;
+  companyDisplayName?: string;
+}): EmailRender {
+  const first = vars.firstName.trim() || "there";
+  const company = (vars.companyDisplayName || "").trim();
+  const subject = "We're Setting Up Your Alexander Account";
+  const companyLine = company
+    ? `We've received your questionnaire answers for ${company}.`
+    : "We've received your questionnaire answers.";
+  const text = `Hi ${first},
+
+${companyLine}
+
+Our team is now configuring Alexander around your business policies, hours, services, and call handling preferences.
+
+You do not need to take any action right now. We'll email you again when your Alexander phone agent has been verified and your dashboard is ready.
+
+Alexander
+A product of Beyond Intelligence, Inc.
+`;
+  const html = `<!DOCTYPE html><html><body style="font-family:Inter,system-ui,sans-serif;color:#211f1f;line-height:1.5">
+<p>Hi ${escapeHtml(first)},</p>
+<p>${escapeHtml(companyLine)}</p>
+<p>Our team is now configuring Alexander around your business policies, hours, services, and call handling preferences.</p>
+<p>You do not need to take any action right now. We'll email you again when your Alexander phone agent has been verified and your dashboard is ready.</p>
+<p>Alexander<br/>A product of Beyond Intelligence, Inc.</p>
+</body></html>`;
+  return { subject, text, html };
+}
+
 export function renderDashboardReadyEmail(vars: {
   firstName: string;
   dashboardUrl: string;
