@@ -7,6 +7,7 @@ import { POLICY_GROUPS } from "../policy-profile/types";
 
 import { formatSlotValue, humanizeFieldName } from "./format";
 import { redactSensitiveText, sanitizeProfileForAgentContext } from "./sanitize";
+import { AGENT_INSTRUCTIONS_V1_1 } from "./agent-instructions-v1_1";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -36,8 +37,12 @@ export type TrilletDemoBundle = {
 };
 
 function loadSharedInstructions(path?: string): string {
-  const p = path ?? resolve(__dirname, "agent-instructions-v1_1.txt");
-  return readFileSync(p, "utf8").trim();
+  if (!path) return AGENT_INSTRUCTIONS_V1_1.trim();
+  try {
+    return readFileSync(path, "utf8").trim();
+  } catch {
+    return AGENT_INSTRUCTIONS_V1_1.trim();
+  }
 }
 
 function slot(profile: CustomerPolicyProfileV1, group: PolicyGroupId, field: string): PolicyAnswerSlot | undefined {

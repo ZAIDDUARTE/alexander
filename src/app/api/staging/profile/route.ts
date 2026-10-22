@@ -33,10 +33,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const customerId =
-    auth.mode === "customer_session"
-      ? auth.customerId
-      : request.nextUrl.searchParams.get("customerId") || FICTIONAL_PROFILE_CUSTOMER_ID;
+  const requestedCustomerId =
+    request.nextUrl.searchParams.get("customerId") || FICTIONAL_PROFILE_CUSTOMER_ID;
+  if (auth.mode === "customer_session" && requestedCustomerId !== auth.customerId) {
+    return NextResponse.json(
+      { ok: false, reason: "customer_scope_mismatch" },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+  const customerId = auth.mode === "customer_session" ? auth.customerId : requestedCustomerId;
   const scope = assertCustomerScope(auth, customerId);
   if (!scope.ok) {
     return NextResponse.json(

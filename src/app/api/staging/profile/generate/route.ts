@@ -62,13 +62,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const config = generateRuntimeConfiguration({
-    fields: loaded.profile.fields,
-    profileRevision: loaded.profile.currentRevision,
-    customerId,
-    customerNumber: body.customerNumber || "ALX-C000099",
-    questionnaire: loaded.profile.profileData.questionnaire,
-  });
+  let config;
+  try {
+    config = generateRuntimeConfiguration({
+      fields: loaded.profile.fields,
+      profileRevision: loaded.profile.currentRevision,
+      customerId,
+      customerNumber: body.customerNumber || "ALX-C000099",
+      questionnaire: loaded.profile.profileData.questionnaire,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        reason: "generate_failed",
+        detail: error instanceof Error ? error.message : "unknown_error",
+      },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
+    );
+  }
   const contentSha = runtimeConfigContentSha256(config);
 
   await profileUpdatePublication(customerId, (publication, profileData) => {
