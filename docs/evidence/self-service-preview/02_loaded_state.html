@@ -1,0 +1,161 @@
+<!DOCTYPE html><html><body style="font-family:ui-sans-serif,system-ui;margin:1.5rem auto;max-width:900px;padding:0 1rem">
+<h1>Staging business profile editor — loaded evidence</h1>
+<p>Preview memory_store · revision <strong>6</strong> · publication <strong>config_generated</strong> · approved <strong>4</strong></p>
+<p>originalQuestionnaireUntouched=<strong>True</strong></p>
+<ul>
+<li>Q1: Fictional Plumbing Isolated Preview</li>
+<li>Q8 monday closed: True</li>
+<li>Q21: {"gas_odor": "emergency", "active_flooding": "ask_team"}</li>
+</ul>
+<pre style="background:#0f1720;color:#d7e2f0;padding:12px;border-radius:8px;overflow:auto">[
+  [
+    "unauth",
+    401,
+    "invalid_token"
+  ],
+  [
+    "load",
+    200,
+    "memory_store",
+    1,
+    true
+  ],
+  [
+    "routine_edit",
+    200,
+    true,
+    2,
+    "low",
+    false
+  ],
+  [
+    "conflict",
+    409,
+    false,
+    "revision_conflict"
+  ],
+  [
+    "other_admin_get",
+    404,
+    false,
+    "not_found"
+  ],
+  [
+    "session_create",
+    200,
+    true,
+    true
+  ],
+  [
+    "session_other_get",
+    403,
+    false,
+    "customer_scope_mismatch"
+  ],
+  [
+    "sensitive_edit",
+    200,
+    true,
+    3,
+    "high",
+    true,
+    "qa_required"
+  ],
+  [
+    "emergency_edit",
+    200,
+    true,
+    4,
+    "high"
+  ],
+  [
+    "history",
+    200,
+    4,
+    [
+      [
+        4,
+        "high",
+        "active"
+      ],
+      [
+        3,
+        "high",
+        "superseded"
+      ],
+      [
+        2,
+        "low",
+        "superseded"
+      ],
+      [
+        1,
+        "unknown",
+        "superseded"
+      ]
+    ]
+  ],
+  [
+    "generate",
+    200,
+    true,
+    "78edd5965822",
+    5475,
+    815,
+    {
+      "requestOnly": true,
+      "jobberWritesEnabled": false,
+      "googleCalendarWritesEnabled": false,
+      "notes": [
+        "Jobber writes remain disabled (request_writes_enabled=false).",
+        "Google Calendar adapter is freeBusy diagnostic only.",
+        "Do not modify Phillip Marina / Lisa production agents from this generator."
+      ]
+    }
+  ],
+  [
+    "dry_run",
+    200,
+    true,
+    "dry_run",
+    true,
+    null,
+    9,
+    null
+  ],
+  [
+    "publish",
+    200,
+    true,
+    "published",
+    4
+  ],
+  [
+    "pre_rollback_edit",
+    200,
+    true,
+    5
+  ],
+  [
+    "rollback",
+    200,
+    true,
+    6,
+    "rolled_back",
+    4
+  ],
+  [
+    "final",
+    200,
+    true,
+    6,
+    "Fictional Plumbing Isolated Preview"
+  ],
+  [
+    "ui",
+    200,
+    true,
+    true
+  ]
+]</pre>
+</body></html>

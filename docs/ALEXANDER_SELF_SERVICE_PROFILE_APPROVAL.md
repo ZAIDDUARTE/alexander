@@ -3,7 +3,7 @@
 Date: 2026-10-22  
 Branch: `customer-lifecycle-staging`  
 Base revision before this sprint: `d4a32ba`  
-Implementation commit: `55a9a88` (`55a9a88aba6ca9c13325e97e58aafc63c445018b`) — local only until push approved  
+Implementation commits pushed through `5438472`. Preview report: `docs/ALEXANDER_SELF_SERVICE_PREVIEW_REPORT.md`.  
 
 ## Webhook-only sandbox payment status
 
